@@ -1,8 +1,20 @@
 from flask import Blueprint, request, session, jsonify
+from functools import wraps
 from app.services.auth_service import login_user
 from app.services.auth_service import register_user
 from app.services.auth_service import recover_password
 from app.services.auth_service import users
+
+#funcao pra validar se o usuario ta logado, algumas telas so vao carregar se essa funcao for verdadeira
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return jsonify({"message": "Usuário não autenticado."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -23,6 +35,12 @@ def logout():
     session.pop('username', None)
     return jsonify({"message": "Logout realizado com sucesso!"}), 200
 
+@auth_bp.route('/me', methods=['GET'])
+@login_required
+def me():
+    username = session.get('username')
+    return jsonify({"username": username}), 200
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -30,7 +48,7 @@ def register():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({"message": "Username e password são obrigatórios."}), 400
+        return jsonify({"message": "Usuário e senha são obrigatórios."}), 400
 
     if register_user(username, password):
         return jsonify({"message": "Usuário registrado com sucesso!"}), 201
