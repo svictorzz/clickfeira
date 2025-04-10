@@ -1,6 +1,7 @@
 from flask import Blueprint, request, session, jsonify
 from app.services.auth_service import login_user
 from app.services.auth_service import register_user
+from app.services.auth_service import recover_password
 from app.services.auth_service import users
 
 auth_bp = Blueprint('auth', __name__)
@@ -39,3 +40,21 @@ def register():
 @auth_bp.route('/users', methods=['GET'])
 def get_users():
     return jsonify(users), 200
+
+@auth_bp.route('/recover-password', methods=['POST'])
+def recover_password_route():
+    data = request.json
+    username = data.get('username')
+
+    if not username:
+        return jsonify({"message": "O usuário é obrigatório."}), 400
+    
+    new_password = recover_password(username)
+
+    if new_password:
+        return jsonify({
+            "message": "Senha redefinida com sucesso!",
+            "new_password": new_password
+        }), 200
+    else:
+        return jsonify({"message": "Usuário não encontrado."}), 404
