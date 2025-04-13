@@ -1,0 +1,15 @@
+.login-container img{
+    width: 40px;
+    margin-top: -40px;
+    margin-left: -10px;
+}
+
+.login-container h4{
+    margin-top: -40px;
+}
+
+form p{
+    text-align: center;
+    font-size: 1rem;
+    color: #4F4D4D;
+}
