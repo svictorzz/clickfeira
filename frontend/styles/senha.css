@@ -13,3 +13,17 @@ form p{
     font-size: 1rem;
     color: #4F4D4D;
 }
+
+@media (min-width: 601px){
+    .login-container{
+        margin-top: 40px;
+    }
+
+    .login-container h4{
+        margin-left: 20px;
+    }
+
+    .login-container img{
+        margin-top: -30px;
+    }
+}

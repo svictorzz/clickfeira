@@ -1,11 +1,53 @@
 body {
     font-family: 'Poppins', sans-serif;
-
   }
 
-  .login-container {
-    padding: 30px;
-    overflow: hidden;
+  @media (max-width: 600px){
+
+    body{
+      background-color: white;
+    }
+
+    .login-container {
+      padding: 30px;
+      overflow: hidden;
+    }
+  
+    .img-logo{
+      height: 100px;
+      margin-top: 50px;
+      margin-bottom: 30px;
+    }
+  
+    
+  }
+
+  @media (min-width: 601px){
+    .img-logo{
+      height: 100px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .box-container {
+      width: 100%;
+      max-width: 400px;
+      background-color: #fff;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    body{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;         
+      background-color: #0c9243;
+      margin: 0;
+      padding: 20px;             
+      box-sizing: border-box;
+    }
   }
 
   .logo {
@@ -16,12 +58,6 @@ body {
     margin: -30px -30px 20px;
     color: #fff;
     overflow: hidden;
-  }
-
-  .img-logo{
-    height: 100px;
-    margin-top: 50px;
-    margin-bottom: 30px;
   }
 
   .logo h1 {
@@ -58,7 +94,7 @@ body {
     font-size: 0.7rem;
     color: #AAA9A9;
   }
-
+  
   .btn-success {
     width: 100%;
     border-radius: 10px;
