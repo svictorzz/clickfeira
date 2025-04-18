@@ -1,0 +1,27 @@
+.card-img-top {
+    object-fit: cover;
+    height: 200px; 
+    width: 100%;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.card-title{
+    color: #067D39;
+    font-weight: bold;
+}
+
+.card-text{
+    font-weight: bold;
+}
+
+.card:hover{
+    transform: translateY(-4px); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); 
+}
+
+.text-muted a{
+    color: #727272;
+}
+
+
