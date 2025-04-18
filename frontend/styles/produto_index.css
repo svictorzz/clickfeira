@@ -1,0 +1,152 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  body {
+    background-color: #f9f9f9;
+  }
+  
+  .container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .sidebar {
+    width: 240px;
+    background-color: #007E41;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+  }
+  
+  .logo img {
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  
+  .sidebar ul {
+    list-style: none;
+  }
+  
+  .sidebar li {
+    padding: 10px 0;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .sidebar li.active {
+    color: #fff;
+  }
+  
+  .logout {
+    color: #ff4d4d;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 30px;
+    background-color: #f9f9f9;
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  header h2 span {
+    font-size: 24px;
+  }
+  
+  .cinza {
+    color: gray;
+    font-weight: normal;
+  }
+  
+  .user-circle {
+    width: 40px;
+    height: 40px;
+    background-color: #ccc;
+    border-radius: 50%;
+  }
+  
+  .search-bar {
+    display: flex;
+    align-items: center;
+    margin: 30px 0;
+    gap: 10px;
+  }
+  
+  .input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .input-icon i {
+    position: absolute;
+    left: 10px;
+    color: gray;
+  }
+  
+  .input-icon input {
+    padding: 10px 10px 10px 30px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    width: 400px;
+  }
+  
+  .filter, .add {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .filter {
+    background-color: white;
+    border: 1px solid #ccc;
+  }
+  
+  .add {
+    background-color: #007f30;
+    color: white;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 5px rgba(0,0,0,0.05);
+  }
+  
+  th, td {
+    text-align: center;
+    padding: 14px;
+    font-size: 15px;
+  }
+  
+  th {
+    border-bottom: 2px solid #007f30;
+    font-weight: bold;
+  }
+  
+  .edit-icon {
+    color: #007f30;
+    cursor: pointer;
+  }
+  
+  .delete-icon {
+    color: #d9534f;
+    cursor: pointer;
+  }
