@@ -1,9 +1,11 @@
 from flask import Blueprint, request, session, jsonify
 from functools import wraps
-from app.services.auth_service import login_user
-from app.services.auth_service import register_user
-from app.services.auth_service import recover_password
-from app.services.auth_service import users
+from app.services.auth_service import(
+    login_user,
+    register_user,
+    recover_password,
+    users
+)
 
 #funcao pra validar se o usuario ta logado, algumas telas so vao carregar se essa funcao for verdadeira
 

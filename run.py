@@ -1,6 +1,7 @@
 from flask import Flask
 from app.routes.auth_routes import auth_bp
 from app.routes.product_routes import product_bp
+from app.routes.stock_routes import stock_bp
 
 def create_app():
     app = Flask(__name__)
@@ -8,7 +9,8 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(product_bp)
-
+    app.register_blueprint(stock_bp)
+  
     return app
 
 if __name__ == "__main__":
