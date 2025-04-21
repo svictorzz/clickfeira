@@ -1,4 +1,3 @@
-# Dicionário para armazenar o estoque por product_id
 stock_data = {}
 
 def register_entry(product_id, quantity):
@@ -13,7 +12,6 @@ def register_exit(product_id, quantity):
         return False, "Produto não encontrado no estoque."
     if stock_data[product_id] < quantity:
         return False, "Quantidade insuficiente no estoque."
-    
     stock_data[product_id] -= quantity
     return True, "Saída registrada com sucesso."
 

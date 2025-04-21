@@ -1,73 +1,69 @@
 from datetime import datetime
-from app.services.stock_service import register_exit, get_stock
+from app.services.stock_service import register_entry, register_exit, get_stock
 from app.services.product_service import get_product_by_id
 
 orders = []
-order_counter = 1 
-
+order_id_counter = 1
 
 def create_order(data):
-    global order_counter
+    global order_id_counter
 
-    required = ['comerciante', 'dataPedido', 'fornecedor', 'itensPedido', 'status', 'tipoPedido']
-    if any(field not in data for field in required):
-        return False, "Obrigatório preencher todos os campos do pedido."
-    
-    order_id = order_counter
-    order_counter += 1
+    required_fields = ['comerciante', 'fornecedor', 'itensPedido', 'tipoPedido']
+    if not all(field in data for field in required_fields):
+        return False, "Campos obrigatórios ausentes."
+
+    tipo = data['tipoPedido']
+
+    # Validação dos itens
+    for item in data['itensPedido']:
+        product = get_product_by_id(item['productId'])
+        if not product:
+            return False, f"Produto com ID {item['productId']} não encontrado."
+
+        if tipo == 'venda':
+            if get_stock(item['productId']) < item['quantity']:
+                return False, f"Estoque insuficiente para produto {product['name']} (ID {item['productId']})."
+
+    # Atualização do estoque
+    for item in data['itensPedido']:
+        if tipo == 'venda':
+            success, msg = register_exit(item['productId'], item['quantity'])
+        elif tipo == 'entrada':
+            success = register_entry(item['productId'], item['quantity'])
+            msg = "Entrada registrada com sucesso." if success else "Erro ao registrar entrada."
+        else:
+            return False, "Tipo de pedido inválido."
+
+        if not success:
+            return False, f"Erro ao atualizar estoque do produto {item['productId']}: {msg}"
+
+    # Cálculo do total
+    total = sum(
+        get_product_by_id(item['productId'])['price'] * item['quantity']
+        for item in data['itensPedido']
+    )
 
     order = {
-        'idPedido': order_id,
-        'comerciante': data['comerciante'],
-        'dataPedido': data['dataPedido'],
-        'fornecedor': data['fornecedor'],
-        'tipoPedido': data['tipoPedido'], 
-        'status': data['status'],        
-        'itensPedido': [],
-        'totalPedido': 0
+        "idPedido": order_id_counter,
+        "comerciante": data['comerciante'],
+        "fornecedor": data['fornecedor'],
+        "dataPedido": data.get('dataPedido', datetime.now().isoformat()),
+        "tipoPedido": tipo,
+        "status": data.get('status', 'pendente'),
+        "itensPedido": data['itensPedido'],
+        "totalPedido": total
     }
 
-    total = 0
-    for item in data['itensPedido']:
-        pid = item.get('productId')
-        qty = item.get('quantity')
-        if pid is None or qty is None:
-            return False, f"Dados inválidos no item: {item}"
-
-        prod = get_product_by_id(pid)
-        if not prod:
-            return False, f"Produto com ID {pid} não encontrado."
-
-        if data['tipoPedido'] == 'venda':
-            stock = get_stock(pid)
-            if stock < qty:
-                return False, f"Estoque insuficiente para produto {prod['name']} (ID {pid})."
-            success, msg = register_exit(pid, qty)
-            if not success:
-                return False, msg
-
-        subtotal = prod['price'] * qty
-        total += subtotal
-        order['itensPedido'].append({
-            'productId': pid,
-            'name': prod['name'],
-            'quantity': qty,
-            'unitPrice': prod['price'],
-            'total': subtotal
-        })
-
-    order['totalPedido'] = total
     orders.append(order)
-    return True, order
+    order_id_counter += 1
 
+    return True, order
 
 def get_all_orders():
     return orders
 
-
 def get_order_by_id(order_id):
     return next((o for o in orders if o['idPedido'] == order_id), None)
-
 
 def update_order(order_id, updates):
     order = get_order_by_id(order_id)
@@ -76,7 +72,6 @@ def update_order(order_id, updates):
     order['status'] = updates.get('status', order['status'])
     order['fornecedor'] = updates.get('fornecedor', order['fornecedor'])
     return True, order
-
 
 def delete_order(order_id):
     global orders
