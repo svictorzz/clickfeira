@@ -25,7 +25,7 @@ Thumbs.db
 *.log
 
 # Firebase / Credenciais
-credenciais.json
+credentials.json
 *.firebase.json
 
 # Arquivos de build/empacotamento
