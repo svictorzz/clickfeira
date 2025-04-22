@@ -1,36 +1,63 @@
+from app.firebase_config import db
 from app.services.stock_service import get_stock
 
-products = []
-product_id_counter = 1
+def _normalize_produtos_data(data):
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        return {str(i): item for i, item in enumerate(data) if item is not None}
+    return {}
+
+def get_next_product_id():
+    ref = db.reference("produto")
+    data = ref.get()
+    produtos = _normalize_produtos_data(data)
+    if not produtos:
+        return 1
+    existing_ids = [int(pid) for pid in produtos.keys() if pid.isdigit()]
+    return max(existing_ids) + 1 if existing_ids else 1
+
 
 def add_product(product):
-    global product_id_counter
-    product["productId"] = product_id_counter
-    products.append(product)
-    product_id_counter += 1
+    product_id = get_next_product_id()
+    product["idProduto"] = product_id
+    db.reference("produto").child(str(product_id)).set(product)
+    return product
+
 
 def get_all_products():
-    return [get_product_by_id(p["productId"]) for p in products]
+    ref = db.reference("produto")
+    data = ref.get()
+    produtos = _normalize_produtos_data(data)
+    result = []
+    for pid, info in produtos.items():
+        item = dict(info)
+        item["quantidadeEstoque"] = get_stock(int(pid))
+        result.append(item)
+    return result
+
 
 def get_product_by_id(product_id):
-    product = next((p for p in products if p["productId"] == product_id), None)
-    if not product:
+    ref = db.reference(f"produto/{product_id}")
+    data = ref.get()
+    if not data:
         return None
-    product_with_stock = dict(product)  # cópia para não modificar o original
-    product_with_stock["stockQuantity"] = get_stock(product_id)
-    return product_with_stock
+    item = dict(data)
+    item["quantidadeEstoque"] = get_stock(int(product_id))
+    return item
+
 
 def update_product(product_id, updates):
-    product = next((p for p in products if p["productId"] == product_id), None)
-    if product:
-        product.update(updates)
-        return get_product_by_id(product_id)
-    return None
+    ref = db.reference(f"produto/{product_id}")
+    if ref.get() is None:
+        return None
+    ref.update(updates)
+    return get_product_by_id(product_id)
+
 
 def delete_product(product_id):
-    global products
-    product = get_product_by_id(product_id)
-    if product:
-        products = [p for p in products if p["productId"] != product_id]
-        return True
-    return False
+    ref = db.reference(f"produto/{product_id}")
+    if ref.get() is None:
+        return False
+    ref.delete()
+    return True
