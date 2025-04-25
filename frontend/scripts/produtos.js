@@ -29,7 +29,7 @@ document.querySelector('.abrir-modal').addEventListener('click', () => {
   indiceParaEditar = null; // Reseta o índice de edição
 });
 
-// Fechar o modal de cadastro
+// Fechar o modal de cadastroo
 document.querySelector('.cancelar').addEventListener('click', () => {
   document.getElementById('modal-produto').style.display = 'none'; // Esconde o modal
   indiceParaEditar = null; // Reseta o índice de edição
