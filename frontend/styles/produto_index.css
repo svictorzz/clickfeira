@@ -11,14 +11,14 @@ body {
   background-color: #f9f9f9; /* Cor de fundo do body */
 }
 
-/* Estilo do conteúdo principal */
+/* Estilo do contueúdo principal */
 .content {
-  padding: 30px; /* Define o padding do conteúdo */
+  padding: 30px; /* Deefine o padding do conteúdo */
 }
 
 /* Estilo do título do header */
 header h2 {
-  font-size: 24px; /* Tamanho da fonte do título */
+  font-size: 24px; /* Tamanhho da fonte do título */
 }
 
 /* Estilo para o texto com a classe 'cinza' */

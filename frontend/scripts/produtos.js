@@ -3,13 +3,13 @@ const produtos = [];
 let indiceParaExcluir = null;
 let indiceParaEditar = null;
 
-// Mostrar/Ocultar filtros ao clicar no botão de filtro
+// Mostrar/Ocultar filtros ao clicar no botão de filtroo
 document.querySelector('.filter').addEventListener('click', () => {
   const filtros = document.getElementById('filtros-container');
   filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none'; // Alterna entre mostrar ou ocultar os filtros
 });
 
-// Preenche o campo de unidade atual com o valor da unidade mínima selecionadaa
+// Preenche o campo de uniddade atual com o valor da unidade mínima selecionadaa
 document.getElementById('unidade-minima').addEventListener('change', function () {
   document.getElementById('unidade-atual').value = this.value;
 });
