@@ -1,360 +1,320 @@
-/* Estilo global para todos os elementos */
+/* --- RESET GLOBAL --- */
 * {
-  margin: 0; /* Remove margens de todos os elementos */
-  padding: 0; /* Remove o padding de todos os elementos */
-  box-sizing: border-box; /* Altera o modelo de caixa para incluir padding e border */
-  font-family: 'Poppins', sans-serif; /* Define a fonte global */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* Estilo do body da página produtos! */
+/* --- ESTILO GERAL --- */
 body {
-  background-color: #f9f9f9; /* Cor de fundo do body */
+  background-color: #f9f9f9;
 }
 
-/* Estilo do contueúdo principal */
 .content {
-  padding: 30px; /* Deefine o padding do conteúdo */
+  padding: 30px;
 }
 
-/* Estilo do título do header */
 header h2 {
-  font-size: 24px; /* Tamanhho da fonte do título */
+  font-size: 24px;
 }
 
-/* Estilo para o texto com a classe 'cinza' */
 .cinza {
-  color: gray; /* Cor do texto cinza */
-  font-weight: normal; /* Peso da fonte normal */
+  color: gray;
+  font-weight: normal;
 }
 
-/* Estilo da barra de pesquisa */
+/* --- BARRA DE PESQUISA --- */
 .search-bar {
-  display: flex; /* Exibe os elementos como flexbox */
-  align-items: center; /* Alinha os itens no centro */
-  margin: 30px 0; /* Define margem superior e inferior */
-  gap: 10px; /* Espaçamento entre os itens */
+  display: flex;
+  align-items: center;
+  margin: 30px 0;
+  gap: 10px;
 }
 
-/* Estilo do input de pesquisa */
 .input-icon {
-  position: relative; /* Para posicionar o ícone de busca */
-  display: flex; /* Exibe o conteúdo como flexbox */
-  align-items: center; /* Alinha os itens no centro */
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .input-icon i {
-  position: absolute; /* Posiciona o ícone dentro do input */
-  left: 10px; /* Define a posição do ícone à esquerda */
-  color: gray; /* Cor do ícone */
+  position: absolute;
+  left: 10px;
+  color: gray;
 }
 
 .input-icon input {
-  padding: 10px 10px 10px 30px; /* Adiciona espaçamento interno */
-  border-radius: 20px; /* Bordas arredondadas */
-  border: 1px solid #ccc; /* Cor da borda */
-  width: 400px; /* Largura do input */
+  padding: 10px 10px 10px 30px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  width: 400px;
 }
 
-/* Estilo dos botões de filtro e adicionar */
+.input-icon input:focus {
+  box-shadow: 0 0 5px rgba(0, 127, 48, 0.5);
+  border: 1px solid #007f30;
+}
+
+/* --- BOTÕES PRINCIPAIS --- */
 .filter, .abrir-modal {
-  padding: 10px 16px; /* Padding dos botões */
-  border: none; /* Remove borda */
-  border-radius: 20px; /* Bordas arredondadas */
-  font-weight: bold; /* Fonte em negrito */
-  cursor: pointer; /* Define o cursor como ponteiro */
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-/* Estilo do botão de filtro */
 .filter {
-  background-color: white; /* Cor de fundo branca */
-  border: 1px solid #ccc; /* Borda cinza */
+  background-color: white;
+  border: 1px solid #ccc;
 }
 
-/* Estilo do botão de adicionar */
 .abrir-modal {
-  background-color: #007f30; /* Cor de fundo verde */
-  color: white; /* Cor do texto branca */
+  background-color: #007f30;
+  color: white;
 }
 
-/* Estilo da tabela */
+.abrir-modal:hover,
+.modal-buttons .salvar:hover {
+  background-color: #005f24;
+}
+
+/* --- TABELA DE PRODUTOS --- */
 table {
-  width: 100%; /* Largura da tabela */
-  border-collapse: collapse; /* Colapsa as bordas */
-  background-color: white; /* Cor de fundo branca */
-  border-radius: 10px; /* Bordas arredondadas */
-  overflow: hidden; /* Esconde qualquer conteúdo fora da tabela */
-  box-shadow: 0 0 5px rgba(0,0,0,0.05); /* Sombra suave */
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
 }
 
-/* Estilo das células da tabela */
 th, td {
-  text-align: center; /* Alinha o conteúdo no centro */
-  padding: 14px; /* Padding das células */
-  font-size: 15px; /* Tamanho da fonte */
+  text-align: center;
+  padding: 14px;
+  font-size: 15px;
 }
 
-/* Estilo do cabeçalho da tabela */
 th {
-  border-bottom: 2px solid #007f30; /* Borda inferior verde */
+  border-bottom: 2px solid #007f30;
 }
 
-/* Estilo dos ícones de editar */
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
 .edit-icon {
-  color: #007f30; /* Cor verde */
-  cursor: pointer; /* Define o cursor como ponteiro */
+  color: #007f30;
+  cursor: pointer;
 }
 
-/* Estilo dos ícones de excluir */
 .delete-icon {
-  color: #d9534f; /* Cor vermelha */
-  cursor: pointer; /* Define o cursor como ponteiro */
+  color: #d9534f;
+  cursor: pointer;
 }
 
-/* Estilo do modal de registro */
+/* --- MODAL GERAL --- */
 .modal-overlay {
-  display: none; /* Inicialmente invisível */
-  position: fixed; /* Fixa a posição do modal */
-  top: 0; /* Fica no topo da página */
-  left: 0; /* Fica à esquerda da página */
-  width: 100%; /* Largura 100% */
-  height: 100%; /* Altura 100% */
-  background-color: rgba(0,0,0,0.4); /* Fundo escurecido */
-  justify-content: center; /* Centraliza o conteúdo */
-  align-items: center; /* Centraliza o conteúdo verticalmente */
-  z-index: 1000; /* Coloca o modal no topo */
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-/* Estilo do conteúdo do modal */
 .modal-content {
-  background-color: white; /* Cor de fundo branca */
-  padding: 30px; /* Padding */
-  border-radius: 12px; /* Bordas arredondadas */
-  width: 1000px; /* Largura do modal */
-  max-width: 95%; /* Largura máxima */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Sombra ao redor do modal */
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 1000px;
+  max-width: 95%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  animation: aparecer-modal 0.3s ease;
 }
 
-/* Estilo do título no conteúdo do modal */
+@keyframes aparecer-modal {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 .modal-content h3 {
-  margin-bottom: 20px; /* Margem inferior */
-  font-weight: bold; /* Fonte em negrito */
+  margin-bottom: 20px;
+  font-weight: bold;
 }
 
-/* Estilo das labels dentro do modal */
-.modal-content label {
-  display: block; /* Exibe as labels como bloco */
-  margin-top: 10px; /* Margem superior */
-  font-weight: 500; /* Peso da fonte */
+.modal-content label,
+#modal-visualizar .modal-content label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
 }
 
-/* Estilo dos inputs, selects e textareas dentro do modal */
 .modal-content input,
 .modal-content select,
-.modal-content textarea {
-  width: 100%; /* Largura total */
-  padding: 10px; /* Padding */
-  margin-top: 5px; /* Margem superior */
-  margin-bottom: 15px; /* Margem inferior */
-  border: 1px solid #ccc; /* Borda */
-  border-radius: 6px; /* Bordas arredondadas */
-}
-
-/* Estilo do textarea */
-.modal-content textarea {
-  resize: vertical; /* Permite redimensionar o textarea verticalmente */
-}
-
-/* Grid do formulário dentro do modal */
-.form-grid {
-  display: flex; /* Flexbox */
-  gap: 20px; /* Espaçamento entre as colunas */
-  flex-wrap: wrap; /* Permite que as colunas quebrem */
-}
-
-/* Estilo das colunas do formulário */
-.form-col {
-  flex: 1; /* Flexível */
-  min-width: 300px; /* Largura mínima */
-}
-
-/* Grupo de inputs dentro do modal */
-.input-group {
-  display: flex; /* Flexbox */
-  gap: 10px; /* Espaçamento entre os elementos */
-}
-
-/* Estilo dos inputs dentro do grupo */
-.input-group input {
-  flex: 2; /* O primeiro input ocupa mais espaço */
-}
-
-.input-group select {
-  flex: 1; /* O select ocupa menos espaço */
-}
-
-/* Estilo dos botões do modal */
-.modal-buttons {
-  display: flex; /* Flexbox */
-  justify-content: flex-end; /* Alinha os botões à direita */
-  margin-top: 20px; /* Margem superior */
-  gap: 10px; /* Espaçamento entre os botões */
-}
-
-/* Estilo do botão de salvar no modal */
-.modal-buttons .salvar {
-  background-color: #007f30; /* Cor de fundo verde */
-  color: white; /* Cor do texto branca */
-  border: none; /* Remove a borda */
-  padding: 10px 16px; /* Padding */
-  border-radius: 20px; /* Bordas arredondadas */
-  font-weight: bold; /* Fonte em negrito */
-  cursor: pointer; /* Cursor como ponteiro */
-}
-
-/* Estilo do botão de cancelar no modal */
-.modal-buttons .cancelar {
-  background-color: #ccc; /* Cor de fundo cinza */
-  color: #333; /* Cor do texto escura */
-  border: none; /* Remove a borda */
-  padding: 10px 16px; /* Padding */
-  border-radius: 20px; /* Bordas arredondadas */
-  font-weight: bold; /* Fonte em negrito */
-  cursor: pointer; /* Cursor como ponteiro */
-}
-
-/* Estilo do modal de visualização */
-#modal-visualizar .modal-content {
-  padding: 30px; /* Padding */
-  border-radius: 12px; /* Bordas arredondadas */
-  width: 800px; /* Largura do modal */
-  max-width: 95%; /* Largura máxima */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Sombra */
-}
-
-/* Estilo do título no modal de visualização */
-#modal-visualizar .modal-content h3 {
-  margin-bottom: 23px; /* Margem inferior */
-  font-weight: bold; /* Fonte em negrito */
-  font-size: 24px; /* Tamanho da fonte */
-}
-
-/* Estilo das labels no modal de visualização */
-#modal-visualizar .modal-content label {
-  display: block; /* Exibe as labels como bloco */
-  margin-top: 10px; /* Margem superior */
-  font-weight: 500; /* Peso da fonte */
-}
-
-/* Estilo dos inputs, selects e textareas no modal de visualização */
+.modal-content textarea,
 #modal-visualizar .modal-content input,
 #modal-visualizar .modal-content select,
 #modal-visualizar .modal-content textarea {
-  width: 100%; /* Largura total */
-  padding: 10px; /* Padding */
-  margin-top: 5px; /* Margem superior */
-  margin-bottom: 15px; /* Margem inferior */
-  border: 1px solid #ccc; /* Borda */
-  border-radius: 6px; /* Bordas arredondadas */
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-/* Estilo do textarea no modal de visualização */
-#modal-visualizar .modal-content textarea {
-  resize: vertical; /* Permite redimensionar o textarea */
+.modal-content textarea {
+  resize: vertical;
 }
 
-/* Estilo das colunas do modal de visualização */
+/* --- FORMULÁRIOS DENTRO DO MODAL --- */
 .form-grid {
-  display: flex; /* Flexbox */
-  gap: 20px; /* Espaçamento entre as colunas */
-  flex-wrap: wrap; /* Permite que as colunas quebrem */
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-/* Estilo das colunas do modal de visualização */
 .form-col {
-  flex: 1; /* Flexível */
-  min-width: 300px; /* Largura mínima */
+  flex: 1;
+  min-width: 300px;
 }
 
-/* Estilo da imagem do produto */
-.product-image {
-  max-width: 250px; /* Largura máxima da imagem */
-  height: auto; /* Altura automática */
-  border: 2px solid #ddd; /* Borda */
-  border-radius: 10px; /* Bordas arredondadas */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra ao redor da imagem */
+.input-group {
+  display: flex;
+  gap: 10px;
 }
 
-/* Descrição da imagem do produto */
-.image-description {
-  text-align: left; /* Alinha o texto à esquerda */
-  font-size: 0.9rem; /* Tamanho da fonte */
-  color: #666; /* Cor do texto */
-  margin-top: 10px; /* Margem superior */
+.input-group input {
+  flex: 2;
 }
 
-/* Estilo dos botões do modal de visualização */
+.input-group select {
+  flex: 1;
+}
+
+/* --- BOTÕES DO MODAL --- */
 .modal-buttons {
-  display: flex; /* Flexbox */
-  justify-content: flex-end; /* Alinha os botões à direita */
-  margin-top: 20px; /* Margem superior */
-  gap: 10px; /* Espaçamento entre os botões */
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  gap: 10px;
 }
 
-/* Estilo do botão de cancelar no modal de visualização */
+.modal-buttons .salvar {
+  background-color: #007f30;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-buttons .cancelar,
 .modal-buttons .cancelar-visualizar {
-  background-color: #ccc; /* Cor de fundo cinza */
-  color: #333; /* Cor do texto escuro */
-  border: none; /* Remove a borda */
-  padding: 10px 16px; /* Padding */
-  border-radius: 20px; /* Bordas arredondadas */
-  font-weight: bold; /* Fonte em negrito */
-  cursor: pointer; /* Cursor como ponteiro */
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-/* Estilo do botão de cancelar no modal de visualização ao passar o mouse */
 .modal-buttons .cancelar-visualizar:hover {
-  background-color: #bbb; /* Altera a cor de fundo ao passar o mouse */
+  background-color: #bbb;
 }
 
-/* Estilo da descrição do produto */
+/* --- VISUALIZAÇÃO DE PRODUTO --- */
+#modal-visualizar .modal-content {
+  width: 800px;
+  max-width: 95%;
+}
+
+.product-image {
+  max-width: 250px;
+  height: auto;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.image-description {
+  text-align: left;
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 10px;
+}
+
 .descricao-produto {
-  display: block; /* Exibe como bloco */
-  white-space: pre-wrap; /* Mantém quebras de linha e espaços */
-  word-wrap: break-word; /* Quebra palavras grandes */
-  overflow-wrap: break-word; /* Quebra palavras longas */
-  max-height: 150px; /* Limita a altura máxima */
-  overflow-y: auto; /* Adiciona scroll vertical se necessário */
-  padding: 6px; /* Padding */
-  margin-top: 4px; /* Margem superior */
-  background-color: #f9f9f9; /* Cor de fundo */
-  border: 1px solid #ccc; /* Borda */
-  border-radius: 6px; /* Bordas arredondadas */
+  display: block;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 6px;
+  margin-top: 4px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-/* Responsividade para telas menores */
+/* --- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO --- */
+#modal-confirmar-exclusao .modal-buttons .salvar {
+  background-color: #d9534f;
+}
+
+#modal-confirmar-exclusao .modal-buttons .cancelar {
+  background-color: #ccc;
+}
+
+/* --- FILTROS --- */
+#filtros-container select {
+  border-radius: 10px;
+  padding: 6px;
+  border: 1px solid #ccc;
+}
+
+/* --- ALERTA DE MENSAGEM --- */
+.mensagem-alerta {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #ffff;
+  color: black;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 2000;
+  animation: aparecer 0.3s ease;
+}
+
+/* --- ALERTA DE ERRO (mensagem de erro) --- */
+.mensagem-alerta.error {
+  background-color: #d9534f; /* Fundo vermelho para erros */
+  color: white; /* Texto branco para melhor contraste */
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- RESPONSIVIDADE --- */
 @media (max-width: 768px) {
   .form-grid {
-    grid-template-columns: 1fr; /* Alinha os itens em uma única coluna */
+    flex-direction: column;
   }
 
   .modal-content {
-    width: 90%; /* Largura do modal em telas menores */
+    width: 90%;
+    padding: 20px;
   }
-}
-
-/* Estilo do botão salvar no modal de confirmação de exclusão */
-#modal-confirmar-exclusao .modal-buttons .salvar {
-  background-color: #d9534f; /* Cor vermelha */
-}
-
-/* Estilo do botão cancelar no modal de confirmação de exclusão */
-#modal-confirmar-exclusao .modal-buttons .cancelar {
-  background-color: #ccc; /* Cor de fundo cinza */
-}
-
-/* Estilo do select no filtro */
-#filtros-container select {
-  border-radius: 10px; /* Bordas arredondadas */
-  padding: 6px; /* Padding */
-  border: 1px solid #ccc; /* Borda */
 }
