@@ -1,4 +1,4 @@
-// Inicializando as variáveis para armazenar os produtos e os índices de edição/exclusão
+// Inicializando as variáveis para armazenar os produtos e os índices de edição e exclusão
 const produtos = [];
 let indiceParaExcluir = null;
 let indiceParaEditar = null;
