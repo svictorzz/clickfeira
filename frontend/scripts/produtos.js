@@ -14,7 +14,7 @@ document.getElementById('unidade-minima').addEventListener('change', function ()
   document.getElementById('unidade-atual').value = this.value;
 });
 
-// Definir o valor de unidade atual para o valor da unidade mínima quando o documento for carregado
+// Definir o valor de unidade atual para o valor da unidade mínima quando o documento for carregado!
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('unidade-atual').value = document.getElementById('unidade-minima').value;
 });
