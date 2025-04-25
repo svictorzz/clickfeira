@@ -9,7 +9,7 @@ document.querySelector('.filter').addEventListener('click', () => {
   filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none'; // Alterna entre mostrar ou ocultar os filtros
 });
 
-// Preenche o campo de unidade atual com o valor da unidade mínima selecionada
+// Preenche o campo de unidade atual com o valor da unidade mínima selecionadaa
 document.getElementById('unidade-minima').addEventListener('change', function () {
   document.getElementById('unidade-atual').value = this.value;
 });
