@@ -7,49 +7,58 @@
   <title>Produtos | Estoque</title>
 
   <!-- Fontes e Estilos utilizados -->
-  <!-- Link para o Font Awesome para ícones -->
+  <!-- Font Awesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <!-- Link para o Bootstrap para estilização rápida -->
+  <!-- Bootstrap para estilização rápida -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Link para a fonte Poppins -->
+  <!-- Fonte Poppins -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Link para o CSS customizado do menu -->
+  <!-- CSS do menu lateral -->
   <link rel="stylesheet" href="../styles/menu.css">
-  <!-- Link para o CSS customizado da página de produtos -->
+  <!-- CSS da página de produtos -->
   <link rel="stylesheet" href="../styles/produto_index.css">
 </head>
 
 <body>
-  <!-- Contêiner do Menu Lateral -->
+  <!-- Contêiner onde o menu lateral será carregado -->
   <div id="menu-container"></div>
 
   <main class="content">
-    <!-- Cabeçalho -->
+    
+    <!-- Cabeçalho da página -->
     <header>
       <h2><b>Produtos</b> <span class="cinza">/ Estoque</span></h2>
     </header>
 
     <!-- Barra de Pesquisa e Botões -->
     <div class="search-bar">
+      <!-- Campo de pesquisa -->
       <div class="input-icon">
         <i class="fa fa-search"></i>
         <input type="text" placeholder="Pesquisar">
       </div>
+      <!-- Botão para abrir filtros -->
       <button class="filter"><i class="fa fa-sliders"></i> Filtros</button>
+      <!-- Botão para abrir modal de cadastro -->
       <button class="abrir-modal"><i class="fa fa-plus"></i> Adicionar</button>
     </div>
 
-    <!-- Menu de Filtros -->
-    <div id="filtros-container"
-      style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
+    <!-- Menu de Filtros (escondido inicialmente) -->
+    <div id="filtros-container" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
+      <!-- Filtro de ordenação -->
       <div>
-        <label><strong>Ordenar por nome:</strong></label>
-        <select id="ordenar-nome" class="form-select" style="max-width: 200px;">
-          <option value="">Selecione</option>
-          <option value="az">A - Z</option>
-          <option value="za">Z - A</option>
+        <label><strong>Ordenar por:</strong></label>
+        <select id="ordenar-nome">
+          <option value="">Ordenar</option>
+          <option value="az">Nome (A-Z)</option>
+          <option value="za">Nome (Z-A)</option>
+          <option value="preco-asc">Preço (Menor para Maior)</option>
+          <option value="preco-desc">Preço (Maior para Menor)</option>
+          <option value="validade">Validade (Mais Próxima Primeiro)</option>
         </select>
       </div>
+
+      <!-- Filtro por categoria -->
       <div>
         <label><strong>Filtrar por categoria:</strong></label>
         <select id="filtrar-categoria" class="form-select" style="max-width: 200px;">
@@ -60,39 +69,65 @@
           <option value="temperos">Temperos</option>
           <option value="laticínios">Laticínios</option>
           <option value="doces">Doces</option>
+          <option value="salgados">Salgados</option>
+          <option value="carnes">Carnes</option>
+          <option value="grãos">Grãos</option>
           <option value="outros">Outros</option>
         </select>
       </div>
     </div>
 
-    <!-- Tabela dde Produtos- -->
-    <table>
+    <!-- Legenda dos alertas e botão excluir selecionados -->
+    <div id="topo-tabela" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <div id="legenda-alertas">
+        <span style="background-color: #ffcccc; padding: 5px; border-radius: 5px;">⚠️ Validade próxima (até 7 dias)</span>
+        <span style="background-color: #fff3cd; padding: 5px; border-radius: 5px; margin-left: 10px;">⚠️ Estoque baixo</span>
+      </div>
+
+      <!-- Botão de excluir múltiplos produtos -->
+      <button id="btn-excluir-selecionados"
+        style="background-color: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; display: none;">
+        Excluir Selecionados
+      </button>
+    </div>
+
+    <!-- Tabela de Produtos -->
+    <table class="tabela-produtos">
       <thead>
         <tr>
-          <th>Código</th>
-          <th>Produto</th>
-          <th>Estoque</th>
-          <th>Consultar</th>
-          <th>Editar</th>
-          <th>Excluir</th>
+          <th class="col-checkbox"><input type="checkbox" id="selecionar-todos"></th>
+          <th class="col-codigo">Código</th>
+          <th class="col-produto">Produto</th>
+          <th class="col-estoque">Estoque</th>
+          <th class="col-validade">Validade</th>
+          <th class="col-consultar">Consultar</th>
+          <th class="col-editar">Editar</th>
+          <th class="col-excluir">Excluir</th>
         </tr>
       </thead>
-      <tbody id="lista-produtos"></tbody>
+      <tbody id="lista-produtos"></tbody> <!-- Aqui os produtos são inseridos via JS -->
     </table>
+
+    <!-- Controles de Paginação -->
+    <div id="controles-paginacao" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+      <!-- Botões Anterior / Próximo serão inseridos pelo JavaScript -->
+    </div>
 
     <!-- Modal de Cadastro de Produto -->
     <div id="modal-produto" class="modal-overlay">
       <div class="modal-content">
         <form id="form-produto">
-          <center>
-            <h3>Adicionar Novo Produto</h3>
-          </center>
+          <center><h3>Adicionar Novo Produto</h3></center>
+
           <div class="form-grid">
+            <!-- Coluna esquerda do formulário -->
             <div class="form-col">
               <label for="imagem">Imagem do Produto:</label>
               <input type="file" id="imagem" name="imagem" accept="image/*">
+
               <label for="codigo">Código:</label>
               <input type="text" id="codigo" name="codigo" value="P12345" readonly>
+
               <label for="categoria">Categoria:</label>
               <select id="categoria" name="categoria" required>
                 <option value="">Selecione...</option>
@@ -102,34 +137,49 @@
                 <option value="temperos">Temperos</option>
                 <option value="laticínios">Laticínios</option>
                 <option value="doces">Doces</option>
+                <option value="salgados">Salgados</option>
+                <option value="carnes">Carnes</option>
+                <option value="grãos">Grãos</option>
                 <option value="outros">Outros</option>
               </select>
+
               <label for="nome">Nome do Produto:</label>
               <input type="text" id="nome" name="nome" maxlength="80" required>
+
               <label for="validade">Data de Validade:</label>
               <input type="date" id="validade" name="validade" required>
             </div>
+
+            <!-- Coluna direita do formulário -->
             <div class="form-col">
               <label for="descricao">Descrição:</label>
               <textarea id="descricao" name="descricao" rows="5" maxlength="150"></textarea>
+
               <label for="qtd-minima">Quantidade Mínima:</label>
               <div class="input-group">
-                <input type="number" min="0" id="qtd-minima" name="qtd-minima" required>
+                <input type="number" step="0.01" min="0" id="qtd-minima" name="qtd-minima" required>
                 <select id="unidade-minima" name="unidade-minima" required>
+                  <option value="" disabled selected hidden>Medida...</option>
                   <option value="unidade">unidade</option>
                   <option value="g">g</option>
                   <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
                 </select>
               </div>
+
               <label for="qtd-atual">Quantidade Atual:</label>
               <div class="input-group">
-                <input type="number" min="0" id="qtd-atual" name="qtd-atual" required>
+                <input type="number" step="0.01" min="0" id="qtd-atual" name="qtd-atual" required>
                 <input type="text" id="unidade-atual" name="unidade-atual" readonly required>
               </div>
+
               <label for="preco">Preço (R$):</label>
               <input type="number" step="0.01" min="0" id="preco" name="preco" required>
             </div>
           </div>
+
+          <!-- Botões de ação do formulário -->
           <div class="modal-buttons">
             <button type="submit" class="salvar">Salvar</button>
             <button type="button" class="cancelar">Cancelar</button>
@@ -141,14 +191,16 @@
     <!-- Modal de Visualização de Produto -->
     <div id="modal-visualizar" class="modal-overlay">
       <div class="modal-content">
-        <center>
-          <h3 class="modal-title">Detalhes do Produto</h3>
-        </center>
+        <center><h3 class="modal-title">Detalhes do Produto</h3></center>
+
         <div class="form-grid">
+          <!-- Coluna da imagem -->
           <div class="form-col">
             <img id="ver-imagem" alt="Imagem do Produto" class="product-image">
             <p class="image-description">Imagem do produto</p>
           </div>
+
+          <!-- Coluna das informações principais -->
           <div class="form-col">
             <p><strong>Código:</strong> <span id="ver-codigo"></span></p>
             <p><strong>Nome:</strong> <span id="ver-nome"></span></p>
@@ -156,12 +208,16 @@
             <p><strong>Validade:</strong> <span id="ver-validade"></span></p>
             <p><strong>Preço:</strong> R$ <span id="ver-preco"></span></p>
           </div>
+
+          <!-- Coluna das descrições -->
           <div class="form-col">
             <p><strong>Descrição:</strong><span id="ver-descricao" class="descricao-produto"></span></p>
             <p><strong>Qtd. Mínima:</strong> <span id="ver-qtd-minima"></span></p>
             <p><strong>Qtd. Atual:</strong> <span id="ver-qtd-atual"></span></p>
           </div>
         </div>
+
+        <!-- Botão para fechar modal -->
         <div class="modal-buttons">
           <button type="button" class="cancelar-visualizar">Fechar</button>
         </div>
@@ -171,7 +227,7 @@
     <!-- Modal de Confirmação de Exclusão -->
     <div id="modal-confirmar-exclusao" class="modal-overlay">
       <div class="modal-content" style="max-width: 400px; text-align: center;">
-        <h4 style="margin-bottom: 20px;">Deseja realmente excluir este produto?</h4>
+        <h4>Deseja realmente excluir este produto?</h4>
         <p style="color: gray; font-size: 14px;">Essa ação não poderá ser desfeita.</p>
         <div class="modal-buttons" style="justify-content: center;">
           <button id="btn-confirmar-excluir" class="salvar">Sim, excluir</button>
@@ -181,23 +237,24 @@
     </div>
   </main>
 
-  <!-- Script do Bootstrap -->
+  <!-- Scripts de Bibliotecas -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- Carregar Menu via JavaScript -->
+
+  <!-- Carregamento do Menu lateral via JavaScript -->
   <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    fetch('../components/menu.html')
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('menu-container').innerHTML = html;
-      })
-      .catch(err => console.error("Erro ao carregar menu:", err));
-  });
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch('../components/menu.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('menu-container').innerHTML = html;
+        })
+        .catch(err => console.error("Erro ao carregar menu:", err));
+    });
   </script>
 
-  <!-- Script Menu Lateral -->
+  <!-- Scripts principais -->
   <script src="../scripts/menu.js"></script>
+  <script src="../scripts/produtos.js"></script>
 
 </body>
 
