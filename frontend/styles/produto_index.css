@@ -6,7 +6,7 @@
   font-family: 'Poppins', sans-serif;
 }
 
-/* --- ESTILO GERAL --- */
+/* --- ESTILO GERAL DA PÁGINA --- */
 body {
   background-color: #f9f9f9;
 }
@@ -15,6 +15,7 @@ body {
   padding: 30px;
 }
 
+/* --- TÍTULO DO HEADER --- */
 header h2 {
   font-size: 24px;
 }
@@ -24,7 +25,7 @@ header h2 {
   font-weight: normal;
 }
 
-/* --- BARRA DE PESQUISA --- */
+/* --- BARRA DE PESQUISA (Search Bar) --- */
 .search-bar {
   display: flex;
   align-items: center;
@@ -56,18 +57,24 @@ header h2 {
   border: 1px solid #007f30;
 }
 
-/* --- BOTÕES PRINCIPAIS --- */
-.filter, .abrir-modal {
+/* --- BOTÕES PRINCIPAIS (Filtro / Abrir Modal) --- */
+.filter,
+.abrir-modal {
   padding: 10px 16px;
   border: none;
   border-radius: 20px;
   font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .filter {
-  background-color: white;
+  background-color: #f4f4f4;
   border: 1px solid #ccc;
+}
+
+.filter:hover {
+  background-color: #e8f5e9;
 }
 
 .abrir-modal {
@@ -81,29 +88,71 @@ header h2 {
 }
 
 /* --- TABELA DE PRODUTOS --- */
-table {
+table,
+.tabela-produtos {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+  font-size: 14px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+  table-layout: fixed;
 }
 
-th, td {
+/* Cabeçalho e células */
+th,
+td {
   text-align: center;
   padding: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 15px;
 }
 
 th {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #333;
   border-bottom: 2px solid #007f30;
 }
 
-tbody tr:nth-child(odd) {
-  background-color: #f9f9f9;
+td {
+  color: #555;
+  border-bottom: 1px solid #eee;
+  word-break: break-word;
 }
 
+/* --- AJUSTES DE LARGURA DAS COLUNAS DA TABELA --- */
+.col-checkbox {
+  width: 40px;
+}
+
+.col-codigo {
+  width: 90px;
+}
+
+.col-produto {
+  width: 30%;
+  min-width: 200px;
+}
+
+.col-estoque {
+  width: 90px;
+}
+
+.col-validade {
+  width: 120px;
+}
+
+.col-consultar,
+.col-editar,
+.col-excluir {
+  width: 60px;
+}
+
+/* Ícones Editar e Excluir */
 .edit-icon {
   color: #007f30;
   cursor: pointer;
@@ -114,7 +163,27 @@ tbody tr:nth-child(odd) {
   cursor: pointer;
 }
 
-/* --- MODAL GERAL --- */
+/* Ajuste de alertas por linha */
+.alerta-validade {
+  background-color: #ffe6e6;
+}
+
+.alerta-estoque {
+  background-color: #fff9e6;
+}
+
+/* --- BOTÃO DE EXCLUIR SELECIONADOS --- */
+#btn-excluir-selecionados {
+  background-color: #d9534f;
+  color: white;
+  font-size: 14px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* --- MODAIS (Cadastro, Visualizar Produto) --- */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -122,7 +191,7 @@ tbody tr:nth-child(odd) {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.4);
   justify-content: center;
   align-items: center;
   z-index: 1000;
@@ -134,15 +203,23 @@ tbody tr:nth-child(odd) {
   border-radius: 12px;
   width: 1000px;
   max-width: 95%;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   animation: aparecer-modal 0.3s ease;
 }
 
 @keyframes aparecer-modal {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
+/* Formulário dentro dos modais */
 .modal-content h3 {
   margin-bottom: 20px;
   font-weight: bold;
@@ -162,9 +239,9 @@ tbody tr:nth-child(odd) {
 #modal-visualizar .modal-content select,
 #modal-visualizar .modal-content textarea {
   width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  margin-bottom: 15px;
+  padding: 12px;
+  margin-top: 8px;
+  margin-bottom: 18px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
@@ -173,7 +250,7 @@ tbody tr:nth-child(odd) {
   resize: vertical;
 }
 
-/* --- FORMULÁRIOS DENTRO DO MODAL --- */
+/* Form Grid */
 .form-grid {
   display: flex;
   gap: 20px;
@@ -198,7 +275,7 @@ tbody tr:nth-child(odd) {
   flex: 1;
 }
 
-/* --- BOTÕES DO MODAL --- */
+/* Botões no Modal */
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
@@ -231,12 +308,29 @@ tbody tr:nth-child(odd) {
   background-color: #bbb;
 }
 
-/* --- VISUALIZAÇÃO DE PRODUTO --- */
+/* Ícones nos botões do modal */
+.modal-buttons .salvar::before {
+  content: "\f0c7";
+  /* Ícone disquete */
+  font-family: "FontAwesome";
+  margin-right: 8px;
+}
+
+.modal-buttons .cancelar::before,
+.modal-buttons .cancelar-visualizar::before {
+  content: "\f057";
+  /* Ícone fechar */
+  font-family: "FontAwesome";
+  margin-right: 8px;
+}
+
+/* Modal de Visualizar Produto */
 #modal-visualizar .modal-content {
   width: 800px;
   max-width: 95%;
 }
 
+/* Estilo da Imagem e Descrição */
 .product-image {
   max-width: 250px;
   height: auto;
@@ -266,7 +360,7 @@ tbody tr:nth-child(odd) {
   border-radius: 6px;
 }
 
-/* --- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO --- */
+/* Modal de Confirmação de Exclusão */
 #modal-confirmar-exclusao .modal-buttons .salvar {
   background-color: #d9534f;
 }
@@ -282,39 +376,108 @@ tbody tr:nth-child(odd) {
   border: 1px solid #ccc;
 }
 
-/* --- ALERTA DE MENSAGEM --- */
+/* --- ALERTA DE MENSAGEM NO TOPO --- */
 .mensagem-alerta {
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: #ffff;
-  color: black;
+  background-color: #d4edda;
+  color: #155724;
   padding: 10px 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 2000;
   animation: aparecer 0.3s ease;
 }
 
-/* --- ALERTA DE ERRO (mensagem de erro) --- */
 .mensagem-alerta.error {
-  background-color: #d9534f; /* Fundo vermelho para erros */
-  color: white; /* Texto branco para melhor contraste */
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
-@keyframes aparecer {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.mensagem-alerta.warning {
+  background-color: #fff3cd;
+  color: #856404;
 }
 
-/* --- RESPONSIVIDADE --- */
+/* --- RESPONSIVIDADE (Tabela Vira Card) --- */
 @media (max-width: 768px) {
-  .form-grid {
-    flex-direction: column;
+
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
   }
 
-  .modal-content {
-    width: 90%;
-    padding: 20px;
+  thead tr {
+    display: none;
   }
+
+  tbody tr {
+    margin-bottom: 15px;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  td {
+    text-align: left;
+    padding: 10px 5px;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    font-weight: bold;
+    color: #333;
+  }
+}
+
+/* --- CONTROLES DE PAGINAÇÃO --- */
+#controles-paginacao {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+#controles-paginacao button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background-color: #007f30;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#controles-paginacao button:hover:not(:disabled) {
+  background-color: #005f24;
+}
+
+#controles-paginacao button:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: default;
+}
+
+#controles-paginacao span {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Checkbox Selecionar Todos */
+#selecionar-todos {
+  transform: scale(1.3);
+  cursor: pointer;
 }
