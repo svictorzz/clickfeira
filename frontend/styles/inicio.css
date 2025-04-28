@@ -1,256 +1,354 @@
 /* --- RESET GLOBAL --- */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
+  margin: 0; /* Remove margens padrões */
+  padding: 0; /* Remove preenchimentos padrões */
+  box-sizing: border-box; /* Inclui o padding e borda no cálculo de tamanho do elemento */
+  font-family: 'Poppins', sans-serif; /* Define a fonte padrão */
 }
 
 /* --- CONFIGURAÇÕES BÁSICAS DO BODY --- */
 body {
-  background-color: #f5f7fa;
-  color: #333;
-  overflow-y: auto;
+  background-color: #f5f7fa; /* Cor de fundo suave */
+  color: #333; /* Cor do texto */
+  overflow-y: auto; /* Permite rolagem vertical */
 }
 
 /* --- CONTEÚDO PRINCIPAL --- */
 .content {
-  padding: 30px;
-  min-height: 100vh;
+  padding: 30px; /* Espaçamento interno da área de conteúdo */
+  min-height: 100vh; /* Garante que o conteúdo ocupe ao menos a altura total da tela */
 }
 
 /* --- CABEÇALHO --- */
 .content header h2 {
-  font-size: 28px;
-  font-weight: bold;
-  text-align: left;
+  font-size: 28px; /* Tamanho do título */
+  font-weight: bold; /* Título em negrito */
+  text-align: left; /* Alinha o título à esquerda */
 }
 
 .content header .cinza {
-  color: gray;
-  font-weight: normal;
-  font-size: 24px;
+  color: gray; /* Cor cinza para o subtítulo */
+  font-weight: normal; /* Subtítulo com peso normal */
+  font-size: 24px; /* Tamanho do subtítulo */
 }
 
 /* --- TÍTULOS DAS SEÇÕES (h3) --- */
 .content h3 {
-  font-size: 22px;
-  color: #007f30;
-  font-weight: 600;
-  margin-bottom: 20px;
-  text-align: left;
+  font-size: 22px; /* Tamanho do título das seções */
+  color: #007f30; /* Cor verde */
+  font-weight: 600; /* Peso de fonte para 600 */
+  margin-bottom: 20px; /* Espaçamento abaixo do título */
+  text-align: left; /* Alinha o título à esquerda */
 }
 
 /* --- SEÇÃO PADRÃO --- */
 .secao {
-  margin-top: 40px;
-  width: 100%;
+  margin-top: 40px; /* Espaçamento superior entre as seções */
+  width: 100%; /* Largura total da seção */
 }
 
-/* --- BLOCO DE CONTEÚDO PADRÃO (alertas, história) --- */
+/* --- BLOCO DE CONTEÚDO PADRÃO --- */
 .bloco-conteudo {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  padding: 30px;
-  margin-top: 20px;
-  width: 100%;
-  max-width: 2000px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff; /* Cor de fundo branca */
+  border: 1px solid #e0e0e0; /* Borda sutil */
+  border-radius: 20px; /* Bordas arredondadas */
+  padding: 30px; /* Espaçamento interno do bloco */
+  margin-top: 20px; /* Espaçamento superior */
+  width: 100%; /* Largura total do conteúdo */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Sombra suave */
 }
 
-/* --- LISTA DE ALERTAS --- */
+/* --- ALERTAS --- */
 #lista-alertas {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: column; /* Alinha os alertas em coluna */
+  gap: 12px; /* Espaçamento entre os alertas */
 }
 
-/* --- CADA ALERTA --- */
 .linha-alerta {
-  font-size: 16px;
-  color: #555;
-  padding: 15px 20px;
-  border-radius: 6px;
-  border: 1px solid;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 16px; /* Tamanho da fonte dos alertas */
+  padding: 15px 20px; /* Espaçamento interno dos alertas */
+  border-radius: 6px; /* Bordas arredondadas nos alertas */
+  display: flex; /* Layout flexível */
+  align-items: center; /* Alinha os itens ao centro verticalmente */
+  gap: 10px; /* Espaçamento entre ícone e texto */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03); /* Sombra sutil */
 }
 
-/* --- ALERTA DE ESTOQUE BAIXO --- */
 .alerta-estoque {
-  background-color: #fff8e1;
-  border-color: #ffc107;
+  background-color: #fff8e1; /* Cor de fundo dos alertas de estoque */
+  border-color: #ffc107; /* Cor da borda para alertas de estoque */
 }
 
-/* --- ALERTA DE VALIDADE PRÓXIMA --- */
 .alerta-validade {
-  background-color: #ffebee;
-  border-color: #e53935;
+  background-color: #ffebee; /* Cor de fundo dos alertas de validade */
+  border-color: #e53935; /* Cor da borda para alertas de validade */
 }
 
-/* --- TEXTO EM NEGRITO NOS ALERTAS --- */
 .linha-alerta b {
-  color: #007f30;
+  color: #007f30; /* Cor verde para o texto em negrito */
 }
 
 /* --- PAGINAÇÃO --- */
 .paginacao {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  gap: 10px;
+  justify-content: center; /* Alinha os botões de paginação no centro */
+  margin-top: 20px; /* Espaçamento superior */
+  gap: 10px; /* Espaçamento entre os botões */
 }
 
 .botao-paginacao {
-  background-color: #007f30;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  background-color: #007f30; /* Cor de fundo dos botões de paginação */
+  color: white; /* Cor do texto */
+  border: none; /* Sem borda */
+  padding: 10px 20px; /* Espaçamento interno */
+  font-size: 14px; /* Tamanho da fonte */
+  font-weight: 500; /* Peso da fonte */
+  border-radius: 20px; /* Bordas arredondadas */
+  cursor: pointer; /* Cursor de ponteiro */
+  transition: background-color 0.3s; /* Transição suave na cor de fundo */
 }
 
 .botao-paginacao:hover {
-  background-color: #005922;
+  background-color: #005922; /* Cor de fundo ao passar o mouse */
 }
 
 #contador-paginas {
-  font-size: 14px;
-  color: #555;
+  font-size: 14px; /* Tamanho da fonte do contador de páginas */
+  color: #555; /* Cor do texto do contador */
 }
 
-/* --- FILTROS DE ALERTAS --- */
+/* --- FILTROS --- */
 .filtros-alertas {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 10px; /* Espaçamento entre os filtros */
+  margin-bottom: 20px; /* Espaçamento inferior */
 }
 
 .botao-filtro {
-  background-color: #007f30;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  background-color: #007f30; /* Cor de fundo dos botões de filtro */
+  color: white; /* Cor do texto */
+  border: none; /* Sem borda */
+  padding: 8px 16px; /* Espaçamento interno */
+  font-size: 14px; /* Tamanho da fonte */
+  font-weight: 500; /* Peso da fonte */
+  border-radius: 20px; /* Bordas arredondadas */
+  cursor: pointer; /* Cursor de ponteiro */
+  transition: background-color 0.3s; /* Transição suave na cor de fundo */
 }
 
 .botao-filtro:hover {
-  background-color: #005922;
+  background-color: #005922; /* Cor de fundo ao passar o mouse */
 }
 
-/* --- BOTÃO FLUTUANTE DE NOVO PRODUTO --- */
+/* --- BOTÃO FLUTUANTE --- */
 .botao-flutuante-container {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
+  position: fixed; /* Fixa o botão na tela */
+  bottom: 30px; /* Distância do fundo */
+  right: 30px; /* Distância da direita */
 }
 
 .botao-flutuante {
-  width: 60px;
-  height: 60px;
-  background-color: #007f30;
-  color: white;
-  font-size: 30px;
-  font-weight: bold;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  width: 60px; /* Largura do botão */
+  height: 60px; /* Altura do botão */
+  background-color: #007f30; /* Cor de fundo */
+  color: white; /* Cor do texto */
+  font-size: 30px; /* Tamanho da fonte */
+  font-weight: bold; /* Peso da fonte */
+  border-radius: 50%; /* Botão redondo */
+  cursor: pointer; /* Cursor de ponteiro */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra */
   display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.3s;
+  justify-content: center; /* Centraliza o conteúdo */
+  align-items: center; /* Alinha o conteúdo no centro */
 }
 
 .botao-flutuante:hover {
-  background-color: #005922;
+  background-color: #005922; /* Cor de fundo ao passar o mouse */
 }
 
-/* --- TOOLTIP NO BOTÃO FLUTUANTE --- */
+/* --- TOOLTIP --- */
 .botao-wrapper {
-  position: relative;
+  position: relative; /* Posiciona o botão relativo */
 }
 
 .tooltip-text {
-  visibility: hidden;
-  background-color: #F2F2F2;
-  color: black;
-  text-align: center;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  opacity: 0;
-  transition: opacity 0.3s, transform 0.3s;
-  white-space: nowrap;
+  visibility: hidden; /* Torna o texto invisível */
+  background-color: #F2F2F2; /* Cor de fundo da tooltip */
+  color: black; /* Cor do texto */
+  text-align: center; /* Alinha o texto no centro */
+  padding: 6px 12px; /* Espaçamento interno */
+  border-radius: 6px; /* Bordas arredondadas */
+  font-size: 12px; /* Tamanho da fonte */
+  position: absolute; /* Posiciona a tooltip */
+  bottom: 70px; /* Distância do botão */
+  opacity: 0; /* Torna a tooltip invisível */
+  transition: opacity 0.3s; /* Transição suave */
 }
 
 .botao-wrapper:hover .tooltip-text {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(-5px);
+  visibility: visible; /* Torna a tooltip visível */
+  opacity: 1; /* Torna a tooltip opaca */
+  transform: translateY(-5px); /* Levanta a tooltip */
 }
 
-/* --- BLOCO HISTÓRIA --- */
+/* --- HISTÓRIA --- */
 .historia-texto {
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-left: 5px solid #007f30;
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  font-size: 17px;
-  line-height: 1.8;
-  color: #444;
-  text-align: justify;
-  max-width: 2000px;
-  width: 100%;
+  background: linear-gradient(135deg, #f5f7fa, #e0e0e0); /* Gradiente suave */
+  border-left: 8px solid #007f30; /* Cor de destaque à esquerda */
+  padding: 30px; /* Espaçamento interno */
+  border-radius: 15px; /* Bordas arredondadas */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra suave */
+  font-size: 17px; /* Tamanho da fonte */
+  line-height: 1.8; /* Altura da linha */
+  text-align: justify; /* Justifica o texto */
+  max-width: 2000px; /* Largura máxima */
+  margin-top: 20px; /* Espaçamento superior */
+  transition: all 0.3s ease-in-out; /* Transição suave para mudanças */
 }
 
-/* --- MODAL DE CADASTRO DE PRODUTOS --- */
+#conteudo-historia.hidden {
+  display: none; /* Oculta o conteúdo quando a classe 'hidden' é aplicada */
+}
+
+#toggle-historia {
+  font-size: 20px; /* Tamanho da seta */
+  margin-right: 10px; /* Espaçamento à direita */
+  color: #007f30; /* Cor verde para o ícone */
+  font-weight: bold; /* Peso de fonte para o ícone */
+  transition: color 0.3s ease; /* Transição de cor suave */
+}
+
+#toggle-historia:hover {
+  color: #005522; /* Altera a cor ao passar o mouse */
+}
+
+#conteudo-historia {
+  display: block; /* Inicialmente visível */
+  padding: 15px 30px; /* Espaçamento interno */
+  border-radius: 8px; /* Bordas arredondadas */
+  margin-top: 15px; /* Espaçamento superior */
+  background-color: #ffffff; /* Fundo branco para o conteúdo */
+  font-size: 16px; /* Tamanho da fonte */
+  line-height: 1.6; /* Altura da linha */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Sombra sutil */
+}
+
+#conteudo-historia.hidden~#toggle-historia {
+  transform: rotate(180deg); /* Gira a seta */
+  transition: transform 0.3s ease; /* Transição suave para rotação */
+}
+
+/* --- MODAL --- */
 .modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  display: none; /* Inicialmente invisível */
+  position: fixed; /* Fixa o modal */
+  top: 0; /* Alinha no topo */
+  left: 0; /* Alinha à esquerda */
+  width: 100%; /* Largura total */
+  height: 100%; /* Altura total */
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo escuro com opacidade */
+  justify-content: center; /* Centraliza o conteúdo */
+  align-items: center; /* Centraliza o conteúdo */
+  z-index: 1000; /* Coloca o modal acima dos outros elementos */
 }
 
 .modal-content {
-  background-color: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 1000px;
-  max-width: 95%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  animation: aparecer-modal 0.3s ease;
+  background-color: white; /* Fundo branco do modal */
+  padding: 30px; /* Espaçamento interno */
+  border-radius: 12px; /* Bordas arredondadas */
+  width: 1000px; /* Largura fixa */
+  max-width: 95%; /* Largura máxima */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombra */
+  animation: aparecer-modal 0.3s ease; /* Animação de aparecimento */
 }
 
 @keyframes aparecer-modal {
   from {
-    transform: scale(0.9);
-    opacity: 0;
+    transform: scale(0.9); /* Começa menor */
+    opacity: 0; /* Inicia invisível */
   }
   to {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(1); /* Escala para tamanho original */
+    opacity: 1; /* Torna o modal visível */
   }
+}
+
+/* --- BOTÃO LIMPAR HISTÓRICO --- */
+#container-botao-historico {
+  display: none; /* Inicialmente invisível */
+  text-align: right; /* Alinha à direita */
+  margin-top: 15px; /* Espaçamento superior */
+}
+
+.botao-limpar {
+  background-color: #e53935; /* Cor de fundo do botão */
+  color: white; /* Cor do texto */
+  border: none; /* Sem borda */
+  padding: 8px 16px; /* Espaçamento interno */
+  font-size: 14px; /* Tamanho da fonte */
+  font-weight: 500; /* Peso da fonte */
+  border-radius: 20px; /* Bordas arredondadas */
+  cursor: pointer; /* Cursor de ponteiro */
+  transition: background-color 0.3s; /* Transição suave */
+}
+
+.botao-limpar:hover {
+  background-color: #c62828; /* Cor de fundo ao passar o mouse */
+}
+
+/* --- AJUSTES DE RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+  .content {
+    padding: 20px; /* Reduz o padding em telas menores */
+  }
+
+  .content header h2 {
+    font-size: 22px; /* Tamanho menor do título */
+  }
+
+  .filtros-alertas {
+    flex-direction: column; /* Organiza os filtros em coluna */
+    gap: 8px; /* Espaçamento entre filtros */
+  }
+
+  .botao-flutuante {
+    width: 55px; /* Ajusta o tamanho do botão flutuante */
+    height: 55px;
+    font-size: 26px; /* Ajusta o tamanho da fonte */
+  }
+
+  .modal-content {
+    width: 95%; /* Ajusta a largura do modal */
+    max-height: 90vh; /* Limita a altura */
+    overflow-y: auto; /* Permite rolagem */
+    padding: 20px; /* Ajusta o padding */
+  }
+
+  .historia-texto {
+    padding: 20px; /* Ajusta o padding */
+    font-size: 15px; /* Reduz o tamanho da fonte */
+  }
+
+  .linha-alerta {
+    font-size: 14px; /* Tamanho da fonte para alertas */
+    padding: 12px 16px; /* Ajusta o padding */
+  }
+}
+
+#conteudo-historia {
+  display: block; /* Inicialmente visível */
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  background-color: #f9f9f9;
+}
+
+#toggle-historia {
+  font-size: 20px;
+  margin-right: 10px;
+}
+
+#conteudo-historia.hidden {
+  display: none; /* Oculta o conteúdo quando a classe 'hidden' é aplicada */
 }
