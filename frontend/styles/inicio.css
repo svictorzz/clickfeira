@@ -1,0 +1,256 @@
+/* --- RESET GLOBAL --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* --- CONFIGURAÇÕES BÁSICAS DO BODY --- */
+body {
+  background-color: #f5f7fa;
+  color: #333;
+  overflow-y: auto;
+}
+
+/* --- CONTEÚDO PRINCIPAL --- */
+.content {
+  padding: 30px;
+  min-height: 100vh;
+}
+
+/* --- CABEÇALHO --- */
+.content header h2 {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.content header .cinza {
+  color: gray;
+  font-weight: normal;
+  font-size: 24px;
+}
+
+/* --- TÍTULOS DAS SEÇÕES (h3) --- */
+.content h3 {
+  font-size: 22px;
+  color: #007f30;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+/* --- SEÇÃO PADRÃO --- */
+.secao {
+  margin-top: 40px;
+  width: 100%;
+}
+
+/* --- BLOCO DE CONTEÚDO PADRÃO (alertas, história) --- */
+.bloco-conteudo {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 30px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 2000px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* --- LISTA DE ALERTAS --- */
+#lista-alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- CADA ALERTA --- */
+.linha-alerta {
+  font-size: 16px;
+  color: #555;
+  padding: 15px 20px;
+  border-radius: 6px;
+  border: 1px solid;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- ALERTA DE ESTOQUE BAIXO --- */
+.alerta-estoque {
+  background-color: #fff8e1;
+  border-color: #ffc107;
+}
+
+/* --- ALERTA DE VALIDADE PRÓXIMA --- */
+.alerta-validade {
+  background-color: #ffebee;
+  border-color: #e53935;
+}
+
+/* --- TEXTO EM NEGRITO NOS ALERTAS --- */
+.linha-alerta b {
+  color: #007f30;
+}
+
+/* --- PAGINAÇÃO --- */
+.paginacao {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.botao-paginacao {
+  background-color: #007f30;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.botao-paginacao:hover {
+  background-color: #005922;
+}
+
+#contador-paginas {
+  font-size: 14px;
+  color: #555;
+}
+
+/* --- FILTROS DE ALERTAS --- */
+.filtros-alertas {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.botao-filtro {
+  background-color: #007f30;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.botao-filtro:hover {
+  background-color: #005922;
+}
+
+/* --- BOTÃO FLUTUANTE DE NOVO PRODUTO --- */
+.botao-flutuante-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+}
+
+.botao-flutuante {
+  width: 60px;
+  height: 60px;
+  background-color: #007f30;
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s;
+}
+
+.botao-flutuante:hover {
+  background-color: #005922;
+}
+
+/* --- TOOLTIP NO BOTÃO FLUTUANTE --- */
+.botao-wrapper {
+  position: relative;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  background-color: #F2F2F2;
+  color: black;
+  text-align: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+}
+
+.botao-wrapper:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(-5px);
+}
+
+/* --- BLOCO HISTÓRIA --- */
+.historia-texto {
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid #007f30;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 17px;
+  line-height: 1.8;
+  color: #444;
+  text-align: justify;
+  max-width: 2000px;
+  width: 100%;
+}
+
+/* --- MODAL DE CADASTRO DE PRODUTOS --- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 1000px;
+  max-width: 95%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: aparecer-modal 0.3s ease;
+}
+
+@keyframes aparecer-modal {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
