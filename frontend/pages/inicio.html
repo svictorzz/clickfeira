@@ -2,48 +2,61 @@
 <html lang="pt-br">
 
 <head>
+  <!-- Definindo a codificação de caracteres da página -->
   <meta charset="UTF-8">
+  
+  <!-- Tornando o layout responsivo para dispositivos móveis -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Início</title>
-
+  
+  <title>Início</title> <!-- Título da página -->
+  
   <!-- Fontes e Estilos Externos -->
+  <!-- Fonte Font Awesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <!-- Bootstrap para estilos pré-definidos e componentes responsivos -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Fonte Poppins do Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Estilos Personalizados -->
+  
+  <!-- Estilos personalizados para este projeto -->
   <link rel="stylesheet" href="../styles/produtos.css">
   <link rel="stylesheet" href="../styles/menu.css">
   <link rel="stylesheet" href="../styles/inicio.css">
+  
+  <!-- Script do arquivo JS da página, com 'defer' para carregar após o HTML -->
+  <script src="../scripts/inicio.js" defer></script>
 </head>
 
 <body>
-  <!-- Menu lateral -->
+  <!-- Menu lateral que será carregado dinamicamente -->
   <div id="menu-container"></div>
 
-  <!-- Conteúdo principal -->
+  <!-- Conteúdo principal da página -->
   <main class="content">
-    <!-- Cabeçalho -->
     <header>
+      <!-- Título principal da página -->
       <h2><b>Início</b> <span class="cinza">/ Painel Geral</span></h2>
     </header>
 
-    <!-- Seção de Alertas -->
+    <!-- Seção de Alertas de Estoque e Validade -->
     <section class="secao">
       <h3>Alertas de Estoque e Validade</h3>
 
-      <!-- Filtros -->
+      <!-- Filtros para selecionar tipos de alertas -->
       <div class="filtros-alertas">
         <button class="botao-filtro" data-filtro="todos">Todos</button>
         <button class="botao-filtro" data-filtro="estoque">Estoque Baixo</button>
         <button class="botao-filtro" data-filtro="validade">Validade Próxima</button>
       </div>
 
-      <!-- Bloco de Conteúdo dos Alertas -->
+      <!-- Bloco de conteúdo para exibir os alertas -->
       <div class="bloco-conteudo">
+        <!-- Lista de alertas -->
         <div id="lista-alertas"></div>
 
-        <!-- Paginação -->
+        <!-- Paginação dos alertas -->
         <div id="paginacao" class="paginacao">
           <button id="btnAnterior" class="botao-paginacao">Anterior</button>
           <span id="contador-paginas"></span>
@@ -54,36 +67,67 @@
 
     <!-- Seção Nossa História -->
     <section class="secao">
-      <h3>Nossa História</h3>
-      <div class="historia-texto">
+      <h3>
+        <!-- Ícone para expandir/recolher a seção de história -->
+        <span id="toggle-historia" style="cursor: pointer;">&#x21d5;</span>
+        Nossa História
+      </h3>
+      <!-- Conteúdo da seção de história -->
+      <div id="conteudo-historia" class="historia-texto">
         <p>
-          Bem-vindo ao <b>ClickFeira!</b> Nosso sistema foi desenvolvido para transformar a gestão de estoque de feirantes e pequenos empreendedores,
-          trazendo mais organização, praticidade e controle ao dia a dia.
+          Bem-vindo ao <b>ClickFeira!</b> Nosso sistema foi desenvolvido para transformar a gestão de estoque de
+          feirantes e pequenos empreendedores, trazendo mais organização, praticidade e controle ao dia a dia.
           <br><br>
           Acreditamos que a tecnologia deve ser acessível e feita para apoiar o crescimento do comércio local,
           unindo consumo sustentável e preservação ecológica.
           <br><br>
-          Com o ClickFeira, você acompanha seus produtos, fornecedores, prazos de validade e quantidades de forma simples e eficiente,
-          garantindo a melhor experiência para o seu negócio.
+          Com o ClickFeira, você acompanha seus produtos, fornecedores, prazos de validade e quantidades de forma
+          simples e eficiente, garantindo a melhor experiência para o seu negócio.
           <br><br>
           Contamos com você para um futuro melhor!
         </p>
       </div>
     </section>
 
-    <!-- Botão Flutuante para adicionar produto -->
+    <!-- Seção Histórico de Ações -->
+    <section class="secao">
+      <h3>Histórico de Ações</h3>
+      <div class="bloco-conteudo">
+        <!-- Histórico de ações registradas -->
+        <div id="historico-acoes">
+          <p>Carregando histórico...</p>
+        </div>
+
+        <!-- Botão para limpar o histórico -->
+        <div id="container-botao-historico" style="margin-top: 15px; text-align: right;">
+          <button id="limpar-historico" class="botao-limpar">Limpar Histórico</button>
+        </div>
+
+        <!-- Paginação do Histórico -->
+        <div id="paginacao-historico" class="paginacao" style="margin-top: 10px;">
+          <button id="btnAnteriorHistorico" class="botao-paginacao">Anterior</button>
+          <span id="contador-paginas-historico"></span>
+          <button id="btnProximoHistorico" class="botao-paginacao">Próximo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botão Flutuante para adicionar um novo produto -->
     <div class="botao-flutuante-container">
       <div class="botao-wrapper">
         <button id="botao-flutuante" class="botao-flutuante">+</button>
-        <span class="tooltip-text">Adicionar Novo Produto</span>
+        <span class="tooltip-text">Adicionar Novo Produto</span> <!-- Tooltip explicativo -->
       </div>
     </div>
 
-    <!-- Modal de Cadastro de Produto -->
+    <!-- Modal para cadastro de produto -->
     <div id="modal-produto" class="modal-overlay">
       <div class="modal-content">
+        <!-- Formulário de cadastro de produto -->
         <form id="form-produto">
-          <center><h3>Adicionar Novo Produto</h3></center>
+          <center>
+            <h3>Adicionar Novo Produto</h3>
+          </center>
 
           <div class="form-grid">
             <div class="form-col">
@@ -112,7 +156,7 @@
               <input type="text" id="nome" name="nome" maxlength="80" required>
 
               <label for="validade">Data de Validade:</label>
-              <input type="date" id="validade" name="validade" required>
+              <input type="date" id="validade" name="validade" required">
             </div>
 
             <div class="form-col">
@@ -152,22 +196,28 @@
     </div>
   </main>
 
-  <!-- Scripts essenciais -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../scripts/menu.js"></script>
-  <script src="../scripts/inicio.js"></script>
-
-  <!-- Carregar o Menu dinamicamente -->
+  <!-- Scripts essenciais para carregamento e funcionalidades -->
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      fetch('../components/menu.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('menu-container').innerHTML = html;
-        })
-        .catch(err => console.error("Erro ao carregar menu:", err));
+    document.addEventListener('DOMContentLoaded', async function () {
+      try {
+        // Carrega o conteúdo do menu dinamicamente
+        const res = await fetch('../components/menu.html');
+        const html = await res.text();
+        document.getElementById('menu-container').innerHTML = html;
+
+        // Carrega a página após o menu ser carregado
+        iniciarPagina();
+      } catch (error) {
+        console.error("Erro ao carregar o menu:", error);
+      }
     });
   </script>
+  
+  <!-- Script específico para o menu -->
+  <script src="../scripts/menu.js"></script>
+
+  <!-- Scripts do Bootstrap para funcionalidades adicionais -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
