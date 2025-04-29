@@ -23,11 +23,18 @@ function carregarProdutosDoLocalStorage() {
 
 // -- FORMATAR DATA --
 function formatarData(dataString) {
-  const data = new Date(dataString);
+  // agora usamos parseDateYMD
+  const data = parseDateYMD(dataString);
   const dia = String(data.getDate()).padStart(2, '0');
-  const mes = String(data.getMonth() + 1).padStart(2, '0'); // Janeiro é 0!
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
   const ano = data.getFullYear();
   return `${dia}-${mes}-${ano}`;
+}
+
+function parseDateYMD(ymd) {
+  // ymd ex: "2025-05-04"
+  const [year, month, day] = ymd.split('-').map(n => parseInt(n, 10));
+  return new Date(year, month - 1, day);
 }
 
 // -- GERAR CÓDIGO ALEATÓRIO --
@@ -46,6 +53,16 @@ function gerarCodigoProduto() {
 
   return novoCodigo;
 }
+
+//Para saber de itens vencidos
+function calcularDiasParaVencer(validadeStr) {
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);          // zera as horas
+  const validade = parseDateYMD(validadeStr);
+  const diff = validade.getTime() - hoje.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
 
 function mostrarMensagem(texto, tipo) {
   const mensagem = document.createElement('div');
@@ -71,7 +88,8 @@ function adicionarLinhaTabela(produto) {
   row.setAttribute('data-codigo', produto.codigo);
 
   const hoje = new Date();
-  const validadeProduto = new Date(produto.validade);
+  hoje.setHours(0,0,0,0);
+  const validadeProduto = parseDateYMD(produto.validade);
   const diasParaVencer = Math.floor((validadeProduto - hoje) / (1000 * 60 * 60 * 24));
 
   const estoqueAtual = parseFloat(produto.qtdAtual.split(' ')[0]);
@@ -112,6 +130,7 @@ document.addEventListener('change', () => {
   }
 });
 
+// -- ATUALIZAR TABELA --
 function atualizarTabela() {
   const tbody = document.getElementById('lista-produtos');
   tbody.innerHTML = '';
@@ -227,9 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.getElementById('unidade-minima').addEventListener('change', function () {
-    const novaUnidade = this.value;
-    document.getElementById('unidade-atual').value = novaUnidade;
+  document.getElementById('unidade-minima').addEventListener('change', function() {
+    // Atualiza apenas a unidade
+    document.getElementById('unidade-atual').value = this.value;
   });
 
   document.addEventListener('change', function (e) {
@@ -319,6 +338,8 @@ document.getElementById('form-produto').addEventListener('submit', function (e) 
   }
 });
 
+
+// -- SALVAR PRODUTO APOS CADASTRO --
 function salvarProduto(imagemBase64) {
   const unidadeMinima = document.getElementById('unidade-minima').value;
   const unidadeAtual = document.getElementById('unidade-atual').value;
