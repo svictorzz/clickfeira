@@ -28,7 +28,7 @@ function parseDateYMD(ymd) {
 
 function calcularDiasParaVencer(validadeStr) {
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);          // zera as horas
+  hoje.setHours(0, 0, 0, 0);          // zera as horas
   const validade = parseDateYMD(validadeStr);
   const diff = validade.getTime() - hoje.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -111,8 +111,8 @@ function atualizarLista() {
       const mensagem = a.tipo === 'estoque'
         ? `Estoque abaixo do mínimo (${a.qtdAtual}).`
         : (a.tipo === 'vencido'
-            ? `${a.produto} venceu em ${formatarData(a.dataValidade)}`
-            : `Vence em ${a.diasParaVencer} dia(s).`);
+          ? `${a.produto} venceu em ${formatarData(a.dataValidade)}`
+          : `Vence em ${a.diasParaVencer} dia(s).`);
       const div = document.createElement('div');
       div.className = `linha-alerta alerta-${a.tipo}`;
       div.innerHTML = `<span style="font-size:20px">${icone}</span><div><b>${a.produto}</b><br>${mensagem}</div>`;
@@ -165,7 +165,7 @@ function exibirHistorico() {
     ul.style.listStyle = 'none'; ul.style.padding = '0';
     pageHist.forEach(a => {
       const li = document.createElement('li');
-      const dt = new Date(a.data).toLocaleString('pt-BR', { day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit' });
+      const dt = new Date(a.data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       li.innerHTML = `<b>${a.tipo}</b> - ${a.descricao}<br><small>${dt}</small>`;
       ul.appendChild(li);
     });
@@ -232,7 +232,7 @@ function salvarProduto(imagemBase64 = '') {
   }
   // Validação: data de validade não pode ser anterior ao dia de hoje
   const dataVal = new Date(validade);
-  const hojeDate = new Date(); hojeDate.setHours(0,0,0,0);
+  const hojeDate = new Date(); hojeDate.setHours(0, 0, 0, 0);
   if (dataVal < hojeDate) {
     mostrarMensagem('Data de validade não pode ser anterior ao dia de hoje!', 'error');
     return;
@@ -251,7 +251,7 @@ function salvarProduto(imagemBase64 = '') {
     preco: preco.toFixed(2),
     validade: validade,
     qtdMinima: `${qtdMin} ${unidadeMin}`,
-    qtdAtual: `${qtdMin} ${unidadeAt}`,
+    qtdAtual: `${document.getElementById('qtd-atual').value} ${unidadeAt}`, 
     imagem: imagemBase64,
     descricao: document.getElementById('descricao').value.trim()
   };
@@ -285,12 +285,13 @@ document.getElementById('form-produto').addEventListener('submit', e => {
 });
 
 // --- REFLETIR UNIDADE MÍNIMA NA UNIDADE ATUAL ---
-document.getElementById('unidade-minima').addEventListener('change', function() {
+document.getElementById('unidade-minima').addEventListener('change', function () {
+  // Atualiza apenas a unidade
   document.getElementById('unidade-atual').value = this.value;
 });
 
 // --- TOGGLE NOSSA HISTÓRIA (ARIA/CSS) ---
-document.getElementById('toggle-historia').addEventListener('click', function() {
+document.getElementById('toggle-historia').addEventListener('click', function () {
   const conteudo = document.getElementById('conteudo-historia');
   const expanded = this.getAttribute('aria-expanded') === 'true';
   if (expanded) {
@@ -311,3 +312,5 @@ window.addEventListener('DOMContentLoaded', () => {
   exibirHistorico();
   iniciarPagina();
 });
+
+
