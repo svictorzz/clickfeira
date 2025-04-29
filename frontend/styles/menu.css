@@ -8,12 +8,14 @@ body {
 }
 
 .navbar {
-    position: fixed; 
-    top: 0;    
-    left: 0;         
-    width: 100%;    
-    z-index: 1000;  
-}
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px; /* Garanta que está igual ao margin-top do conteúdo */
+    z-index: 1000;
+    background-color: #067D39; /* Cor de fundo do menu */
+  }
 
 .nav-link{
     color: white;
