@@ -11,8 +11,19 @@ body {
   background-color: #f9f9f9;
 }
 
+/* --- CONTEÚDO PRINCIPAL --- */
 .content {
   padding: 30px;
+  min-height: 100vh;
+  margin-top: 60px; /* Altura do menu (60px definido no .container-fluid) */
+  overflow-y: auto;
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 768px) {
+  .content {
+    margin-top: 56px; /* Ajuste fino para mobile */
+  }
 }
 
 /* --- TÍTULO DO HEADER --- */
