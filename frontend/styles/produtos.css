@@ -30,12 +30,13 @@ body {
 
 /* --- TÍTULO DO HEADER --- */
 header h2 {
-  font-size: 24px;
+  font-size: 28px;
 }
 
 .cinza {
   color: gray;
   font-weight: normal;
+  font-size: 26px;
 }
 
 /* --- BARRA DE PESQUISA (Search Bar) --- */
