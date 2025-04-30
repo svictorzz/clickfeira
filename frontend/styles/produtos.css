@@ -15,14 +15,16 @@ body {
 .content {
   padding: 30px;
   min-height: 100vh;
-  margin-top: 60px; /* Altura do menu (60px definido no .container-fluid) */
+  margin-top: 60px;
+  /* Altura do menu (60px definido no .container-fluid) */
   overflow-y: auto;
 }
 
 /* Ajuste para telas menores */
 @media (max-width: 768px) {
   .content {
-    margin-top: 56px; /* Ajuste fino para mobile */
+    margin-top: 56px;
+    /* Ajuste fino para mobile */
   }
 }
 
@@ -103,12 +105,22 @@ table,
 .tabela-produtos {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  border-radius: 10px;
+  background: white;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   font-size: 14px;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
-  table-layout: fixed;
+  position: relative;
+}
+
+.tabela-produtos th {
+  background: #f8fff9;
+  color: #2d3436;
+  padding: 16px;
+  font-weight: 600;
+  border-bottom: 3px solid #007f30;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Cabeçalho e células */
@@ -122,17 +134,30 @@ td {
   font-size: 15px;
 }
 
+.tabela-produtos td {
+  padding: 14px;
+  color: #444;
+  border-bottom: 1px solid #f0f4f7;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
 th {
-  background-color: #f9f9f9;
+  color: #111 !important;
   font-weight: 600;
-  color: #333;
   border-bottom: 2px solid #007f30;
 }
 
 td {
-  color: #555;
+  color: #333;
   border-bottom: 1px solid #eee;
   word-break: break-word;
+}
+
+/* --- HOVER EFEITO --- */
+.tabela-produtos tr:not(:first-child):hover td {
+  background: rgba(0, 127, 48, 0.03);
+  cursor: pointer;
 }
 
 /* --- AJUSTES DE LARGURA DAS COLUNAS DA TABELA --- */
@@ -164,9 +189,25 @@ td {
 }
 
 /* Ícones Editar e Excluir */
+.edit-icon, .delete-icon, .search-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.search-icon:hover {
+  color: #2196f3;
+  background: rgba(33, 150, 243, 0.1);
+}
+
 .edit-icon {
   color: #007f30;
   cursor: pointer;
+}
+
+.edit-icon:hover {
+  color: #007f30;
+  background: rgba(0, 127, 48, 0.1);
 }
 
 .delete-icon {
@@ -174,13 +215,28 @@ td {
   cursor: pointer;
 }
 
+.delete-icon:hover {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
 /* Ajuste de alertas por linha */
 .alerta-validade {
-  background-color: #ffe6e6;
+  background: #fff9e6 !important;
+  border-left: 4px solid #ffd700 !important;
+}
+
+.alerta-validade td,
+.alerta-estoque td,
+.alerta-vencido td {
+  color: #222 !important;
+  /* Texto ainda mais escuro em linhas com alertas */
+  font-weight: 500;
 }
 
 .alerta-estoque {
-  background-color: #fff9e6;
+  background: #e8f4ff !important;
+  border-left: 4px solid #2196f3 !important;
 }
 
 /* --- BOTÃO DE EXCLUIR SELECIONADOS --- */
@@ -401,6 +457,12 @@ td {
   animation: aparecer 0.3s ease;
 }
 
+/* Alerta para produtos vencidos */
+.alerta-vencido {
+  background: #ffebee !important;
+  border-left: 4px solid #ff4444 !important;
+}
+
 .mensagem-alerta.error {
   background-color: #f8d7da;
   color: #721c24;
@@ -410,6 +472,30 @@ td {
   background-color: #fff3cd;
   color: #856404;
 }
+
+/* --- LEGENDAS --- */
+#legenda-alertas {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+#legenda-alertas span {
+  padding: 8px 16px;
+  border-radius: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-left: 4px solid;
+}
+
+#legenda-alertas span:nth-child(1) { border-color: #ffd700; }
+#legenda-alertas span:nth-child(2) { border-color: #2196f3; }
+#legenda-alertas span:nth-child(3) { border-color: #ff4444; }
 
 /* --- RESPONSIVIDADE (Tabela Vira Card) --- */
 @media (max-width: 768px) {
@@ -461,18 +547,19 @@ td {
 }
 
 #controles-paginacao button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 20px;
-  background-color: #007f30;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  color: #444;
+  transition: all 0.3s ease;
 }
 
 #controles-paginacao button:hover:not(:disabled) {
-  background-color: #005f24;
+  background: #007f30;
+  color: white;
+  border-color: #007f30;
+  transform: translateY(-2px);
 }
 
 #controles-paginacao button:disabled {
