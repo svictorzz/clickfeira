@@ -353,7 +353,7 @@ function salvarProduto(imagemBase64) {
   const unidadeMinima = document.getElementById('unidade-minima').value;
   const unidadeAtual = document.getElementById('unidade-atual').value;
 
-  if (!['unidade', 'g', 'kg'].includes(unidadeMinima) || !['unidade', 'g', 'kg', 'ml', 'l'].includes(unidadeAtual)) {
+  if (!['unidade', 'g', 'kg', 'ml', 'l'].includes(unidadeMinima) || !['unidade', 'g', 'kg', 'ml', 'l'].includes(unidadeAtual)) {
     mostrarMensagem('A unidade precisa ser Unidade, g, kg, ml ou l!', 'error');
     return;
   }
