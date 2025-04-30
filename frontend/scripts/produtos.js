@@ -373,10 +373,28 @@ function salvarProduto(imagemBase64) {
   if (indiceParaEditar !== null) {
     produtos[indiceParaEditar] = { ...produtos[indiceParaEditar], ...produto };
     mostrarMensagem('Produto atualizado com sucesso!', 'success');
+    
+    // Registrar edição no histórico
+    const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
+    historico.push({
+      tipo: 'Edição de produto',
+      descricao: `Produto "${produto.nome}" atualizado.`,
+      data: new Date().toISOString()
+    });
+    localStorage.setItem('historicoAcoes', JSON.stringify(historico));
   } else {
     produtos.push(produto);
     paginaAtual = Math.ceil(produtos.length / itensPorPagina);
     mostrarMensagem('Produto cadastrado com sucesso!', 'success');
+
+    // Registrar criação no histórico
+    const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
+    historico.push({
+      tipo: 'Cadastro de produto',
+      descricao: `Produto "${produto.nome}" cadastrado.`,
+      data: new Date().toISOString()
+    });
+    localStorage.setItem('historicoAcoes', JSON.stringify(historico));
   }
 
   salvarProdutosNoLocalStorage();
@@ -450,9 +468,20 @@ document.getElementById('lista-produtos').addEventListener('click', function (e)
 // --- EXCLUSÃO ---
 document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
   if (indiceParaExcluir !== null) {
+    const produtoNome = produtos[indiceParaExcluir].nome; // Captura o nome antes de excluir
     produtos.splice(indiceParaExcluir, 1);
     salvarProdutosNoLocalStorage();
     atualizarTabela();
+
+    // Registrar exclusão no histórico
+    const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
+    historico.push({
+      tipo: 'Exclusão de produto',
+      descricao: `Produto "${produtoNome}" excluído.`,
+      data: new Date().toISOString()
+    });
+    localStorage.setItem('historicoAcoes', JSON.stringify(historico));
+
     indiceParaExcluir = null;
     document.getElementById('modal-confirmar-exclusao').style.display = 'none';
   }
@@ -474,12 +503,24 @@ document.getElementById('btn-excluir-selecionados').addEventListener('click', ()
   }
 
   if (confirm(`Você deseja excluir ${selecionados.length} produto(s)?`)) {
+    const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
+    
     for (const codigo of selecionados) {
       const index = produtos.findIndex(prod => prod.codigo === codigo);
       if (index !== -1) {
+        const produtoNome = produtos[index].nome;
         produtos.splice(index, 1);
+        
+        // Registrar cada exclusão
+        historico.push({
+          tipo: 'Exclusão de produto',
+          descricao: `Produto "${produtoNome}" excluído.`,
+          data: new Date().toISOString()
+        });
       }
     }
+    
+    localStorage.setItem('historicoAcoes', JSON.stringify(historico));
     salvarProdutosNoLocalStorage();
     atualizarTabela();
     document.getElementById('btn-excluir-selecionados').style.display = 'none';
