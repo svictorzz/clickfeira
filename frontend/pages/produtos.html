@@ -79,9 +79,19 @@
 
     <!-- Legenda dos alertas e botão excluir selecionados -->
     <div id="topo-tabela" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <div id="legenda-alertas">
-        <span style="background-color: #ffcccc; padding: 5px; border-radius: 5px;">⚠️ Validade próxima (até 7 dias)</span>
-        <span style="background-color: #fff3cd; padding: 5px; border-radius: 5px; margin-left: 10px;">⚠️ Estoque baixo</span>
+      <div id="legenda-alertas" style="margin-bottom: 25px;">
+        <span
+          style="background: #fff9e6; border-left: 4px solid #ffd700; padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa fa-exclamation-triangle"></i>Validade Próxima
+        </span>
+        <span
+          style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 8px 12px; border-radius: 6px; margin-left: 10px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa fa-box-open"></i>Estoque Baixo
+        </span>
+        <span
+          style="background: #ffebee; border-left: 4px solid #c62828; padding: 8px 12px; border-radius: 6px; margin-left: 10px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa fa-skull-crossbones"></i>Vencido
+        </span>
       </div>
 
       <!-- Botão de excluir múltiplos produtos -->
