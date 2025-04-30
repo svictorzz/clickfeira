@@ -40,6 +40,14 @@
     font-size: 26px;
   }  
 
+  .intro-text {
+    font-size: 1rem;        /* Tamanho de fonte legível */
+    color: #555;            /* Tom de cinza suave */
+    margin-top: 20px;   
+    margin-bottom: 0px;  /* Espaço abaixo antes dos cards */
+    line-height: 1.6;       /* Altura de linha para boa leitura */
+  }
+  
 
 /* Sistema de Grid Aprimorado */
 .row {
