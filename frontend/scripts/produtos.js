@@ -97,12 +97,21 @@ function adicionarLinhaTabela(produto) {
 
   let alerta = '';
 
-  if (diasParaVencer <= 7) {
-    row.classList.add('alerta-validade'); // nova classe de alerta para validade próxima
+  // Verificar se o produto está VENCIDO
+  if (diasParaVencer <= 0) {
+    row.classList.add('alerta-vencido');
     alerta = ' ⚠️';
-  } else if (estoqueAtual < estoqueMinimo) {
-    row.classList.add('alerta-estoque'); // nova classe de alerta para estoque baixo
-    alerta = ' ⚠️';
+  } 
+  // Próximo da validade (7 dias)
+  else {
+    if (diasParaVencer <= 7) {
+      row.classList.add('alerta-validade');
+      alerta = ' ⚠️';
+    }   // Estoque abaixo
+    if (estoqueAtual < estoqueMinimo) {
+      row.classList.add('alerta-estoque');
+      alerta = ' ⚠️';
+    }
   }
 
   row.innerHTML = `
