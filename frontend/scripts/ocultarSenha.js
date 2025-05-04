@@ -1,11 +1,19 @@
-const senhaInput = document.getElementById('senha');
-const toggleSenha = document.getElementById('toggleSenha');
-const iconeSenha = document.getElementById('iconeSenha');
-    
-toggleSenha.addEventListener('click', () => {
-    const tipo = senhaInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    senhaInput.setAttribute('type', tipo);
-    iconeSenha.classList.toggle('bi-eye');
-    iconeSenha.classList.toggle('bi-eye-slash');
+document.addEventListener("DOMContentLoaded", function () {
+    function toggleSenha(idInput, idIcone) {
+        const input = document.getElementById(idInput);
+        const icone = document.getElementById(idIcone);
+
+        icone.addEventListener("click", function () {
+            if (input.type === "password") {
+                input.type = "text";
+                icone.classList.replace("bi-eye", "bi-eye-slash");
+            } else {
+                input.type = "password";
+                icone.classList.replace("bi-eye-slash", "bi-eye");
+            }
+        });
+    }
+
+    toggleSenha("senha", "iconeSenha");
+    toggleSenha("confirmarSenha", "iconeConfirmarSenha"); 
 });
-  

@@ -1,4 +1,6 @@
 from flask import Blueprint, request, session, jsonify
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from functools import wraps
 from app.services.auth_service import (
     login_user,
@@ -22,12 +24,14 @@ def login():
     data = request.get_json()
     email = data.get('email')
     senha = data.get('senha')
+
     if not email or not senha:
         return jsonify({"message": "Email e senha são obrigatórios."}), 400
 
     if login_user(email, senha):
-        session['email'] = email
-        return jsonify({"message": "Login realizado com sucesso!"}), 200
+        token = create_access_token(identity=email)
+        return jsonify({"message": "Login realizado com sucesso!", "token": token}), 200
+
     return jsonify({"message": "Credenciais inválidas."}), 401
 
 @auth_bp.route('/logout', methods=['POST'])
@@ -37,9 +41,10 @@ def logout():
     return jsonify({"message": "Logout realizado com sucesso!"}), 200
 
 @auth_bp.route('/me', methods=['GET'])
-@login_required
+@jwt_required()
 def me():
-    return jsonify({"email": session['email']}), 200
+    email = get_jwt_identity() 
+    return jsonify({"email": email}), 200
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
