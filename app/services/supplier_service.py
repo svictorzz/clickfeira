@@ -1,31 +1,55 @@
-suppliers = []
-supplier_id_counter = 1
+from app.firebase_config import db
 
-def add_supplier(supplier):
-    global supplier_id_counter
-    supplier["idFornecedor"] = supplier_id_counter
+def _normalize_fornecedores_data(data):
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        return {str(i): item for i, item in enumerate(data) if item is not None}
+    return {}
+
+
+def get_next_supplier_id() -> int:
+    ref = db.reference("fornecedor")
+    raw = ref.get()
+    fornecedores = _normalize_fornecedores_data(raw)
+    if not fornecedores:
+        return 1
+    ids = [int(fid) for fid in fornecedores.keys() if fid.isdigit()]
+    return max(ids) + 1 if ids else 1
+
+
+def add_supplier(supplier: dict) -> dict:
+    supplier_id = get_next_supplier_id()
+    supplier["idFornecedor"] = supplier_id
     supplier.setdefault("produtosFornecidos", [])
-    suppliers.append(supplier)
-    supplier_id_counter += 1
+    db.reference("fornecedor").child(str(supplier_id)).set(supplier)
     return supplier
 
-def get_all_suppliers():
-    return suppliers
 
-def get_supplier_by_id(supplier_id):
-    return next((s for s in suppliers if s["idFornecedor"] == supplier_id), None)
+def get_all_suppliers() -> list:
+    ref = db.reference("fornecedor")
+    raw = ref.get()
+    fornecedores = _normalize_fornecedores_data(raw)
+    return list(fornecedores.values())
 
-def update_supplier(supplier_id, updates):
-    supplier = get_supplier_by_id(supplier_id)
-    if supplier:
-        supplier.update(updates)
-        return supplier
-    return None
 
-def delete_supplier(supplier_id):
-    global suppliers
-    supplier = get_supplier_by_id(supplier_id)
-    if supplier:
-        suppliers = [s for s in suppliers if s["idFornecedor"] != supplier_id]
-        return True
-    return False
+def get_supplier_by_id(supplier_id: int) -> dict | None:
+    ref = db.reference(f"fornecedor/{supplier_id}")
+    supplier = ref.get()
+    return supplier if supplier else None
+
+
+def update_supplier(supplier_id: int, updates: dict) -> dict | None:
+    ref = db.reference(f"fornecedor/{supplier_id}")
+    if not ref.get():
+        return None
+    ref.update(updates)
+    return get_supplier_by_id(supplier_id)
+
+
+def delete_supplier(supplier_id: int) -> bool:
+    ref = db.reference(f"fornecedor/{supplier_id}")
+    if not ref.get():
+        return False
+    ref.delete()
+    return True

@@ -4,7 +4,6 @@ from app.services.order_service import (
     get_order_by_id, update_order, delete_order
 )
 from app.routes.auth_routes import login_required
-from app.services.product_service import get_product_by_id, update_product
 
 order_bp = Blueprint('order', __name__)
 
