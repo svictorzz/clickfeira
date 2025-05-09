@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .card-img-top {
     object-fit: cover;
     height: 200px; 
@@ -25,3 +26,159 @@
 }
 
 
+=======
+/* Reset e Tipografia */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Estrutura Principal */
+.container {
+    padding: 30px;
+    margin-top: 60px;
+}
+
+/* --- CONTEÚDO PRINCIPAL (igual ao inicio.html) --- */
+.content {
+    padding: 30px;
+    min-height: 100vh;
+    margin-top: 60px;
+    overflow-y: auto;
+  }
+  
+  @media (max-width: 768px) {
+    .content {
+      margin-top: 56px;
+    }
+  }
+  
+  /* --- CABEÇALHO (título H2) --- */
+  .content header h2 {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: left;
+  }
+  
+  /* --- SUBTÍTULO EM CINZA --- */
+  .content header .cinza {
+    color: gray;
+    font-weight: normal;
+    font-size: 26px;
+  }  
+
+  .intro-text {
+    font-size: 1rem;        /* Tamanho de fonte legível */
+    color: #555;            /* Tom de cinza suave */
+    margin-top: 20px;   
+    margin-bottom: 0px;  /* Espaço abaixo antes dos cards */
+    line-height: 1.6;       /* Altura de linha para boa leitura */
+  }
+  
+
+/* Sistema de Grid Aprimorado */
+.row {
+    gap: 2rem 0;
+}
+
+/* Cards Modernizados */
+.card {
+    border: none !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 30px rgba(0, 127, 48, 0.15);
+}
+
+.card-img-top {
+    height: 240px;
+    object-position: center;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.card-body {
+    padding: 1.75rem;
+    background: #f8f9fa;
+}
+
+.card-title {
+    color: #007f30 !important;
+    font-weight: 600;
+    font-size: 1.35rem;
+    margin-bottom: 0.75rem;
+}
+
+.card-text {
+    color: #495057;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Footer dos Cards */
+.card-footer {
+    background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%) !important;
+    border-top: 1px solid #e9ecef !important;
+    padding: 1rem 1.75rem !important;
+}
+
+.text-muted a {
+    color: #6c757d !important;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.text-muted a:hover {
+    color: #005922 !important;
+    text-decoration: none;
+}
+
+.text-muted a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background: #007f30;
+    transition: width 0.3s ease;
+}
+
+.text-muted a:hover::after {
+    width: 100%;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .card-img-top {
+        height: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin-top: 56px;
+        padding: 20px;
+    }
+
+    .card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-img-top {
+        height: 180px;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+}
+>>>>>>> dc2a7aedc557e300e91836788e53eed5306edbcf

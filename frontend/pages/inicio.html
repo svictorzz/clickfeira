@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <!-- Definindo a codificação de caracteres da página -->
+  <meta charset="UTF-8">
+
+  <!-- Tornando o layout responsivo para dispositivos móveis -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Início</title> <!-- Título da página -->
+
+  <!-- Fontes e Estilos Externos -->
+  <!-- Fonte Font Awesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Bootstrap para estilos pré-definidos e componentes responsivos -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Fonte Poppins do Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Estilos personalizados para este projeto -->
+  <link rel="stylesheet" href="../styles/produtos.css">
+  <link rel="stylesheet" href="../styles/menu.css">
+  <link rel="stylesheet" href="../styles/inicio.css">
+
+  <!-- Script do arquivo JS da página, com 'defer' para carregar após o HTML -->
+  <script src="../scripts/inicio.js" defer></script>
+</head>
+
+<body>
+  <!-- Menu lateral que será carregado dinamicamente -->
+  <div id="menu-container"></div>
+
+  <!-- Conteúdo principal da página -->
+  <main class="content">
+    <header>
+      <!-- Título principal da página -->
+      <h2><b>Início</b> <span class="cinza">/ Painel Geral</span></h2>
+    </header>
+
+    <!-- Seção de Alertas de Estoque e Validade -->
+    <section class="secao">
+      <h3>
+        Alertas de Estoque e Validade
+        <!-- badge de contagem -->
+        <span id="badge-alertas" class="badge">0</span>
+      </h3>
+      <div class="filtros-alertas" role="group" aria-label="Filtros de alertas">
+        <button class="botao-filtro" data-filtro="todos" aria-label="Mostrar todos">Todos</button>
+        <button class="botao-filtro" data-filtro="estoque" aria-label="Filtrar estoque baixo">Estoque Baixo</button>
+        <button class="botao-filtro" data-filtro="validade" aria-label="Filtrar validade próxima">Validade</button>
+        <button class="botao-filtro" data-filtro="vencido" aria-label="Filtrar vencidos">Vencidos</button>
+      </div>
+
+      <!-- Bloco de conteúdo para exibir os alertas -->
+      <div class="bloco-conteudo">
+        <!-- Lista de alertas -->
+        <div id="lista-alertas"></div>
+
+        <!-- Paginação dos alertas -->
+        <div id="paginacao" class="paginacao">
+          <button id="btnAnterior" class="botao-paginacao">Anterior</button>
+          <span id="contador-paginas"></span>
+          <button id="btnProximo" class="botao-paginacao">Próximo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção Nossa História -->
+    <section class="secao">
+      <h3>
+        <span id="toggle-historia" role="button" aria-expanded="true" aria-controls="conteudo-historia">&#x21d5;</span>
+        Nossa História
+      </h3>
+      <div id="conteudo-historia" class="historia-texto">
+        <p>
+          Bem-vindo ao <b>ClickFeira!</b> Nosso sistema foi desenvolvido para transformar a gestão de estoque de
+          feirantes e pequenos empreendedores, trazendo mais organização, praticidade e controle ao dia a dia.
+          <br><br>
+          Acreditamos que a tecnologia deve ser acessível e feita para apoiar o crescimento do comércio local,
+          unindo consumo sustentável e preservação ecológica.
+          <br><br>
+          Com o ClickFeira, você acompanha seus produtos, fornecedores, prazos de validade e quantidades de forma
+          simples e eficiente, garantindo a melhor experiência para o seu negócio.
+          <br><br>
+          Contamos com você para um futuro melhor!
+        </p>
+      </div>
+    </section>
+
+    <!-- Seção Histórico de Ações -->
+    <section class="secao">
+      <h3>
+        Histórico de Ações
+        <span id="badge-historico" class="badge">0</span>
+      </h3>
+      <!-- 3) Campo de busca -->
+      <input type="search" id="search-historico" placeholder="Buscar no histórico…" aria-label="Buscar no histórico"
+        style="width:100%;margin-bottom:10px;padding:8px;border-radius:8px;border:1px solid #ccc;" />
+
+      <div id="historico-acoes">
+        <p>Carregando histórico…</p>
+      </div>
+
+      <!-- Botão para limpar o histórico -->
+      <div id="container-botao-historico" style="margin-top: 15px; text-align: right;">
+        <button id="limpar-historico" class="botao-limpar">Limpar Histórico</button>
+      </div>
+
+      <!-- Paginação do Histórico -->
+      <div id="paginacao-historico" class="paginacao" style="margin-top: 10px;">
+        <button id="btnAnteriorHistorico" class="botao-paginacao">Anterior</button>
+        <span id="contador-paginas-historico"></span>
+        <button id="btnProximoHistorico" class="botao-paginacao">Próximo</button>
+      </div>
+      </div>
+    </section>
+
+    <!-- Botão Flutuante para adicionar um novo produto -->
+    <div class="botao-flutuante-container">
+      <div class="botao-wrapper">
+        <button id="botao-flutuante" class="botao-flutuante">+</button>
+        <span class="tooltip-text">Adicionar Novo Produto</span> <!-- Tooltip explicativo -->
+      </div>
+    </div>
+
+    <!-- Modal para cadastro de produto -->
+    <div id="modal-produto" class="modal-overlay">
+      <div class="modal-content">
+        <!-- Formulário de cadastro de produto -->
+        <form id="form-produto">
+          <center>
+            <h3>Adicionar Novo Produto</h3>
+          </center>
+
+          <div class="form-grid">
+            <div class="form-col">
+              <label for="imagem">Imagem do Produto:</label>
+              <input type="file" id="imagem" name="imagem" accept="image/*">
+
+              <label for="codigo">Código:</label>
+              <input type="text" id="codigo" name="codigo" readonly>
+
+              <label for="categoria">Categoria:</label>
+              <select id="categoria" name="categoria" required>
+                <option value="">Selecione...</option>
+                <option value="frutas">Frutas</option>
+                <option value="legumes">Legumes</option>
+                <option value="verduras">Verduras</option>
+                <option value="temperos">Temperos</option>
+                <option value="laticínios">Laticínios</option>
+                <option value="doces">Doces</option>
+                <option value="salgados">Salgados</option>
+                <option value="carnes">Carnes</option>
+                <option value="grãos">Grãos</option>
+                <option value="bebidas">Bebidas</option>
+                <option value="outros">Outros</option>
+              </select>
+
+              <label for="nome">Nome do Produto:</label>
+              <input type="text" id="nome" name="nome" maxlength="80" required>
+
+              <label for="validade">Data de Validade:</label>
+              <input type="date" id="validade" name="validade" required">
+            </div>
+
+            <div class="form-col">
+              <label for="descricao">Descrição:</label>
+              <textarea id="descricao" name="descricao" rows="5" maxlength="150"></textarea>
+
+              <label for="qtd-minima">Quantidade Mínima:</label>
+              <div class="input-group">
+                <input type="number" step="0.01" min="0" id="qtd-minima" name="qtd-minima" required>
+                <select id="unidade-minima" name="unidade-minima" required>
+                  <option value="" disabled selected hidden>Medida...</option>
+                  <option value="unidade">unidade</option>
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
+                </select>
+              </div>
+
+              <label for="qtd-atual">Quantidade Atual:</label>
+              <!-- Campo corrigido -->
+              <div class="input-group">
+                <input type="number" step="0.01" min="0" id="qtd-atual" name="qtd-atual" required>
+                <input type="text" id="unidade-atual" name="unidade-atual" readonly required>
+              </div>
+
+              <label for="preco">Preço (R$):</label>
+              <input type="number" step="0.01" min="0" id="preco" name="preco" required>
+            </div>
+          </div>
+
+          <div class="modal-buttons">
+            <button type="submit" class="salvar">Salvar</button>
+            <button type="button" class="cancelar">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts essenciais para carregamento e funcionalidades que atualizam frequentemente -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      try {
+        // Carrega o conteúdo do menu dinamicamente
+        const res = await fetch('../components/menu.html');
+        const html = await res.text();
+        document.getElementById('menu-container').innerHTML = html;
+
+        // Carrega a página após o menu ser carregado
+        iniciarPagina();
+      } catch (error) {
+        console.error("Erro ao carregar o menu:", error);
+      }
+    });
+  </script>
+
+  <!-- Script para o menu -->
+  <script src="../scripts/menu.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      try {
+        // 1) Carrega o menu
+        const res = await fetch('../components/menu.html');
+        const html = await res.text();
+        document.getElementById('menu-container').innerHTML = html;
+
+        // 2) Inicia a página (mostrar/esconder seções, etc.)
+        iniciarPagina();
+
+        // 3) Após mostrar a seção “Início”, inicializa alertas e histórico
+        //    (paginaHistorico e paginaAtual já são globais em inicio.js)
+        carregarAlertas();
+        paginaHistorico = 0;
+        exibirHistorico();
+      } catch (error) {
+        console.error("Erro ao carregar o menu:", error);
+      }
+    });
+  </script>
+
+  <!-- Scripts do Bootstrap para funcionalidades adicionais -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

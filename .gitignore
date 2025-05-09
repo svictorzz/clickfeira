@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+env/
+venv/
+ENV/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+
+# Configurações de IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de log
+*.log
+
+# Firebase / Credenciais
+credentials.json
+*.firebase.json
+
+# Arquivos de build/empacotamento
+build/
+dist/
+*.egg
+*.bak
+
+# Teste
+.coverage
+htmlcov/
+.cache/
+.tox/
+pytest_cache/
+.pytest_cache/
