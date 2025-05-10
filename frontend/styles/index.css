@@ -115,3 +115,19 @@ h4.text-center.mb-4{
 .footer-text a:hover {
   text-decoration: underline;
 }
+
+.is-invalid {
+  border: 2px solid red;
+}
+
+.error-message {
+  color: red;
+  font-size: 10px;
+  margin-top: 5px;
+  display: block;
+  background-color: #ffe6e6;
+  padding: 5px;
+  border-radius: 4px;
+  max-width: 300px; 
+  word-wrap: break-word;
+}

@@ -36,7 +36,7 @@ def register_user(data: dict) -> bool:
         "nome": data["nome"],
         "email": data["email"],
         "senha": data["senha"],
-        "contato": data["contato"],
+        "telefone": data["telefone"],
         "cpf": data["cpf"],
         "endereco": data["endereco"],
         "listaFeiras": data.get("listaFeiras", [])

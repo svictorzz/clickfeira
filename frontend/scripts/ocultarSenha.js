@@ -1,7 +1,12 @@
 document.addEventListener("DOMContentLoaded", function () {
-    function toggleSenha(idInput, idIcone) {
-        const input = document.getElementById(idInput);
-        const icone = document.getElementById(idIcone);
+    function toggleSenha(inputSelector, iconeSelector) {
+        const input = document.querySelector(inputSelector);
+        const icone = document.querySelector(`#${iconeSelector}`);
+
+        if (!input || !icone) {
+            console.error(`❌ Elemento não encontrado: ${inputSelector} ou #${iconeSelector}`);
+            return;
+        }
 
         icone.addEventListener("click", function () {
             if (input.type === "password") {
@@ -14,6 +19,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    toggleSenha("senha", "iconeSenha");
-    toggleSenha("confirmarSenha", "iconeConfirmarSenha"); 
+    toggleSenha("input[name='senha']", "iconeSenha");
+    toggleSenha("input[name='confirmarSenha']", "iconeConfirmarSenha");
 });

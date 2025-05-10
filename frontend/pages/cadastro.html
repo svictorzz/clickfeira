@@ -23,38 +23,38 @@
       <form id="formCadastro" novalidate>
         <div class="mb-3">
           <label for="nome" class="form-label">Nome</label>
-          <input type="text" class="form-control rounded-pill" id="nome" placeholder="Digite seu nome completo" required>
+          <input type="text" class="form-control rounded-pill" id="nome" name="nome" placeholder="Digite seu nome completo" required>
           <div class="invalid-feedback">Nome é obrigatório.</div>
         </div>
 
         <div class="mb-3">
           <label for="email" class="form-label">E-mail</label>
-          <input type="email" class="form-control rounded-pill" id="email" placeholder="Digite seu e-mail" required>
+          <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="Digite seu e-mail" required>
           <div class="invalid-feedback">E-mail inválido.</div>
         </div>
 
         <div class="mb-3">
           <label for="documento" class="form-label">CPF/CNPJ</label>
-          <input type="text" class="form-control rounded-pill" id="documento" placeholder="Digite seu CPF ou CNPJ" required>
+          <input type="text" class="form-control rounded-pill" id="cpf" name="cpf" placeholder="Digite seu CPF ou CNPJ" required>
           <div class="invalid-feedback">Informe um CPF ou CNPJ válido.</div>
         </div>
 
         <div class="mb-3">
           <label for="endereco" class="form-label">Endereço</label>
-          <input type="text" class="form-control rounded-pill" id="endereco" placeholder="Digite o endereço da sua feira" required>
+          <input type="text" class="form-control rounded-pill" id="endereco" name="endereco" placeholder="Digite o endereço da sua feira" required>
           <div class="invalid-feedback">Endereço inválido.</div>
         </div>
 
         <div class="mb-3">
           <label for="telefone" class="form-label">Telefone</label>
-          <input type="tel" class="form-control rounded-pill" id="telefone" placeholder="Digite seu telefone" required>
+          <input type="tel" class="form-control rounded-pill" id="telefone" name="telefone" placeholder="Digite seu telefone" required>
           <div class="invalid-feedback">Telefone inválido.</div>
         </div>
 
         <div class="mb-3">
           <label for="senha" class="form-label">Senha</label>
           <div class="input-group">
-            <input type="password" class="form-control rounded-start-pill" id="senha" placeholder="Digite sua senha" required>
+            <input type="password" class="form-control rounded-start-pill" id="senha" name="senha" placeholder="Digite sua senha" required>
             <span class="input-group-text rounded-end-pill" id="toggleSenha">
               <i class="bi bi-eye" id="iconeSenha"></i>
             </span>
@@ -65,7 +65,7 @@
         <div class="mb-3">
           <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
           <div class="input-group">
-            <input type="password" class="form-control rounded-start-pill" id="confirmarSenha" placeholder="Confirme sua senha" required>
+            <input type="password" class="form-control rounded-start-pill" id="confirmarSenha" name="confirmarSenha" placeholder="Confirme sua senha" required>
             <span class="input-group-text rounded-end-pill" id="toggleConfirmarSenha">  
               <i class="bi bi-eye" id="iconeConfirmarSenha"></i>
             </span>
@@ -73,6 +73,8 @@
           <div class="invalid-feedback">As senhas não coincidem.</div>
         </div>
 
+        <p id="erroCadastro" class="error-message" style="display: none; color: red;"></p>
+        
         <button type="submit" class="btn btn-success w-100 mt-3">Cadastrar</button>
 
         <div class="footer-text mt-3 text-center">

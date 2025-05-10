@@ -49,8 +49,10 @@ def me():
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    required = ['nome','email','senha','contato','cpf','endereco']
-    if not all(field in data for field in required):
+
+    required = ['nome', 'email', 'senha', 'telefone', 'cpf', 'endereco']
+    
+    if any(field not in data or not data[field] for field in required):
         return jsonify({"message": "Todos os campos são obrigatórios."}), 400
 
     if register_user(data):
