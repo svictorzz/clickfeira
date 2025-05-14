@@ -40,4 +40,4 @@ htmlcov/
 .cache/
 .tox/
 pytest_cache/
-.pytest_cache/
+.pytest_cache/*.pyc

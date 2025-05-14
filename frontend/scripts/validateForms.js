@@ -2,12 +2,60 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formCadastro = document.getElementById("formCadastro");
     const formLogin = document.getElementById("formLogin"); // 🔹 Adicionando validação para login!
+document.addEventListener("DOMContentLoaded", function () {
+
+    const formCadastro = document.getElementById("formCadastro");
+    const formLogin = document.getElementById("formLogin"); // 🔹 Adicionando validação para login!
 
     if (formCadastro) {
         formCadastro.addEventListener("submit", function (e) {
             e.preventDefault();
             let valid = true;
+    if (formCadastro) {
+        formCadastro.addEventListener("submit", function (e) {
+            e.preventDefault();
+            let valid = true;
 
+            const campos = {
+                nome: {
+                    el: document.getElementById("nome"),
+                    cond: val => val.trim().length >= 3,
+                    msg: "Nome deve ter pelo menos 3 caracteres."
+                },
+                email: {
+                    el: document.getElementById("email"),
+                    cond: val => val.includes("@") && val.includes("."),
+                    msg: "Digite um e-mail válido."
+                },
+                cpf: {
+                    el: document.getElementById("cpf"),
+                    cond: val => val.trim().length === 11,
+                    msg: "Informe um CPF válido."
+                },
+                endereco: {
+                    el: document.getElementById("endereco"),
+                    cond: val => val.trim().length >= 5,
+                    msg: "Endereço inválido."
+                },
+                telefone: { 
+                    el: document.getElementById("telefone"),
+                    cond: val => val.trim().length >= 8,
+                    msg: "Telefone inválido."
+                },
+                senha: {
+                    el: document.getElementById("senha"),
+                    cond: val => {
+                        const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+                        return regex.test(val);
+                    },
+                    msg: "A senha deve ter no mínimo 6 caracteres, incluindo uma letra maiúscula, um número e um caractere especial."
+                },
+                confirmarSenha: {
+                    el: document.getElementById("confirmarSenha"),
+                    cond: val => val === document.getElementById("senha").value,
+                    msg: "As senhas não coincidem."
+                }
+            };
             const campos = {
                 nome: {
                     el: document.getElementById("nome"),
@@ -57,7 +105,22 @@ document.addEventListener("DOMContentLoaded", function () {
                     continue;
                 }
                 const valor = campo.el.value;
+            for (const key in campos) {
+                const campo = campos[key];
+                if (!campo.el) {
+                    console.error(`❌ Campo não encontrado: ${key}`);
+                    valid = false;
+                    continue;
+                }
+                const valor = campo.el.value;
 
+                if (!campo.cond(valor)) {
+                    campo.el.classList.add("is-invalid");
+                    valid = false;
+                } else {
+                    campo.el.classList.remove("is-invalid");
+                }
+            }
                 if (!campo.cond(valor)) {
                     campo.el.classList.add("is-invalid");
                     valid = false;
