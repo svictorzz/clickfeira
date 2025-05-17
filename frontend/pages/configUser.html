@@ -110,7 +110,28 @@
         document.getElementById('menu-container').innerHTML = html;
       })
       .catch(err => console.error("Erro ao carregar menu:", err));
-  });
+
+     // Buscar dados do usuário
+    const comercianteId = localStorage.getItem("idComerciante"); // ou outra forma de obter o ID
+
+  if (comercianteId) {
+    fetch(`/users/${comercianteId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data) {
+          document.getElementById("cpf").value = data.cpf || '';
+          document.getElementById("nome").value = data.nome || '';
+          document.getElementById("email").value = data.email || '';
+          document.getElementById("telefone").value = data.telefone || '';
+          document.getElementById("endereco").value = data.endereco || '';
+        }
+      })
+      .catch(error => console.error("Erro ao carregar dados do usuário:", error));
+  } else {
+    console.warn("ID do comerciante não encontrado.");
+  }
+});
+
 </script>
 </body>
 </html>
