@@ -1,0 +1,22 @@
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+.container{
+    margin-top: 50px;
+}
+
+.cinza {
+    color: gray;
+    font-weight: normal;
+    font-size: 26px;
+}  
+
+header{
+    margin-bottom: 20px;
+}
+
+button{
+    background-color: #067D39;
+    font-weight: bold;
+}
