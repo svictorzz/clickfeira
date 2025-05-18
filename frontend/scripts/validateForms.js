@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (valid) {
-                console.log("📤 Dados validados e prontos para envio!");
+                console.log("Dados validados e prontos para envio!");
                 const userData = new FormData(formCadastro);
                 registerUser(Object.fromEntries(userData.entries()));
             }
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 window.location.href = "inicio.html";
             } catch (error) {
-                console.error("❌ Erro de login:", error);
+                console.error("Erro de login:", error);
 
                 if (errorMessage) {
                     errorMessage.textContent = error.message;
@@ -133,6 +133,6 @@ async function registerUser(userData) {
             alert(error.message);
         }
 
-        console.error("❌ Erro no cadastro:", error);   
+        console.error("Erro no cadastro:", error);   
     }
 }
