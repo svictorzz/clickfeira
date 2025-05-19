@@ -1,0 +1,226 @@
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+.is-invalid {
+  border-color: red !important;
+}
+
+.readonly-field {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.visualizar-fornecedor .info-label {
+  font-weight: bold;
+  color: #555;
+}
+
+.visualizar-fornecedor .info-value {
+  margin-bottom: 10px;
+}
+
+/* Estilo para centralizar o container */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#menu-container {
+  flex-shrink: 0;
+}
+
+.main-content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.container-centralizado {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 60px;
+}
+
+/* Estilos para o cabeçalho */
+.card-header h2 {
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.card-header .cinza {
+  color: #6c757d;
+  font-weight: 400;
+}
+
+/* Estilos para a barra de pesquisa */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.input-icon {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.input-icon i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+}
+
+.input-icon input {
+  padding-left: 35px;
+  border-radius: 20px;
+  border: 1px solid #ced4da;
+  height: 38px;
+  width: 100%;
+}
+
+.filter, .abrir-modal {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+}
+
+.filter {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.abrir-modal {
+  background-color: #198754;
+  color: white;
+}
+
+.abrir-modal:hover {
+  background-color: #157347;
+}
+
+/* Ajustes para a tabela */
+#lista-fornecedores .card {
+  width: 100%;
+  border: none;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+.card-header {
+  background-color: white !important;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #495057;
+  background-color: #f8f9fa;
+}
+
+.btn-outline-primary, .btn-outline-danger {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Estilo para o select de ordenação */
+#ordenar-nome {
+  border-radius: 20px;
+  padding: 5px 10px;
+  border: 1px solid #ced4da;
+  background-color: white;
+}
+
+/* --- ESTILOS PARA OS MODAIS --- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 1000px;
+  max-width: 95%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: aparecer-modal 0.3s ease;
+}
+
+@keyframes aparecer-modal {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Botões no Modal */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.modal-buttons .salvar {
+  background-color: #198754;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-buttons .cancelar {
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}

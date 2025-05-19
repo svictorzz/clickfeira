@@ -3,341 +3,273 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Fornecedores</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <style>
-    .sidebar {
-      background-color: #007a33;
-      min-height: 100vh;
-    }
-    
-    .sidebar a {
-      color: white;
-      text-decoration: none;
-    }
-    
-    .sidebar a:hover {
-      text-decoration: underline;
-    }
-    
-    .panel {
-      display: none;
-    }
-    
-    .panel.active {
-      display: block;
-    }
-    
-    .error-message {
-      color: red;
-      font-size: 0.75rem;
-      margin-top: 0.25rem;
-      display: none;
-    }
-    
-    .is-invalid {
-      border-color: red !important;
-    }
-    
-    .logo {
-      width: 80px;
-      height: auto;
-    }
-    
-    @media (max-width: 768px) {
-      .sidebar {
-        min-height: auto;
-      }
-    }
-    
-    .readonly-field {
-      background-color: #e9ecef;
-      cursor: not-allowed;
-    }
-    
-    .visualizar-fornecedor .info-label {
-      font-weight: bold;
-      color: #555;
-    }
-    
-    .visualizar-fornecedor .info-value {
-      margin-bottom: 10px;
-    }
-  </style>
+  <title>Fornecedores | Gerenciar</title>
+   <!-- Fontes e Estilos utilizados -->
+  <!-- Font Awesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Bootstrap para estilização rápida -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Fonte Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- CSS do menu lateral -->
+  <link rel="stylesheet" href="../styles/menu.css">
+    <!-- CSS da página de fornecedores -->
+  <link rel="stylesheet" href="../styles/fornecedores.css">
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-      <!-- Sidebar -->
-      <div class="col-md-2 p-0 sidebar">
-        <div class="d-flex flex-column p-3">
-          <div class="text-center mb-4">
-            <img src="../assets/logo.png" alt="Logo" class="logo"/>
-          </div>
-          <ul class="nav flex-column">
-            <li class="nav-item mb-2">
-              <a class="nav-link" href="#">Produtos</a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link" href="#">Pedidos</a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link active" href="#">Fornecedores</a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link" href="#">Relatório</a>
-            </li>
-            <li class="nav-item mb-2">
-              <a class="nav-link" href="#">Sustentabilidade</a>
-            </li>
-          </ul>
-          <div class="mt-auto pt-3">
-            <a href="#" class="text-danger fw-bold">
-              <i class="fas fa-sign-out-alt me-2"></i>Sair
-            </a>
-          </div>
+  <!-- Container do menu -->
+  <div id="menu-container"></div>
+  
+  <div class="main-content-container">
+    <div class="container-centralizado">
+      <div class="row w-100 justify-content-center">
+        <!-- Conteúdo Principal -->
+        <div class="col-md-12 p-4">
+          <!-- Lista de Fornecedores -->
+          <section id="lista-fornecedores" class="panel active">
+            <div class="card">
+              <div class="card-header bg-white">
+                <h2><b>Fornecedores</b> <span class="cinza">/ Gerenciar</span></h2>
+              </div>
+              <div class="card-body">
+                <!-- Barra de Pesquisa e Botões -->
+                <div class="search-bar">
+                  <!-- Campo de pesquisa -->
+                  <div class="input-icon">
+                    <i class="fa fa-search"></i>
+                    <input id="pesquisar-fornecedor" type="text" placeholder="Pesquisar">
+                  </div>
+                  <!-- Botão para abrir filtros -->
+                  <button class="filter"><i class="fa fa-sliders"></i> <strong>Filtros</strong></button>
+                  <!-- Botão para adicionar novo fornecedor -->
+                  <button id="btn-adicionar" class="abrir-modal"><i class="fa fa-plus"></i> <strong>Adicionar</strong></button>
+                </div>
+
+                <!-- Menu de Filtros (escondido inicialmente) -->
+                <div id="filtros-container" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                  <!-- Filtro de ordenação -->
+                  <div>
+                    <label><strong>Ordenar por:</strong></label>
+                    <select id="ordenar-nome">
+                      <option value="">Ordenar</option>
+                      <option value="az">Nome (A-Z)</option>
+                      <option value="za">Nome (Z-A)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Código</th>
+                        <th>CNPJ/CPF</th>
+                        <th>Fornecedor</th>
+                        <th>Telefone</th>
+                        <th class="text-center">Produtos</th>
+                        <th class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabela-fornecedores">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-      </div>
-      
-      <!-- Conteúdo Principal -->
-      <div class="col-md-10 p-4">
-        <!-- Lista de Fornecedores -->
-        <section id="lista-fornecedores" class="panel active">
-          <div class="card">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-              <div>
-                <span class="fw-bold text-success">Fornecedores</span>
-                <span class="text-muted ms-2">/ Fornecedores</span>
-              </div>
-              <button id="btn-adicionar" class="btn btn-success btn-sm">
-                <i class="fas fa-plus me-1"></i>Adicionar
-              </button>
-            </div>
-            <div class="card-body">
-              <div class="row mb-3">
-                <div class="col-md-4">
-                  <input id="pesquisar-fornecedor" class="form-control form-control-sm" placeholder="Pesquisar"/>
-                </div>
-                <div class="col-md-3">
-                  <select class="form-select form-select-sm">
-                    <option>Filtrar</option>
-                  </select>
-                </div>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Código</th>
-                      <th>CNPJ/CPF</th>
-                      <th>Fornecedor</th>
-                      <th>Telefone</th>
-                      <th class="text-center">Produtos</th>
-                      <th class="text-center">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tabela-fornecedores">
-                    <!-- Dados serão inseridos via JavaScript -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <!-- Adicionar Fornecedor -->
-        <section id="adicionar-fornecedor" class="panel">
-          <div class="card mx-auto" style="max-width: 500px;">
-            <div class="card-header bg-white">
-              <span class="fw-bold">Fornecedores</span>
-              <span class="text-muted ms-2">/ Adicionar Fornecedor</span>
-            </div>
-            <div class="card-body">
-              <form id="form-adicionar">
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="codigo" class="form-control form-control-sm readonly-field" placeholder="Código" type="text" readonly/>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="nome" class="form-control form-control-sm" placeholder="Nome do fornecedor" required/>
-                    <div id="nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
-                  </div>
-                </div>
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="cnpj" class="form-control form-control-sm" placeholder="CNPJ/CPF" required/>
-                    <div id="cnpj-error" class="error-message">CNPJ/CPF inválido</div>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="email" class="form-control form-control-sm" placeholder="E-mail" type="email"/>
-                    <div id="email-error" class="error-message">E-mail inválido</div>
-                  </div>
-                </div>
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="cep" class="form-control form-control-sm" placeholder="CEP"/>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="telefone" class="form-control form-control-sm" placeholder="Telefone" required/>
-                    <div id="telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
-                  </div>
-                </div>
-                <div class="mb-2">
-                  <input id="endereco" class="form-control form-control-sm" placeholder="Endereço"/>
-                </div>
-                <div class="mb-3">
-                  <select id="produtos" class="form-select form-select-sm">
-                    <option value="">Selecione os produtos</option>
-                    <option value="1">Frutas</option>
-                    <option value="2">Verduras</option>
-                    <option value="3">Legumes</option>
-                  </select>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <button type="button" id="btn-cancelar-adicionar" class="btn btn-outline-secondary btn-sm">
-                    Cancelar
-                  </button>
-                  <button type="submit" class="btn btn-success btn-sm">
-                    Salvar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </section>
-        
-        <!-- Editar Fornecedor -->
-        <section id="editar-fornecedor" class="panel">
-          <div class="card mx-auto" style="max-width: 500px;">
-            <div class="card-header bg-white">
-              <span class="fw-bold">Fornecedores</span>
-              <span class="text-muted ms-2">/ Editar Fornecedor</span>
-            </div>
-            <div class="card-body">
-              <form id="form-editar">
-                <input type="hidden" id="edit-id">
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="edit-codigo" class="form-control form-control-sm readonly-field" placeholder="Código" readonly/>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="edit-nome" class="form-control form-control-sm" placeholder="Nome do fornecedor" required/>
-                    <div id="edit-nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
-                  </div>
-                </div>
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="edit-cnpj" class="form-control form-control-sm" placeholder="CNPJ/CPF" required/>
-                    <div id="edit-cnpj-error" class="error-message">CNPJ/CPF inválido</div>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="edit-email" class="form-control form-control-sm" placeholder="E-mail" type="email"/>
-                    <div id="edit-email-error" class="error-message">E-mail inválido</div>
-                  </div>
-                </div>
-                <div class="row g-2 mb-2">
-                  <div class="col-md-6">
-                    <input id="edit-cep" class="form-control form-control-sm" placeholder="CEP"/>
-                  </div>
-                  <div class="col-md-6">
-                    <input id="edit-telefone" class="form-control form-control-sm" placeholder="Telefone" required/>
-                    <div id="edit-telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
-                  </div>
-                </div>
-                <div class="mb-2">
-                  <input id="edit-endereco" class="form-control form-control-sm" placeholder="Endereço"/>
-                </div>
-                <div class="mb-3">
-                  <select id="edit-produtos" class="form-select form-select-sm">
-                    <option value="">Selecione os produtos</option>
-                    <option value="1">Frutas</option>
-                    <option value="2">Verduras</option>
-                    <option value="3">Legumes</option>
-                  </select>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <button type="button" id="btn-cancelar-editar" class="btn btn-outline-secondary btn-sm">
-                    Cancelar
-                  </button>
-                  <button type="submit" class="btn btn-success btn-sm">
-                    Salvar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </section>
-        
-        <!-- Visualizar Fornecedor -->
-        <section id="visualizar-fornecedor" class="panel">
-          <div class="card mx-auto" style="max-width: 500px;">
-            <div class="card-header bg-white">
-              <span class="fw-bold">Fornecedores</span>
-              <span class="text-muted ms-2">/ Visualizar Fornecedor</span>
-            </div>
-            <div class="card-body visualizar-fornecedor">
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">Código</div>
-                  <div class="info-value" id="view-codigo"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">Nome</div>
-                  <div class="info-value" id="view-nome"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">CNPJ/CPF</div>
-                  <div class="info-value" id="view-cnpj"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">E-mail</div>
-                  <div class="info-value" id="view-email"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">CEP</div>
-                  <div class="info-value" id="view-cep"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">Telefone</div>
-                  <div class="info-value" id="view-telefone"></div>
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <div class="info-label">Endereço</div>
-                  <div class="info-value" id="view-endereco"></div>
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-12">
-                  <div class="info-label">Produtos</div>
-                  <div class="info-value" id="view-produtos"></div>
-                </div>
-              </div>
-              <div class="d-flex justify-content-center">
-                <button type="button" id="btn-voltar-visualizar" class="btn btn-outline-secondary btn-sm">
-                  Voltar
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   </div>
-  
-  <!-- Modal de Confirmação -->
+
+  <!-- Modal de Adicionar Fornecedor -->
+  <div id="modal-adicionar" class="modal-overlay">
+    <div class="modal-content">
+      <form id="form-adicionar">
+        <center><h3>Adicionar Novo Fornecedor</h3></center>
+        
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="codigo">Código</label>
+            <input id="codigo" class="form-control form-control-sm readonly-field" placeholder="Código" type="text" readonly/>
+          </div>
+          <div class="col-md-6">
+            <label for="nome">Nome do Fornecedor</label>
+            <input id="nome" class="form-control form-control-sm" placeholder="Nome do fornecedor" required/>
+            <div id="nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="cnpj">CNPJ/CPF</label>
+            <input id="cnpj" class="form-control form-control-sm" placeholder="CNPJ/CPF" required/>
+            <div id="cnpj-error" class="error-message">CNPJ/CPF inválido</div>
+          </div>
+          <div class="col-md-6">
+            <label for="email">E-mail</label>
+            <input id="email" class="form-control form-control-sm" placeholder="E-mail" type="email"/>
+            <div id="email-error" class="error-message">E-mail inválido</div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="cep">CEP</label>
+            <input id="cep" class="form-control form-control-sm" placeholder="CEP"/>
+          </div>
+          <div class="col-md-6">
+            <label for="telefone">Telefone</label>
+            <input id="telefone" class="form-control form-control-sm" placeholder="Telefone" required/>
+            <div id="telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label for="endereco">Endereço</label>
+          <input id="endereco" class="form-control form-control-sm" placeholder="Endereço"/>
+        </div>
+        <div class="mb-3">
+          <label for="produtos">Produtos Fornecidos</label>
+          <select id="produtos" class="form-select form-select-sm">
+            <option value="">Selecione os produtos</option>
+            <option value="1">Frutas</option>
+            <option value="2">Verduras</option>
+            <option value="3">Legumes</option>
+          </select>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="submit" class="salvar">Salvar</button>
+          <button type="button" class="cancelar" id="btn-cancelar-adicionar">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Editar Fornecedor -->
+  <div id="modal-editar" class="modal-overlay">
+    <div class="modal-content">
+      <form id="form-editar">
+        <center><h3>Editar Fornecedor</h3></center>
+        <input type="hidden" id="edit-id">
+        
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="edit-codigo">Código</label>
+            <input id="edit-codigo" class="form-control form-control-sm readonly-field" placeholder="Código" readonly/>
+          </div>
+          <div class="col-md-6">
+            <label for="edit-nome">Nome do Fornecedor</label>
+            <input id="edit-nome" class="form-control form-control-sm" placeholder="Nome do fornecedor" required/>
+            <div id="edit-nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="edit-cnpj">CNPJ/CPF</label>
+            <input id="edit-cnpj" class="form-control form-control-sm" placeholder="CNPJ/CPF" required/>
+            <div id="edit-cnpj-error" class="error-message">CNPJ/CPF inválido</div>
+          </div>
+          <div class="col-md-6">
+            <label for="edit-email">E-mail</label>
+            <input id="edit-email" class="form-control form-control-sm" placeholder="E-mail" type="email"/>
+            <div id="edit-email-error" class="error-message">E-mail inválido</div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label for="edit-cep">CEP</label>
+            <input id="edit-cep" class="form-control form-control-sm" placeholder="CEP"/>
+          </div>
+          <div class="col-md-6">
+            <label for="edit-telefone">Telefone</label>
+            <input id="edit-telefone" class="form-control form-control-sm" placeholder="Telefone" required/>
+            <div id="edit-telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label for="edit-endereco">Endereço</label>
+          <input id="edit-endereco" class="form-control form-control-sm" placeholder="Endereço"/>
+        </div>
+        <div class="mb-3">
+          <label for="edit-produtos">Produtos Fornecidos</label>
+          <select id="edit-produtos" class="form-select form-select-sm">
+            <option value="">Selecione os produtos</option>
+            <option value="1">Frutas</option>
+            <option value="2">Verduras</option>
+            <option value="3">Legumes</option>
+          </select>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="submit" class="salvar">Salvar</button>
+          <button type="button" class="cancelar" id="btn-cancelar-editar">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Visualizar Fornecedor -->
+  <div id="modal-visualizar" class="modal-overlay">
+    <div class="modal-content">
+      <center><h3>Detalhes do Fornecedor</h3></center>
+      
+      <div class="visualizar-fornecedor">
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Código</div>
+            <div class="info-value" id="view-codigo"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Nome</div>
+            <div class="info-value" id="view-nome"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">CNPJ/CPF</div>
+            <div class="info-value" id="view-cnpj"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">E-mail</div>
+            <div class="info-value" id="view-email"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">CEP</div>
+            <div class="info-value" id="view-cep"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Telefone</div>
+            <div class="info-value" id="view-telefone"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Endereço</div>
+            <div class="info-value" id="view-endereco"></div>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="info-label">Produtos</div>
+            <div class="info-value" id="view-produtos"></div>
+          </div>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="button" class="cancelar" id="btn-voltar-visualizar">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação de Exclusão (Bootstrap) -->
   <div class="modal fade" id="modal-excluir" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -358,472 +290,20 @@
     </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Carregar Menu -->
   <script>
-    // Variáveis globais
-    let fornecedores = [];
-    let fornecedorParaExcluir = null;
-    const modalExcluir = new bootstrap.Modal(document.getElementById('modal-excluir'));
-    let proximoCodigo = 1; // Variável para gerar códigos sequenciais
-    
-    // DOM Elements
-    const elements = {
-      panels: {
-        lista: document.getElementById('lista-fornecedores'),
-        adicionar: document.getElementById('adicionar-fornecedor'),
-        editar: document.getElementById('editar-fornecedor'),
-        visualizar: document.getElementById('visualizar-fornecedor')
-      },
-      tabelaFornecedores: document.getElementById('tabela-fornecedores'),
-      pesquisarFornecedor: document.getElementById('pesquisar-fornecedor'),
-      nomeFornecedorExcluir: document.getElementById('nome-fornecedor-excluir')
-    };
-    
-    // Inicialização
-    document.addEventListener('DOMContentLoaded', () => {
-      // Event Listeners
-      document.getElementById('btn-adicionar').addEventListener('click', mostrarPainelAdicionar);
-      document.getElementById('btn-cancelar-adicionar').addEventListener('click', mostrarPainelLista);
-      document.getElementById('btn-cancelar-editar').addEventListener('click', mostrarPainelLista);
-      document.getElementById('btn-voltar-visualizar').addEventListener('click', mostrarPainelLista);
-      document.getElementById('btn-cancelar-exclusao').addEventListener('click', () => modalExcluir.hide());
-      document.getElementById('btn-confirmar-exclusao').addEventListener('click', confirmarExclusao);
-      elements.pesquisarFornecedor.addEventListener('input', pesquisarFornecedores);
-      
-      // Formulários
-      document.getElementById('form-adicionar').addEventListener('submit', salvarFornecedor);
-      document.getElementById('form-editar').addEventListener('submit', atualizarFornecedor);
-      
-      // Máscaras e validações
-      aplicarMascaras();
-      
-      // Renderizar tabela
-      renderizarTabela();
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch('../components/menu.html') 
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('menu-container').innerHTML = html;
+        })
+        .catch(err => console.error("Erro ao carregar menu:", err));
     });
-    
-    // Funções de navegação
-    function mostrarPainel(panelId) {
-      Object.values(elements.panels).forEach(panel => panel.classList.remove('active'));
-      elements.panels[panelId].classList.add('active');
-    }
-    
-    function mostrarPainelLista() {
-      mostrarPainel('lista');
-    }
-    
-    function mostrarPainelAdicionar() {
-      document.getElementById('form-adicionar').reset();
-      // Gerar código sequencial para novo fornecedor
-      document.getElementById('codigo').value = proximoCodigo.toString().padStart(3, '0');
-      mostrarPainel('adicionar');
-    }
-    
-    function mostrarPainelVisualizar(id) {
-      const fornecedor = fornecedores.find(f => f.id === id);
-      if (!fornecedor) return;
-      
-      // Preencher os dados do fornecedor
-      document.getElementById('view-codigo').textContent = fornecedor.codigo || 'Não informado';
-      document.getElementById('view-nome').textContent = fornecedor.nome || 'Não informado';
-      document.getElementById('view-cnpj').textContent = fornecedor.cnpj || 'Não informado';
-      document.getElementById('view-email').textContent = fornecedor.email || 'Não informado';
-      document.getElementById('view-cep').textContent = fornecedor.cep || 'Não informado';
-      document.getElementById('view-telefone').textContent = fornecedor.telefone || 'Não informado';
-      document.getElementById('view-endereco').textContent = fornecedor.endereco || 'Não informado';
-      
-      // Traduzir o valor dos produtos
-      const produtos = {
-        '1': 'Frutas',
-        '2': 'Verduras',
-        '3': 'Legumes'
-      };
-      document.getElementById('view-produtos').textContent = fornecedor.produtos ? produtos[fornecedor.produtos] : 'Não informado';
-      
-      mostrarPainel('visualizar');
-    }
-    
-    // Funções de renderização
-    function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
-      elements.tabelaFornecedores.innerHTML = '';
-      
-      if (fornecedoresParaRenderizar.length === 0) {
-        elements.tabelaFornecedores.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center py-3 text-muted">
-              Nenhum fornecedor cadastrado
-            </td>
-          </tr>
-        `;
-        return;
-      }
-      
-      fornecedoresParaRenderizar.forEach(fornecedor => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${fornecedor.codigo || ''}</td>
-          <td>${fornecedor.cnpj || ''}</td>
-          <td>${fornecedor.nome || ''}</td>
-          <td>${fornecedor.telefone || ''}</td>
-          <td class="text-center">
-            <i class="fas fa-search text-muted cursor-pointer btn-visualizar" data-id="${fornecedor.id}"></i>
-          </td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary btn-editar me-1" data-id="${fornecedor.id}">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger btn-excluir" data-id="${fornecedor.id}" data-nome="${fornecedor.nome}">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </td>
-        `;
-        elements.tabelaFornecedores.appendChild(tr);
-      });
-      
-      // Adicionar event listeners aos botões
-      document.querySelectorAll('.btn-editar').forEach(btn => {
-        btn.addEventListener('click', () => editarFornecedor(parseInt(btn.dataset.id)));
-      });
-      
-      document.querySelectorAll('.btn-excluir').forEach(btn => {
-        btn.addEventListener('click', () => confirmarExclusaoFornecedor(
-          parseInt(btn.dataset.id), 
-          btn.dataset.nome
-        ));
-      });
-      
-      document.querySelectorAll('.btn-visualizar').forEach(btn => {
-        btn.addEventListener('click', () => mostrarPainelVisualizar(parseInt(btn.dataset.id)));
-      });
-    }
-    
-    // Funções CRUD
-    function editarFornecedor(id) {
-      const fornecedor = fornecedores.find(f => f.id === id);
-      if (!fornecedor) return;
-      
-      document.getElementById('edit-id').value = fornecedor.id;
-      document.getElementById('edit-codigo').value = fornecedor.codigo || '';
-      document.getElementById('edit-nome').value = fornecedor.nome || '';
-      document.getElementById('edit-cnpj').value = fornecedor.cnpj || '';
-      document.getElementById('edit-email').value = fornecedor.email || '';
-      document.getElementById('edit-cep').value = fornecedor.cep || '';
-      document.getElementById('edit-telefone').value = fornecedor.telefone || '';
-      document.getElementById('edit-endereco').value = fornecedor.endereco || '';
-      document.getElementById('edit-produtos').value = fornecedor.produtos || '';
-      
-      mostrarPainel('editar');
-    }
-    
-    function confirmarExclusaoFornecedor(id, nome) {
-      fornecedorParaExcluir = id;
-      elements.nomeFornecedorExcluir.textContent = nome;
-      modalExcluir.show();
-    }
-    
-    function confirmarExclusao() {
-      if (fornecedorParaExcluir) {
-        fornecedores = fornecedores.filter(f => f.id !== fornecedorParaExcluir);
-        renderizarTabela();
-        fornecedorParaExcluir = null;
-        modalExcluir.hide();
-      }
-    }
-    
-    function salvarFornecedor(e) {
-      e.preventDefault();
-      
-      if (!validarFormulario('form-adicionar')) return;
-      
-      const novoFornecedor = {
-        id: fornecedores.length > 0 ? Math.max(...fornecedores.map(f => f.id)) + 1 : 1,
-        codigo: document.getElementById('codigo').value,
-        nome: document.getElementById('nome').value,
-        cnpj: document.getElementById('cnpj').value,
-        email: document.getElementById('email').value,
-        cep: document.getElementById('cep').value,
-        telefone: document.getElementById('telefone').value,
-        endereco: document.getElementById('endereco').value,
-        produtos: document.getElementById('produtos').value
-      };
-      
-      fornecedores.push(novoFornecedor);
-      proximoCodigo++; // Incrementa o código para o próximo fornecedor
-      renderizarTabela();
-      mostrarPainelLista();
-    }
-    
-    function atualizarFornecedor(e) {
-      e.preventDefault();
-      
-      if (!validarFormulario('form-editar')) return;
-      
-      const id = parseInt(document.getElementById('edit-id').value);
-      const index = fornecedores.findIndex(f => f.id === id);
-      
-      if (index !== -1) {
-        fornecedores[index] = {
-          id: id,
-          codigo: document.getElementById('edit-codigo').value, // Mantém o código original
-          nome: document.getElementById('edit-nome').value,
-          cnpj: document.getElementById('edit-cnpj').value,
-          email: document.getElementById('edit-email').value,
-          cep: document.getElementById('edit-cep').value,
-          telefone: document.getElementById('edit-telefone').value,
-          endereco: document.getElementById('edit-endereco').value,
-          produtos: document.getElementById('edit-produtos').value
-        };
-        
-        renderizarTabela();
-        mostrarPainelLista();
-      }
-    }
-    
-    // Funções auxiliares
-    function pesquisarFornecedores() {
-      const termo = elements.pesquisarFornecedor.value.toLowerCase();
-      
-      if (!termo) {
-        renderizarTabela();
-        return;
-      }
-      
-      const resultados = fornecedores.filter(fornecedor => 
-        (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termo)) || 
-        (fornecedor.cnpj && fornecedor.cnpj.includes(termo)) ||
-        (fornecedor.codigo && fornecedor.codigo.includes(termo))
-      );
-      
-      renderizarTabela(resultados);
-    }
-    
-    function validarFormulario(formId) {
-      let valido = true;
-      const form = document.getElementById(formId);
-      
-      // Validar campos obrigatórios
-      form.querySelectorAll('[required]').forEach(campo => {
-        const errorElement = document.getElementById(`${campo.id}-error`);
-        
-        if (!campo.value.trim()) {
-          campo.classList.add('is-invalid');
-          if (errorElement) errorElement.style.display = 'block';
-          valido = false;
-        } else {
-          campo.classList.remove('is-invalid');
-          if (errorElement) errorElement.style.display = 'none';
-        }
-      });
-      
-      // Validações específicas
-      if (formId === 'form-adicionar' || formId === 'form-editar') {
-        // Validar CNPJ/CPF
-        const cnpjField = form.querySelector('#cnpj, #edit-cnpj');
-        if (cnpjField && cnpjField.value.trim()) {
-          const cnpjError = document.getElementById(`${cnpjField.id}-error`);
-          if (!validarCnpjCpf(cnpjField.value)) {
-            cnpjField.classList.add('is-invalid');
-            if (cnpjError) {
-              cnpjError.textContent = 'CNPJ/CPF inválido';
-              cnpjError.style.display = 'block';
-            }
-            valido = false;
-          }
-        }
-        
-        // Validar e-mail
-        const emailField = form.querySelector('#email, #edit-email');
-        if (emailField && emailField.value.trim()) {
-          const emailError = document.getElementById(`${emailField.id}-error`);
-          if (!validarEmail(emailField.value)) {
-            emailField.classList.add('is-invalid');
-            if (emailError) emailError.style.display = 'block';
-            valido = false;
-          }
-        }
-        
-        // Validar nome (apenas letras e espaços)
-        const nomeField = form.querySelector('#nome, #edit-nome');
-        if (nomeField && nomeField.value.trim()) {
-          const nomeError = document.getElementById(`${nomeField.id}-error`);
-          if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nomeField.value)) {
-            nomeField.classList.add('is-invalid');
-            if (nomeError) {
-              nomeError.textContent = 'Nome deve conter apenas letras e espaços';
-              nomeError.style.display = 'block';
-            }
-            valido = false;
-          }
-        }
-        
-        // Validar telefone
-        const telefoneField = form.querySelector('#telefone, #edit-telefone');
-        if (telefoneField && telefoneField.value.trim()) {
-          const telefoneError = document.getElementById(`${telefoneField.id}-error`);
-          if (!validarTelefone(telefoneField.value)) {
-            telefoneField.classList.add('is-invalid');
-            if (telefoneError) {
-              telefoneError.textContent = 'Formato inválido. Use (DDD) 99999-9999 ou (DDD) 9999-9999';
-              telefoneError.style.display = 'block';
-            }
-            valido = false;
-          }
-        }
-      }
-      
-      return valido;
-    }
-    
-    function aplicarMascaras() {
-      // Máscara para CNPJ/CPF
-      const cnpjFields = document.querySelectorAll('#cnpj, #edit-cnpj');
-      cnpjFields.forEach(field => {
-        field.addEventListener('input', function(e) {
-          let value = e.target.value.replace(/\D/g, '');
-          
-          if (value.length <= 11) { // CPF
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-          } else { // CNPJ
-            value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-            value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-            value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-            value = value.replace(/(\d{4})(\d)/, '$1-$2');
-          }
-          
-          e.target.value = value;
-        });
-      });
-      
-      // Máscara para CEP
-      const cepFields = document.querySelectorAll('#cep, #edit-cep');
-      cepFields.forEach(field => {
-        field.addEventListener('input', function(e) {
-          let value = e.target.value.replace(/\D/g, '');
-          value = value.replace(/^(\d{5})(\d)/, '$1-$2');
-          e.target.value = value;
-        });
-      });
-      
-      // Máscara para telefone (com DDD e 9º dígito ou sem 9º dígito)
-      const telefoneFields = document.querySelectorAll('#telefone, #edit-telefone');
-      telefoneFields.forEach(field => {
-        field.addEventListener('input', function(e) {
-          let value = e.target.value.replace(/\D/g, '');
-          
-          if (value.length > 10) { // Com DDD e 9º dígito (celular)
-            value = value.replace(/^(\d{2})(\d)/, '($1) $2');
-            value = value.replace(/(\d{5})(\d)/, '$1-$2');
-          } else if (value.length > 6) { // Com DDD (telefone fixo)
-            value = value.replace(/^(\d{2})(\d)/, '($1) $2');
-            value = value.replace(/(\d{4})(\d)/, '$1-$2');
-          }
-          
-          e.target.value = value;
-        });
-      });
-      
-      // Validar apenas letras e espaços no nome
-      const nomeFields = document.querySelectorAll('#nome, #edit-nome');
-      nomeFields.forEach(field => {
-        field.addEventListener('input', function(e) {
-          e.target.value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
-        });
-      });
-    }
-    
-    // Funções de validação
-    function validarCnpjCpf(valor) {
-      const str = valor.replace(/[^\d]+/g, '');
-      
-      if (str.length === 11) {
-        return validarCPF(str);
-      } else if (str.length === 14) {
-        return validarCNPJ(str);
-      }
-      return false;
-    }
-    
-    function validarCPF(cpf) {
-      cpf = cpf.replace(/[^\d]+/g, '');
-      
-      // Elimina CPFs invalidos conhecidos
-      if (cpf.length !== 11 || 
-          /^(\d)\1{10}$/.test(cpf)) {
-        return false;
-      }
-      
-      // Valida 1o digito
-      let add = 0;
-      for (let i = 0; i < 9; i++) {
-        add += parseInt(cpf.charAt(i)) * (10 - i);
-      }
-      let rev = 11 - (add % 11);
-      if (rev === 10 || rev === 11) rev = 0;
-      if (rev !== parseInt(cpf.charAt(9))) return false;
-      
-      // Valida 2o digito
-      add = 0;
-      for (let i = 0; i < 10; i++) {
-        add += parseInt(cpf.charAt(i)) * (11 - i);
-      }
-      rev = 11 - (add % 11);
-      if (rev === 10 || rev === 11) rev = 0;
-      if (rev !== parseInt(cpf.charAt(10))) return false;
-      
-      return true;
-    }
-    
-    function validarCNPJ(cnpj) {
-      cnpj = cnpj.replace(/[^\d]+/g, '');
-      
-      // Elimina CNPJs invalidos conhecidos
-      if (cnpj.length !== 14 || 
-          /^(\d)\1{13}$/.test(cnpj)) {
-        return false;
-      }
-      
-      // Valida DVs
-      let tamanho = cnpj.length - 2;
-      let numeros = cnpj.substring(0, tamanho);
-      const digitos = cnpj.substring(tamanho);
-      let soma = 0;
-      let pos = tamanho - 7;
-      
-      for (let i = tamanho; i >= 1; i--) {
-        soma += numeros.charAt(tamanho - i) * pos--;
-        if (pos < 2) pos = 9;
-      }
-      
-      let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-      if (resultado !== parseInt(digitos.charAt(0))) return false;
-      
-      tamanho = tamanho + 1;
-      numeros = cnpj.substring(0, tamanho);
-      soma = 0;
-      pos = tamanho - 7;
-      
-      for (let i = tamanho; i >= 1; i--) {
-        soma += numeros.charAt(tamanho - i) * pos--;
-        if (pos < 2) pos = 9;
-      }
-      
-      resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-      if (resultado !== parseInt(digitos.charAt(1))) return false;
-      
-      return true;
-    }
-    
-    function validarEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    }
-    
-    function validarTelefone(telefone) {
-      // Valida formatos: (DDD) 99999-9999 ou (DDD) 9999-9999
-      const re = /^\(\d{2}\) \d{4,5}-\d{4}$/;
-      return re.test(telefone);
-    }
   </script>
+  <!-- Script principal -->
+  <script src="../scripts/fornecedores.js"></script>
 </body>
 </html>
