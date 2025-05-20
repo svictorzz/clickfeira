@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+.content {
+    padding: 30px;
+    min-height: 100vh;
+    margin-top: 60px;
+    overflow-y: auto;
+}
+
+.content header h2 {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: left;
+}
+
+.content header .cinza {
+    color: gray;
+    font-weight: normal;
+    font-size: 26px;
+}
+
+/* Estilo para cada seção de relatório */
+#dashboard-fornecedores {
+    background-color: #f8f9fa;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.05);
+    margin-top: 30px;
+}
+
+#dashboard-fornecedores {
+    background-color: #f8f9fa;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+    margin-top: 30px;
+    max-width: 1000px;
+    margin-left: 20px;
+    margin-right: 0;
+  }
+  
+  #dashboard-fornecedores h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  #btn-exportar-excel {
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 128, 0, 0.1);
+    white-space: nowrap;
+  }
+  
+  .grafico-container {
+    max-width: 800px;
+    margin: 20px auto 0 auto;
+  }
+  
+  #grafico-fornecedores {
+    width: 100% !important;
+    max-height: 380px;
+  }
+
+  /* DASHBOARD 2 - Estoque Atual */
+#dashboard-estoque {
+    background-color: #f8f9fa;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+    margin-top: 30px;
+    max-width: 1000px;
+    margin-left: 20px;
+    margin-right: 0;
+  }
+  
+  #dashboard-estoque h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  #btn-exportar-estoque {
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 255, 0.1);
+    white-space: nowrap;
+    background-color: #007bff;
+    border: none;
+    color: white;
+  }
+  
+  #btn-exportar-estoque:hover {
+    background-color: #0056b3;
+  }
+  
+  #grafico-estoque {
+    width: 100% !important;
+    max-height: 380px;
+  }
+  
+  /* Compartilhado entre dashboards */
+  .cabecalho-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .grafico-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  
+  
