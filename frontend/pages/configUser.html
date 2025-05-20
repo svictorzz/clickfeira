@@ -51,6 +51,11 @@
                 <input type="text" class="form-control form-control-lg" id="endereco" name="endereco" placeholder="Rua, nº, Bairro, Cidade" required>
                 <div class="invalid-feedback">Endereço é obrigatório.</div>
             </div>
+
+             <div class="d-flex justify-content-end gap-3">
+            <button type="button" id="submit" class="btn btn-outline-secondary btn-lg">Cancelar</button>
+            <button type="submit" class="btn btn-success btn-lg">Salvar</button>
+        </div>
         </div>
 
         <div class="bg-light p-4 rounded shadow-sm mb-5">
@@ -73,12 +78,45 @@
                 <input type="password" class="form-control form-control-lg" id="confirmar_senha" name="confirmar_senha" placeholder="Confirme a nova senha" required>
                 <div class="invalid-feedback">Confirme sua nova senha.</div>
             </div>
+
+            <div class="d-flex justify-content-end gap-3">
+            <button type="button" id="submit" class="btn btn-outline-secondary btn-lg">Cancelar</button>
+            <button type="submit" class="btn btn-success btn-lg">Confirmar</button>
+        </div>
+        </div>
+
+       <div class="bg-light p-4 rounded shadow-sm mb-5">
+        <h4 class="mb-4 fw-semibold">Excluir Usuário</h4>
+            <div class="mb-3">
+                <p>A funcionalidade de exclusão de conta permite que você remova seu próprio acesso ao sistema ClickFeira de forma definitiva. Essa ação é indicada caso você não deseje mais utilizar a plataforma.</p>
+                <p>Antes de continuar, certifique-se de que não possui pendências ou dados importantes vinculados à sua conta. A exclusão é permanente e irreversível, e todas as suas permissões de acesso serão removidas.</p>
         </div>
 
         <div class="d-flex justify-content-end gap-3">
-            <button type="button" id="submit" class="btn btn-outline-secondary btn-lg">Cancelar</button>
-            <button type="submit" class="btn btn-success btn-lg">Salvar</button>
+            <button type="button" class="btn btn-outline-secondary btn-lg">Cancelar</button>
+            <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#modalExcluirConta">
+            Excluir
+            </button>
         </div>
+
+        <div class="modal fade" id="modalExcluirConta" tabindex="-1" aria-labelledby="modalExcluirLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalExcluirLabel">Deseja realmente excluir sua conta?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                Ao confirmar, sua conta será permanentemente removida do sistema ClickFeira. Esta ação é irreversível.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btn-confirmar-exclusao" class="btn btn-danger">Confirmar exclusão</button>
+            </div>
+            </div>
+        </div>
+        </div>
+
     </form>
 </div>
 
