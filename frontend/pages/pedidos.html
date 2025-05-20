@@ -5,204 +5,218 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pedidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="../styles/pedidos.css">
 </head>
 
 <body>
+    <div id="menu-container"></div>
 
     <main class="main-content">
-        <header class="page-header">
-            <h2>
-                <span class="titulo-verde">Pedidos</span>
-                <span class="titulo-cinza" id="tipoTitulo">/ Fornecedor</span>
-            </h2>
-            <div class="profile-circle"></div>
+        <header>
+            <h2><b>Pedidos</b> <span id="tipo_titulo">/ Fornecedor</span></h2>
         </header>
 
-        <section class="search-bar d-flex align-items-center gap-2 my-3">
-            <div class="search-input flex-grow-1">
-                <i class="bi bi-search"></i>
-                <input type="text" class="form-control" placeholder="Pesquisar">
+        <div class="search-bar">
+            <div class="search-input">
+                <i class="fa fa-search"></i>
+                <input type="text" placeholder="Pesquisar">
             </div>
-            <button class="btn btn-outline-secondary">
-                <i class="bi bi-sliders"></i> Filtros
+            <button class="filter-button">
+                <i class="fa fa-sliders"></i> Filtros
             </button>
-            <button class="btn btn-success" id="btnAbrirModal">
-                Adicionar <i class="bi bi-plus-lg"></i>
+            <button class="add-button" id="btnAbrirModal">
+                <i class="fa fa-plus"></i> Adicionar
             </button>
-        </section>
+        </div>
 
-        <!-- Botões de tipo de pedido -->
-        <div class="d-flex justify-content-center my-3">
-            <button class="btn me-2 btn-ativo-verde" id="btnEntradas" onclick="mostrarEntradas()">Entradas</button>
-            <button class="btn btn-inativo-vermelho" id="btnSaidas" onclick="mostrarSaidas()">Saídas</button>
+        <div class="botoes-pedido">
+            <button class="btn-ativo-verde" id="button-entradas" onclick="mostrarEntradas()">Entradas</button>
+            <button class="btn-inativo-vermelho" id="button-saidas" onclick="mostrarSaidas()">Saídas</button>
         </div>
 
         <!-- Tabela de Entradas -->
-        <table class="table custom-table text-center" id="tabelaEntradas">
+        <table class="custom-table" id="tabela-entradas">
             <thead>
                 <tr>
-                    <th>Fornecedor</th>
-                    <th>Data</th>
-                    <th>Produtos</th>
-                    <th>Total</th>
-                    <th>ID Pedido</th>
-                    <th>Ações</th>
+                    <th class="col-checkbox"><input type="checkbox" id="selecionar-todos"></th>
+                    <th class="col-id">ID Pedido</th>
+                    <th class="col-fornecedor">Fornecedor</th>
+                    <th class="col-data">Data</th>
+                    <th class="col-produtos">Produtos</th>
+                    <th class="col-total">Total</th>
+                    <th class="col-editar">Editar</th>
+                    <th class="col-excluir">Excluir</th>
                 </tr>
             </thead>
-            <tbody>
-
-            </tbody>
+            <tbody id="lista-produtos"></tbody>
         </table>
 
         <!-- Tabela de Saídas -->
-        <table class="table custom-table text-center" id="tabelaSaidas" style="display: none;">
+        <table class="custom-table" id="tabela-saidas" style="display: none;">
             <thead>
                 <tr>
-                    <th>Cliente</th>
-                    <th>Data</th>
-                    <th>Produtos</th>
-                    <th>Total</th>
-                    <th>ID Pedido</th>
-                    <th>Ações</th>
+                    <th class="col-checkbox"><input type="checkbox" id="selecionar-todos"></th>
+                    <th class="col-id">ID Pedido</th>
+                    <th class="col-cliente">Cliente</th>
+                    <th class="col-data">Data</th>
+                    <th class="col-produtos">Produtos</th>
+                    <th class="col-total">Total</th>
+                    <th class="col-editar">Editar</th>
+                    <th class="col-excluir">Excluir</th>
                 </tr>
             </thead>
-            <tbody>
-
-            </tbody>
+            <tbody id="lista-produtos"></tbody>
         </table>
+
+        <div id="controles-paginacao"
+            style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+            <!-- Botões Anterior / Próximo serão inseridos pelo JavaScript -->
+        </div>
     </main>
 
-    <script src="../scripts/modalPedido.js"></script>
-    <script src="../scripts/validateFormsPedido.js"></script>
-
     <!-- Modal Adicionar -->
-    <div class="modal-overlay" id="modalAdicionar" style="display: none;">
+    <div class="modal-overlay" id="modal-pedidos" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header text-center">
-                <h4 class="text-success">Pedido</h4>
-                <span class="text-muted fw-bold">#12345</span>
+            <div class="modal-header">
+                <h4 class="titulo-verde">Pedido</h4>
+                <span class="subtitulo">#12345</span>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
+                <div class="grupo-form">
                     <label for="fornecedorAdicionar">Fornecedor:</label>
-                    <select id="fornecedorAdicionar" class="form-control" required>
+                    <select id="fornecedorAdicionar" class="campo-form" required>
                         <option selected disabled>Selecione...</option>
                         <option>Frutas Silva</option>
                         <option>Jessy Store</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="produtoAdicionar">Produto:</label>
-                    <select id="produtoAdicionar" class="form-control" required>
-                        <option selected disabled>Selecione um produto...</option>
-                        <option>Maçã Fuji</option>
-                        <option>Banana Prata</option>
-                    </select>
-                </div>
-                <div class="mb-3 d-flex gap-2">
-                    <div class="flex-fill">
-                        <label for="quantidadeAdicionar">Quantidade</label>
-                        <input type="number" id="quantidadeAdicionar" class="form-control" min="1" required>
+                <div class="item-pedido">
+                    <div class="grupo-form">
+                        <label for="produtoAdicionar">Produto:</label>
+                        <select id="produtoAdicionar" class="campo-form" required>
+                            <option selected disabled>Selecione um produto...</option>
+                            <option>Maçã Fuji</option>
+                            <option>Banana Prata</option>
+                        </select>
                     </div>
-                    <div class="flex-fill">
-                        <label for="subtotalAdicionar">Subtotal</label>
-                        <input type="text" id="subtotalAdicionar" class="form-control" readonly disabled required>
+                    <div class="grupo-form-duplo">
+                        <div>
+                            <label for="quantidadeAdicionar">Quantidade</label>
+                            <input type="number" id="quantidadeAdicionar" class="campo-form" min="1" required>
+                        </div>
+                        <div>
+                            <label for="subtotalAdicionar">Subtotal</label>
+                            <input type="text" id="subtotalAdicionar" class="campo-form" readonly disabled required>
+                        </div>
                     </div>
                 </div>
-                <div class="text-end mt-3">
-                    <span class="text-success fw-bold">Total:</span>
-                    <span class="fw-bold" id="totalAdicionar"></span>
+                <div class="resumo-total">
+                    <span class="titulo-verde">Total:</span>
+                    <span id="totalAdicionar"></span>
                 </div>
             </div>
-            <div class="modal-footer d-flex justify-content-center gap-2 mt-3">
-                <button class="btn btn-secondary" id="cancelarModal">Cancelar</button>
-                <button class="btn btn-success" id="btnFecharPedido">Fechar pedido</button>
+            <div class="modal-footer">
+                <button class="botao-secundario" id="cancelarModal">Cancelar</button>
+                <button class="botao-principal" id="btnFecharPedido">Fechar pedido</button>
             </div>
         </div>
     </div>
 
     <!-- Modal Editar -->
-    <div class="modal-overlay" id="modalEditar" style="display: none;">
+    <div class="modal-overlay" id="modal-visualizar" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header text-center">
-                <h4 class="text-success">Pedido</h4>
-                <span class="text-muted fw-bold">#12345</span>
+            <div class="modal-header">
+                <h4 class="titulo-verde">Pedido</h4>
+                <span class="subtitulo">#12345</span>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
+                <div class="grupo-form">
                     <label for="fornecedorEditar">Fornecedor:</label>
-                    <select id="fornecedorEditar" class="form-control" required>
+                    <select id="fornecedorEditar" class="campo-form" required>
                         <option selected disabled>Selecione...</option>
                         <option>Frutas Silva</option>
                         <option>Jessy Store</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="grupo-form">
                     <label for="produtoEditar">Produto:</label>
-                    <select id="produtoEditar" class="form-control" required>
+                    <select id="produtoEditar" class="campo-form" required>
                         <option selected disabled>Selecione um produto...</option>
                         <option>Maçã Fuji</option>
                         <option>Banana Prata</option>
                     </select>
                 </div>
-                <div class="mb-3 d-flex gap-2">
-                    <div class="flex-fill">
+                <div class="grupo-form-duplo">
+                    <div>
                         <label for="quantidadeEditar">Quantidade</label>
-                        <input type="number" id="quantidadeEditar" class="form-control" min="1" required>
+                        <input type="number" id="quantidadeEditar" class="campo-form" min="1" required>
                     </div>
-                    <div class="flex-fill">
+                    <div>
                         <label for="subtotalEditar">Subtotal</label>
-                        <input type="text" id="subtotalEditar" class="form-control" readonly disabled required>
+                        <input type="text" id="subtotalEditar" class="campo-form" readonly disabled required>
                     </div>
                 </div>
-                <div class="text-end mt-3">
-                    <span class="text-success fw-bold">Total:</span>
-                    <span class="fw-bold" id="totalEditar"></span>
+                <div class="resumo-total">
+                    <span class="titulo-verde">Total:</span>
+                    <span id="totalEditar"></span>
                 </div>
             </div>
-            <div class="modal-footer d-flex justify-content-center gap-2 mt-3">
-                <button class="btn btn-secondary" id="cancelarModalEditar">Cancelar</button>
-                <button class="btn btn-success" id="btnSalvarEdicao">Salvar alterações</button>
+            <div class="modal-footer">
+                <button class="botao-secundario" id="cancelarModalEditar">Cancelar</button>
+                <button class="botao-principal" id="btnSalvarEdicao">Salvar alterações</button>
             </div>
         </div>
     </div>
 
+    <script src="../scripts/pedidos.js"></script>
+    <script src="../scripts/validateFormsPedido.js"></script>
+    <script src="../scripts/menu.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch('../components/menu.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('menu-container').innerHTML = html;
+                })
+                .catch(err => console.error("Erro ao carregar menu:", err));
+        });
+
         function mostrarEntradas() {
-            document.getElementById('tabelaEntradas').style.display = 'table';
-            document.getElementById('tabelaSaidas').style.display = 'none';
+            document.getElementById('tabela-entradas').style.display = 'table';
+            document.getElementById('tabela-saidas').style.display = 'none';
 
-            const btnEntradas = document.getElementById('btnEntradas');
-            const btnSaidas = document.getElementById('btnSaidas');
+            const btnEntradas = document.getElementById('button-entradas');
+            const btnSaidas = document.getElementById('button-saidas');
 
-            btnEntradas.classList.remove('btn-inativo-verde');
             btnEntradas.classList.add('btn-ativo-verde');
+            btnEntradas.classList.remove('btn-inativo-verde');
 
-            btnSaidas.classList.remove('btn-ativo-vermelho');
             btnSaidas.classList.add('btn-inativo-vermelho');
+            btnSaidas.classList.remove('btn-ativo-vermelho');
 
-            // Atualiza header
-            document.getElementById('tipoTitulo').textContent = '/ Fornecedor';
+            document.getElementById('tipo_titulo').textContent = '/ Fornecedor';
         }
 
         function mostrarSaidas() {
-            document.getElementById('tabelaEntradas').style.display = 'none';
-            document.getElementById('tabelaSaidas').style.display = 'table';
+            document.getElementById('tabela-entradas').style.display = 'none';
+            document.getElementById('tabela-saidas').style.display = 'table';
 
-            const btnEntradas = document.getElementById('btnEntradas');
-            const btnSaidas = document.getElementById('btnSaidas');
+            const btnEntradas = document.getElementById('button-entradas');
+            const btnSaidas = document.getElementById('button-saidas');
 
-            btnEntradas.classList.remove('btn-ativo-verde');
             btnEntradas.classList.add('btn-inativo-verde');
+            btnEntradas.classList.remove('btn-ativo-verde');
 
-            btnSaidas.classList.remove('btn-inativo-vermelho');
             btnSaidas.classList.add('btn-ativo-vermelho');
+            btnSaidas.classList.remove('btn-inativo-vermelho');
 
-            // Atualiza header
-            document.getElementById('tipoTitulo').textContent = '/ Cliente';
+            document.getElementById('tipo_titulo').textContent = '/ Cliente';
         }
     </script>
 

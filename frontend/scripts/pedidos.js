@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const modalAdicionar = document.getElementById('modalAdicionar');
-    const modalEditar = document.getElementById('modalEditar');
+    const modalAdicionar = document.getElementById('modal-pedidos');
+    const modalEditar = document.getElementById('modal-visualizar');
 
     const btnAbrirModalAdicionar = document.getElementById('btnAbrirModal');
     const btnCancelarAdicionar = document.getElementById('cancelarModal');
@@ -27,13 +27,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnFecharPedido.addEventListener('click', function () {
-        if (validarFormulario('#modalAdicionar')) {  
+        if (validarFormulario('#modal-pedidos')) {  
             modalAdicionar.style.display = 'none';
         }
     });
 
     btnSalvarAlteracoes.addEventListener('click', function () {
-        if (validarFormulario('#modalEditar')) {
+        if (validarFormulario('#modal-visualizar')) {
             modalEditar.style.display = 'none';
         }
     });
