@@ -88,23 +88,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Credenciais inválidas.");
-                }
-                window.location.href = "inicio.html";
-            } catch (error) {
-                console.error("Erro de login:", error);
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Credenciais inválidas.");
+}
 
-                if (errorMessage) {
-                    errorMessage.textContent = error.message;
-                    errorMessage.style.display = "block";
-                } else {
-                    alert(error.message);
+    const data = await response.json();
+
+    // Armazena o token e o ID do usuário no localStorage 
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("idComerciante", data.idComerciante); // Id do comerciante
+
+    // Redireciona para a página inicial
+    window.location.href = "inicio.html";
+                } catch (error) {
+                    console.error("Erro de login:", error);
+
+                    if (errorMessage) {
+                        errorMessage.textContent = error.message;
+                        errorMessage.style.display = "block";
+                    } else {
+                        alert(error.message);
+                    }
                 }
-            }
-        });
-    }
-});
+            });
+        }
+    });
 
 async function registerUser(userData) {
     console.log("📤 Enviando dados para o backend:", userData);

@@ -28,9 +28,14 @@ def login():
     if not email or not senha:
         return jsonify({"message": "Email e senha são obrigatórios."}), 400
 
-    if login_user(email, senha):
+    user = login_user(email, senha)
+    if user:
         token = create_access_token(identity=email)
-        return jsonify({"message": "Login realizado com sucesso!", "token": token}), 200
+        return jsonify({
+            "message": "Login realizado com sucesso!",
+            "token": token,
+            "idComerciante": user.get("idComerciante")  # retornando id do comerciante
+        }), 200
 
     return jsonify({"message": "Credenciais inválidas."}), 401
 
