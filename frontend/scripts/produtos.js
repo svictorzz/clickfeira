@@ -23,7 +23,6 @@ function carregarProdutosDoLocalStorage() {
 
 // -- FORMATAR DATA --
 function formatarData(dataString) {
-  // agora usamos parseDateYMD
   const data = parseDateYMD(dataString);
   const dia = String(data.getDate()).padStart(2, '0');
   const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -36,6 +35,33 @@ function parseDateYMD(ymd) {
   const [year, month, day] = ymd.split('-').map(n => parseInt(n, 10));
   return new Date(year, month - 1, day);
 }
+
+//calcular valor do estoque para modal de visualizar
+function calcularValorTotalEstoque(produto) {
+  const preco = Number(produto.preco);
+  const qtd = Number(produto.qtdAtual.split(' ')[0]);
+  const unidade = produto.precoPor;
+
+  let fator = 1;
+
+  switch (unidade) {
+    case '100g':
+      fator = qtd / 100;
+      break;
+    case 'kg':
+    case 'litro':
+      fator = qtd / 1000;
+      break;
+    case 'unidade':
+    case 'pacote':
+    default:
+      fator = qtd;
+  }
+
+  const total = preco * fator;
+  return `R$ ${total.toFixed(2)}`;
+}
+
 
 // -- GERAR CÓDIGO ALEATÓRIO --
 function gerarCodigoProduto() {
@@ -57,7 +83,7 @@ function gerarCodigoProduto() {
 //Para saber de itens vencidos
 function calcularDiasParaVencer(validadeStr) {
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);          // zera as horas
+  hoje.setHours(0, 0, 0, 0);          // zera as horas
   const validade = parseDateYMD(validadeStr);
   const diff = validade.getTime() - hoje.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -88,7 +114,7 @@ function adicionarLinhaTabela(produto) {
   row.setAttribute('data-codigo', produto.codigo);
 
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);
+  hoje.setHours(0, 0, 0, 0);
   const validadeProduto = parseDateYMD(produto.validade);
   const diasParaVencer = Math.floor((validadeProduto - hoje) / (1000 * 60 * 60 * 24));
 
@@ -101,7 +127,7 @@ function adicionarLinhaTabela(produto) {
   if (diasParaVencer <= 0) {
     row.classList.add('alerta-vencido');
     alerta = ' ⚠️';
-  } 
+  }
   // Próximo da validade (7 dias)
   else {
     if (diasParaVencer <= 7) {
@@ -255,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.getElementById('unidade-minima').addEventListener('change', function() {
+  document.getElementById('unidade-minima').addEventListener('change', function () {
     // Atualiza apenas a unidade
     document.getElementById('unidade-atual').value = this.value;
   });
@@ -367,13 +393,14 @@ function salvarProduto(imagemBase64) {
     qtdMinima: document.getElementById('qtd-minima').value + ' ' + unidadeMinima,
     qtdAtual: document.getElementById('qtd-atual').value + ' ' + unidadeAtual,
     preco: parseFloat(document.getElementById('preco').value).toFixed(2),
+    precoPor: document.getElementById('preco-por').value,
     imagem: imagemBase64
   };
 
   if (indiceParaEditar !== null) {
     produtos[indiceParaEditar] = { ...produtos[indiceParaEditar], ...produto };
     mostrarMensagem('Produto atualizado com sucesso!', 'success');
-    
+
     // Registrar edição no histórico
     const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
     historico.push({
@@ -435,10 +462,11 @@ document.getElementById('lista-produtos').addEventListener('click', function (e)
     document.getElementById('ver-nome').textContent = produto.nome;
     document.getElementById('ver-categoria').textContent = produto.categoria;
     document.getElementById('ver-validade').textContent = formatarData(produto.validade);
-    document.getElementById('ver-preco').textContent = produto.preco;
+    document.getElementById('ver-preco').textContent = `R$ ${Number(produto.preco).toFixed(2)} por ${produto.precoPor}`;
     document.getElementById('ver-descricao').textContent = produto.descricao;
     document.getElementById('ver-qtd-minima').textContent = produto.qtdMinima;
     document.getElementById('ver-qtd-atual').textContent = produto.qtdAtual;
+    document.getElementById('ver-total-estimado').textContent = calcularValorTotalEstoque(produto);
     document.getElementById('ver-imagem').src = produto.imagem;
     document.getElementById('modal-visualizar').style.display = 'flex';
   }
@@ -504,13 +532,13 @@ document.getElementById('btn-excluir-selecionados').addEventListener('click', ()
 
   if (confirm(`Você deseja excluir ${selecionados.length} produto(s)?`)) {
     const historico = JSON.parse(localStorage.getItem('historicoAcoes')) || [];
-    
+
     for (const codigo of selecionados) {
       const index = produtos.findIndex(prod => prod.codigo === codigo);
       if (index !== -1) {
         const produtoNome = produtos[index].nome;
         produtos.splice(index, 1);
-        
+
         // Registrar cada exclusão
         historico.push({
           tipo: 'Exclusão de produto',
@@ -519,7 +547,7 @@ document.getElementById('btn-excluir-selecionados').addEventListener('click', ()
         });
       }
     }
-    
+
     localStorage.setItem('historicoAcoes', JSON.stringify(historico));
     salvarProdutosNoLocalStorage();
     atualizarTabela();
