@@ -24,104 +24,111 @@
     font-size: 26px;
 }
 
-/* Estilo para cada seção de relatório */
-#dashboard-fornecedores {
-    background-color: #f8f9fa;
-    padding: 25px 30px;
-    border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    margin-top: 30px;
+/* TÍTULO CENTRAL DO PAINEL */
+.painel-completo {
+  text-align: center;
+  margin-top: 40px;
 }
 
-#dashboard-fornecedores {
-    background-color: #f8f9fa;
-    padding: 25px 30px;
-    border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
-    margin-top: 30px;
-    max-width: 1000px;
-    margin-left: 20px;
-    margin-right: 0;
+/* CONTÊINER DOS DASHBOARDS, 3 POR LINHA */
+.painel-relatorios-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 40px;
+  justify-items: center;
+}
+
+/* Ajustar o último elemento (dashboard solitário) para ficar centralizado */
+.painel-relatorios-grid .dashboard-card:nth-child(3n + 4):last-child {
+  grid-column: 2;
+}
+
+/* CARD DE CADA DASHBOARD */
+.dashboard-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 25px 20px;
+  width: 100%;
+  max-width: 460px;
+  text-align: left;
+}
+
+/* TÍTULO DE CADA DASHBOARD */
+.dashboard-card h4 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0;
+}
+
+/* GRÁFICO */
+.dashboard-card canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 300px;
+}
+
+/* BOTÕES DE EXPORTAÇÃO */
+.dashboard-card .btn {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+/* ÍCONES DOS DASHBOARDS */
+.dashboard-card i {
+  opacity: 0.9;
+}
+
+/* RESPONSIVO APRIMORADO */
+@media (max-width: 992px) {
+  .painel-relatorios-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  #dashboard-fornecedores h4 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
+  .painel-relatorios-grid .dashboard-card:nth-child(3n + 4):last-child {
+    grid-column: auto;
   }
-  
-  #btn-exportar-excel {
-    font-size: 14px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0, 128, 0, 0.1);
-    white-space: nowrap;
-  }
-  
-  .grafico-container {
-    max-width: 800px;
-    margin: 20px auto 0 auto;
-  }
-  
-  #grafico-fornecedores {
-    width: 100% !important;
-    max-height: 380px;
+}
+
+@media (max-width: 576px) {
+  .painel-relatorios-grid {
+    grid-template-columns: 1fr;
   }
 
-  /* DASHBOARD 2 - Estoque Atual */
-#dashboard-estoque {
-    background-color: #f8f9fa;
-    padding: 25px 30px;
-    border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
-    margin-top: 30px;
-    max-width: 1000px;
-    margin-left: 20px;
-    margin-right: 0;
+  .dashboard-card {
+    max-width: 100%;
+    padding: 20px;
   }
-  
-  #dashboard-estoque h4 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
+
+
+  .content {
+    padding: 15px;
   }
-  
-  #btn-exportar-estoque {
-    font-size: 14px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0, 0, 255, 0.1);
-    white-space: nowrap;
-    background-color: #007bff;
-    border: none;
-    color: white;
+
+  .content header h2, .content header .cinza {
+    font-size: 22px;
   }
-  
-  #btn-exportar-estoque:hover {
-    background-color: #0056b3;
-  }
-  
-  #grafico-estoque {
-    width: 100% !important;
-    max-height: 380px;
-  }
-  
-  /* Compartilhado entre dashboards */
-  .cabecalho-dashboard {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  
-  .grafico-container {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  
-  
+}
+
+/* CORES BOTÕES EXTRAS */
+#btn-exportar-categorias {
+  background-color: #f0ad4e;
+  border: none;
+}
+
+#btn-exportar-categorias:hover {
+  background-color: #ec971f;
+}
+
+#btn-exportar-critico {
+  background-color: #dc3545;
+  border: none;
+}
+
+#btn-exportar-critico:hover {
+  background-color: #b52a37;
+}
