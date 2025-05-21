@@ -8,7 +8,7 @@ def create_app():
     app.config["JWT_SECRET_KEY"] = "b379f4bd6ddcfe8b0a1b789f93c4563bb08bbf9e55a1764fa14d6efde6c1d308"
     jwt = JWTManager(app)
 
-    CORS(app, resources={r"/*": {"origins": "*"}}) 
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     from app.routes.auth_routes import auth_bp
     from app.routes.product_routes import product_bp

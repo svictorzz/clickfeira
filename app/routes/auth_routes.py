@@ -1,11 +1,13 @@
 from flask import Blueprint, request, session, jsonify
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import make_response
 from functools import wraps
 from app.services.auth_service import (
     login_user,
     register_user,
     recover_password,
+    change_password,
     list_all_comerciantes
 )
 
@@ -34,7 +36,7 @@ def login():
         return jsonify({
             "message": "Login realizado com sucesso!",
             "token": token,
-            "idComerciante": user.get("idComerciante")  # retornando id do comerciante
+            "idComerciante": user.get("idComerciante") 
         }), 200
 
     return jsonify({"message": "Credenciais inválidas."}), 401
@@ -82,3 +84,24 @@ def recover_password_route():
             "new_password": new_password
         }), 200
     return jsonify({"message": "Email não encontrado."}), 404
+
+@auth_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password_route():
+    email = get_jwt_identity()
+    data = request.get_json()
+
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+    confirm_new_password = data.get("confirm_new_password")
+
+    if not old_password or not new_password or not confirm_new_password:
+        return jsonify({"message": "Senha antiga, nova senha e confirmação são obrigatórias."}), 400
+
+    if new_password != confirm_new_password:
+        return jsonify({"message": "As senhas não coincidem."}), 400
+
+    if change_password(email, old_password, new_password):
+        return jsonify({"message": "Senha alterada com sucesso!"}), 200
+
+    return jsonify({"message": "Senha incorreta ou usuário não encontrado."}), 400

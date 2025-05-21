@@ -74,8 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (formLogin) {
         formLogin.addEventListener("submit", async function (e) {
             e.preventDefault();
-            console.log("📤 Tentando login...");
-
+            
             const email = document.getElementById("loginEmail").value.trim();
             const senha = document.getElementById("loginSenha").value.trim();
             const errorMessage = document.getElementById("erroLogin");
@@ -115,8 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 async function registerUser(userData) {
-    console.log("📤 Enviando dados para o backend:", userData);
-
+    
     try {
         const response = await fetch(`${API_URL}/register`, {
             method: "POST",

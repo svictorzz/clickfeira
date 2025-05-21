@@ -36,6 +36,9 @@ async function registerUser(userData) {
             console.error("Erro no cadastro:", data.message);
             return { message: data.message || "Erro ao cadastrar usuário." };
         }
+        
+        localStorage.setItem("token", data.token);  
+        localStorage.setItem("idComerciante", data.idComerciante);  
 
         return data;
     } catch (error) {

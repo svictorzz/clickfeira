@@ -46,3 +46,59 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Erro ao buscar dados do comerciante:", error);
     });
 });
+
+async function trocarSenha() {
+    const oldPassword = document.getElementById("senha_atual").value;
+    const newPassword = document.getElementById("nova_senha").value;
+    const confirmNewPassword = document.getElementById("confirmar_senha").value;
+    const token = localStorage.getItem("token");
+
+    if (!oldPassword || !newPassword) {
+        alert("Por favor, preencha todos os campos.");
+        return;
+    }
+
+    if (!token) {
+        alert("Usuário não autenticado! Faça login novamente.");
+        return;
+    }
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/change-password", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword,
+                confirm_new_password: confirmNewPassword
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert("Senha alterada com sucesso!");
+            document.getElementById("senha_atual").value = newPassword;
+        } else {
+            alert(`Erro: ${data.message}`);
+        }
+    } catch (error) {
+        console.error("Erro ao trocar senha:", error);
+        alert("Erro ao trocar a senha. Tente novamente.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btnTrocarSenha = document.getElementById("btn-mudar-senha");
+
+    if (btnTrocarSenha) {
+        btnTrocarSenha.addEventListener("click", function (event) {
+            event.preventDefault();
+            trocarSenha();
+        });
+    } else {
+        console.warn("Botão de troca de senha não encontrado.");
+    }
+});
