@@ -24,7 +24,7 @@
   <div id="menu-container"></div>
 
   <main class="content">
-    
+
     <!-- Cabeçalho da página -->
     <header>
       <h2><b>Produtos</b> <span class="cinza">/ Estoque</span></h2>
@@ -44,7 +44,8 @@
     </div>
 
     <!-- Menu de Filtros (escondido inicialmente) -->
-    <div id="filtros-container" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
+    <div id="filtros-container"
+      style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
       <!-- Filtro de ordenação -->
       <div>
         <label><strong>Ordenar por:</strong></label>
@@ -65,6 +66,7 @@
           <option value="">Todas</option>
           <option value="frutas">Frutas</option>
           <option value="legumes">Legumes</option>
+          <option value="vegetais">Vegetais/option>
           <option value="verduras">Verduras</option>
           <option value="temperos">Temperos</option>
           <option value="laticínios">Laticínios</option>
@@ -72,13 +74,15 @@
           <option value="salgados">Salgados</option>
           <option value="carnes">Carnes</option>
           <option value="grãos">Grãos</option>
+          <option value="bebidas">Bebidas</option>
           <option value="outros">Outros</option>
         </select>
       </div>
     </div>
 
     <!-- Legenda dos alertas e botão excluir selecionados -->
-    <div id="topo-tabela" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <div id="topo-tabela"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
       <div id="legenda-alertas" style="margin-bottom: 25px;">
         <span
           style="background: #fff9e6; border-left: 4px solid #ffd700; padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
@@ -119,7 +123,8 @@
     </table>
 
     <!-- Controles de Paginação -->
-    <div id="controles-paginacao" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+    <div id="controles-paginacao"
+      style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
       <!-- Botões Anterior / Próximo serão inseridos pelo JavaScript -->
     </div>
 
@@ -127,7 +132,9 @@
     <div id="modal-produto" class="modal-overlay">
       <div class="modal-content">
         <form id="form-produto">
-          <center><h3>Adicionar Novo Produto</h3></center>
+          <center>
+            <h3>Adicionar Novo Produto</h3>
+          </center>
 
           <div class="form-grid">
             <!-- Coluna esquerda do formulário -->
@@ -143,6 +150,7 @@
                 <option value="">Selecione...</option>
                 <option value="frutas">Frutas</option>
                 <option value="legumes">Legumes</option>
+                <option value="vegetais">Vegetais</option>
                 <option value="verduras">Verduras</option>
                 <option value="temperos">Temperos</option>
                 <option value="laticínios">Laticínios</option>
@@ -150,6 +158,7 @@
                 <option value="salgados">Salgados</option>
                 <option value="carnes">Carnes</option>
                 <option value="grãos">Grãos</option>
+                <option value="bebidas">Bebidas</option>
                 <option value="outros">Outros</option>
               </select>
 
@@ -183,9 +192,19 @@
                 <input type="number" step="0.01" min="0" id="qtd-atual" name="qtd-atual" required>
                 <input type="text" id="unidade-atual" name="unidade-atual" readonly required>
               </div>
-
               <label for="preco">Preço (R$):</label>
-              <input type="number" step="0.01" min="0" id="preco" name="preco" required>
+              <div class="input-group">
+                <input type="number" step="0.01" min="0" id="preco" name="preco" required>
+                <select id="preco-por" name="preco-por" required>
+                  <option value="" disabled selected hidden>por...</option>
+                  <option value="unidade">unidade</option>
+                  <option value="100g">100g</option>
+                  <option value="kg">kg</option>
+                  <option value="litro">litro</option>
+                  <option value="ml">ml</option>
+                  <option value="pacote">pacote</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -201,7 +220,9 @@
     <!-- Modal de Visualização de Produto -->
     <div id="modal-visualizar" class="modal-overlay">
       <div class="modal-content">
-        <center><h3 class="modal-title">Detalhes do Produto</h3></center>
+        <center>
+          <h3 class="modal-title">Detalhes do Produto</h3>
+        </center>
 
         <div class="form-grid">
           <!-- Coluna da imagem -->
@@ -216,7 +237,9 @@
             <p><strong>Nome:</strong> <span id="ver-nome"></span></p>
             <p><strong>Categoria:</strong> <span id="ver-categoria"></span></p>
             <p><strong>Validade:</strong> <span id="ver-validade"></span></p>
-            <p><strong>Preço:</strong> R$ <span id="ver-preco"></span></p>
+            <p><strong>Preço:</strong> <span id="ver-preco"></span></p>
+            <p><strong>Valor total estimado em estoque:</strong> <span id="ver-total-estimado"></span></p>
+
           </div>
 
           <!-- Coluna das descrições -->
@@ -262,8 +285,6 @@
     });
   </script>
 
-  <!-- Scripts principais -->
-  <script src="../scripts/menu.js"></script>
   <script src="../scripts/produtos.js"></script>
 
 </body>
