@@ -16,13 +16,13 @@ def get_new_id() -> int:
         return 1
     return max(ids) + 1 if ids else 1
 
-def login_user(email: str, password: str) -> bool:
+def login_user(email: str, password: str) -> dict | None:
     ref = db.reference("comerciante")
     resultados = ref.order_by_child("email").equal_to(email).get() or {}
     for _, user in resultados.items():
         if user.get("senha") == password:
-            return True
-    return False
+            return user  # <-- Retorna os dados do usuário, com idComerciante
+    return None
 
 def register_user(data: dict) -> bool:
     ref = db.reference("comerciante")

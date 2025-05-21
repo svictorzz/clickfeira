@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// Configuração do Firebase (mesma do seu projeto)
+// Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
   authDomain: "click-feira.firebaseapp.com",
@@ -12,13 +12,20 @@ const firebaseConfig = {
   appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
 };
 
+// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 document.addEventListener("DOMContentLoaded", () => {
-  const comercianteId = "21"; // ID fixo usado para testes
+  const idComerciante = localStorage.getItem("idComerciante");
 
-  const userRef = ref(db, `comerciante/${comercianteId}`);
+  if (!idComerciante) {
+    console.warn("ID do comerciante não encontrado no localStorage.");
+    return;
+  }
+
+  const userRef = ref(db, `comerciante/${idComerciante}`);
+
   get(userRef)
     .then((snapshot) => {
       if (snapshot.exists()) {
@@ -30,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("email").value = data.email || "";
         document.getElementById("telefone").value = data.telefone || data.listaFeiras?.telefone || "";
         document.getElementById("endereco").value = data.endereco || "";
-        document.getElementById("senha_atual").value = data.senha;
+        document.getElementById("senha_atual").value = data.senha || "";
       } else {
         console.warn("Nenhum dado encontrado para o comerciante.");
       }
