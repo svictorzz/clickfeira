@@ -190,7 +190,9 @@ td {
 }
 
 /* Ícones Editar e Excluir */
-.edit-icon, .delete-icon, .search-icon {
+.edit-icon,
+.delete-icon,
+.search-icon {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 8px;
   border-radius: 50%;
@@ -333,6 +335,10 @@ td {
 .input-group {
   display: flex;
   gap: 10px;
+}
+
+#preco-por {
+  flex: 1;
 }
 
 .input-group input {
@@ -490,13 +496,21 @@ td {
   gap: 6px;
   font-size: 14px;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   border-left: 4px solid;
 }
 
-#legenda-alertas span:nth-child(1) { border-color: #ffd700; }
-#legenda-alertas span:nth-child(2) { border-color: #2196f3; }
-#legenda-alertas span:nth-child(3) { border-color: #ff4444; }
+#legenda-alertas span:nth-child(1) {
+  border-color: #ffd700;
+}
+
+#legenda-alertas span:nth-child(2) {
+  border-color: #2196f3;
+}
+
+#legenda-alertas span:nth-child(3) {
+  border-color: #ff4444;
+}
 
 /* --- RESPONSIVIDADE (Tabela Vira Card) --- */
 @media (max-width: 768px) {
