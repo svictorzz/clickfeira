@@ -21,7 +21,7 @@ def login_user(email: str, password: str) -> dict | None:
     results = ref.order_by_child("email").equal_to(email).get() or {}
     for _, user in results.items():
         if user.get("senha") == password:
-            return user  # <-- Retorna os dados do usuário, com idComerciante
+            return user
     return None
 
 def register_user(data: dict) -> bool:
@@ -56,18 +56,18 @@ def change_password(email: str, old_password: str, new_password: str) -> bool:
     ref = db.reference("comerciante")
     resultados = ref.order_by_child("email").equal_to(email).get() or {}
 
-    if not resultados:  # ✅ Confirma se o usuário existe
+    if not resultados:
         return False  
 
-    senha_correta = False  # ✅ Variável para controlar a validação
+    senha_correta = False
 
     for key, user in resultados.items():
-        if user.get("senha") == old_password:  # ✅ Verifica se a senha antiga está correta
+        if user.get("senha") == old_password:
             senha_correta = True
             ref.child(key).update({"senha": new_password})
-            break  # 🔹 Para o loop após encontrar a correspondência correta
+            break 
 
-    return senha_correta  # ✅ Retorna True só se a senha antiga estiver correta
+    return senha_correta 
 
 def list_all_comerciantes() -> dict:
     data = db.reference("comerciante").get() or {}

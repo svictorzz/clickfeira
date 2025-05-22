@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.services.config_service import (
     get_user_by_id,
-    update_dados_comerciante,
-    alterar_senha_comerciante
+    update_dados_comerciante
 )
 from app.routes.auth_routes import login_required  
 
@@ -33,18 +32,3 @@ def update_user_route(comerciante_id):
         return jsonify({"message": "Dados atualizados com sucesso."}), 200
     return jsonify({"message": "Erro ao atualizar dados ou usuário não encontrado."}), 404
 
-
-@user_bp.route('/users/<string:comerciante_id>/password', methods=['PUT'])
-@login_required
-def change_password_route(comerciante_id):
-    dados = request.json
-    senha_atual = dados.get("senha_atual")
-    nova_senha = dados.get("nova_senha")
-
-    if not senha_atual or not nova_senha:
-        return jsonify({"message": "Senha atual e nova senha são obrigatórias."}), 400
-
-    sucesso = alterar_senha_comerciante(comerciante_id, senha_atual, nova_senha)
-    if sucesso:
-        return jsonify({"message": "Senha alterada com sucesso."}), 200
-    return jsonify({"message": "Senha atual incorreta ou usuário não encontrado."}), 400

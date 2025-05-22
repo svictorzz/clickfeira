@@ -24,18 +24,3 @@ def update_dados_comerciante(comerciante_id: str, novos_dados: dict) -> bool:
     except Exception as e:
         print(f"Erro ao atualizar dados do comerciante: {e}")
         return False
-
-
-def alterar_senha_comerciante(comerciante_id: str, senha_atual: str, nova_senha: str) -> bool:
-    ref = db.reference(f"comerciante/{comerciante_id}")
-    data = ref.get()
-
-    if not data or data.get("senha") != senha_atual:
-        return False  # Senha incorreta ou usuário não existe
-
-    try:
-        ref.update({"senha": nova_senha})
-        return True
-    except Exception as e:
-        print(f"Erro ao alterar senha do comerciante: {e}")
-        return False
