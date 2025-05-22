@@ -7,7 +7,7 @@ from app.services.product_service import (
     delete_product
 )
 
-product_bp = Blueprint('product', __name__)
+product_bp = Blueprint('product', __name__, url_prefix='/product')
 
 @product_bp.route('/products', methods=['POST'])
 def create_product():

@@ -1,8 +1,8 @@
-const API_URL = "http://127.0.0.1:5000";
+export const API_URL = "http://127.0.0.1:5000";
 
 async function loginUser(email, senha) {
     try {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, senha }),
@@ -24,7 +24,7 @@ async function loginUser(email, senha) {
 
 async function registerUser(userData) {
     try {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),

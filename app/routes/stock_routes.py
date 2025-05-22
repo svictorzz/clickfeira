@@ -8,7 +8,7 @@ from app.services.stock_service import (
 )
 from app.routes.auth_routes import login_required
 
-stock_bp = Blueprint('stock', __name__)
+stock_bp = Blueprint('stock', __name__, url_prefix='/stock')
 
 @stock_bp.route('/stock/entry', methods=['POST'])
 @login_required

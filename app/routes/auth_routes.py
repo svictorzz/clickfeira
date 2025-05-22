@@ -1,17 +1,11 @@
 from flask import Blueprint, request, session, jsonify
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import make_response
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from functools import wraps
 from app.services.auth_service import (
-    login_user,
-    register_user,
-    recover_password,
-    change_password,
-    list_all_comerciantes
+    login_user, register_user, recover_password, change_password
 )
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 def login_required(f):
     @wraps(f)
@@ -56,7 +50,6 @@ def me():
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-
     required = ['nome', 'email', 'senha', 'telefone', 'cpf', 'endereco']
     
     if any(field not in data or not data[field] for field in required):
@@ -65,10 +58,6 @@ def register():
     if register_user(data):
         return jsonify({"message": "Comerciante registrado com sucesso!"}), 201
     return jsonify({"message": "Email já cadastrado."}), 409
-
-@auth_bp.route('/users', methods=['GET'])
-def get_users():
-    return jsonify(list_all_comerciantes()), 200
 
 @auth_bp.route('/recover-password', methods=['POST'])
 def recover_password_route():

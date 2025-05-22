@@ -1,3 +1,5 @@
+import { API_URL } from "./api.js";
+
 document.addEventListener("DOMContentLoaded", function () {
 
     const formCadastro = document.getElementById("formCadastro");
@@ -49,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
             for (const key in campos) {
                 const campo = campos[key];
                 if (!campo.el) {
-                    console.error(`❌ Campo não encontrado: ${key}`);
                     valid = false;
                     continue;
                 }
@@ -80,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const errorMessage = document.getElementById("erroLogin");
 
             try {
-                const response = await fetch(`${API_URL}/login`, {
+                const response = await fetch(`${API_URL}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, senha }),
@@ -93,11 +94,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const data = await response.json();
 
-    // Armazena o token e o ID do usuário no localStorage 
     localStorage.setItem("token", data.token);
-    localStorage.setItem("idComerciante", data.idComerciante); // Id do comerciante
+    localStorage.setItem("idComerciante", data.idComerciante);
 
-    // Redireciona para a página inicial
     window.location.href = "inicio.html";
                 } catch (error) {
                     console.error("Erro de login:", error);
@@ -116,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
 async function registerUser(userData) {
     
     try {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),

@@ -1,3 +1,5 @@
+import { API_URL } from "./api.js";
+
 // --- VARIÁVEIS GLOBAIS ---
 let alertas = [];
 let paginaAtual = 0;

@@ -1,3 +1,5 @@
+import { API_URL } from "./api.js";
+
 document.addEventListener('DOMContentLoaded', function () {
     // Função para calcular subtotal e total automaticamente
     function calcularSubtotalETotal(modalId) {
