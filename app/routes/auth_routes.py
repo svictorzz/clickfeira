@@ -74,6 +74,31 @@ def recover_password_route():
         }), 200
     return jsonify({"message": "Email não encontrado."}), 404
 
+@auth_bp.route('/edit-info', methods=['POST'])
+@jwt_required()
+def edit_info_route():
+    email = get_jwt_identity()
+    data = request.get_json()
+
+    new_email = data.get("new_email")
+    new_address = data.get("new_address")
+    new_phone = data.get("new_phone")
+
+    if not any([new_email, new_address, new_phone]):
+        return jsonify({"message": "Preencha pelo menos um campo para atualizar."}), 400
+
+    success = edit_user_info(
+        email=email,
+        new_email=new_email,
+        new_address=new_address,
+        new_phone=new_phone
+    )
+
+    if success:
+        return jsonify({"message": "Informações alteradas com sucesso!"}), 200
+    else:
+        return jsonify({"message": "Usuário não encontrado."}), 404
+
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password_route():

@@ -48,6 +48,61 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+async function editarInformacoes() {
+    const novoEmail = document.getElementById("email").value;
+    const novoEndereco = document.getElementById("endereco").value;
+    const novoTelefone = document.getElementById("telefone").value;
+    const token = localStorage.getItem("token");
+
+    if (!novoEmail && !novoEndereco && !novoTelefone) {
+        alert("Por favor, preencha pelo menos um campo para atualizar.");
+        return;
+    }
+
+    if (!token) {
+        alert("Usuário não autenticado! Faça login novamente.");
+        return;
+    }
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/edit-info", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                new_email: novoEmail || null,
+                new_address: novoEndereco || null,
+                new_phone: novoTelefone || null
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert("Informações atualizadas com sucesso!");
+        } else {
+            alert(`Erro: ${data.message}`);
+        }
+    } catch (error) {
+        console.error("Erro ao editar informações:", error);
+        alert("Erro ao editar as informações. Tente novamente.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btnTrocarSenha = document.getElementById("btn-confirmar-info");
+
+    if (btnTrocarSenha) {
+        btnTrocarSenha.addEventListener("click", function (event) {
+            event.preventDefault();
+            editarInformacoes();
+        });
+    } else {
+        console.warn("Botão de troca de senha não encontrado.");
+    }
+});
+
 async function trocarSenha() {
     const oldPassword = document.getElementById("senha_atual").value;
     const newPassword = document.getElementById("nova_senha").value;
@@ -56,6 +111,11 @@ async function trocarSenha() {
 
     if (!oldPassword || !newPassword) {
         alert("Por favor, preencha todos os campos.");
+        return;
+    }
+
+    if (oldPassword === newPassword) {
+        alert("A nova senha não pode ser igual à senha atual.");
         return;
     }
 
@@ -82,6 +142,8 @@ async function trocarSenha() {
         if (response.ok) {
             alert("Senha alterada com sucesso!");
             document.getElementById("senha_atual").value = newPassword;
+            document.getElementById("nova_senha").value = "";
+            document.getElementById("confirmar_senha").value = "";
         } else {
             alert(`Erro: ${data.message}`);
         }
