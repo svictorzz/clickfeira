@@ -52,6 +52,30 @@ def recover_password(email: str) -> str | None:
         return new_password
     return None
 
+def edit_user_info(email: str, new_email: str = None, new_address: str = None, new_phone: str = None) -> bool:
+    ref = db.reference("comerciante")
+    resultados = ref.order_by_child("email").equal_to(email).get() or {}
+
+    if not resultados:
+        return False  
+
+    for key, user in resultados.items():
+        updates = {}
+        if new_email:
+            updates["email"] = new_email
+        if new_address:
+            updates["endereco"] = new_address
+        if new_phone:
+            updates["telefone"] = new_phone
+
+        if updates:
+            ref.child(key).update(updates)
+        return True  
+
+    return False  
+
+
+
 def change_password(email: str, old_password: str, new_password: str) -> bool:
     ref = db.reference("comerciante")
     resultados = ref.order_by_child("email").equal_to(email).get() or {}
