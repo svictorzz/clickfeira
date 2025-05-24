@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const icone = document.querySelector(`#${iconeSelector}`);
 
         if (!input || !icone) {
-            console.error(`❌ Elemento não encontrado: ${inputSelector} ou #${iconeSelector}`);
             return;
         }
 

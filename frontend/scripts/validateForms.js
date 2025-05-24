@@ -65,7 +65,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (valid) {
-                console.log("Dados validados e prontos para envio!");
                 const userData = new FormData(formCadastro);
                 registerUser(Object.fromEntries(userData.entries()));
             }

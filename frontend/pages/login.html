@@ -22,12 +22,12 @@
     
         <form id="formLogin">
           <div class="mb-3">
-            <label for="email" class="form-label">E-mail</label>
+            <label for="loginEmail" class="form-label">E-mail</label>
             <input type="email" class="form-control rounded-pill" id="loginEmail" name="email" placeholder="Digite seu e-mail">
           </div>
     
           <div class="mb-3">
-            <label for="senha" class="form-label">Senha</label>
+            <label for="loginSenha" class="form-label">Senha</label>
             <div class="input-group">
               <input type="password" class="form-control rounded-start-pill" id="loginSenha" name="senha" placeholder="Digite sua senha">
               <span class="input-group-text rounded-end-pill" id="toggleSenha">
@@ -53,7 +53,7 @@
       </div>
     </div>
       <script src="../scripts/ocultarSenha.js"></script>
-      <script src="../scripts/api.js"></script>
-      <script src="../scripts/validateForms.js"></script>  
+      <script type="module" src="../scripts/api.js"></script>
+      <script type="module" src="../scripts/validateForms.js"></script>  
     </body>
     </html>
