@@ -1,4 +1,8 @@
-import { API_URL } from "./api.js";
+const token = localStorage.getItem("token") || sessionStorage.getItem("token");  // 🔹 Pega o token salvo
+
+if (!token) {
+    window.location.href = "login.html";  // 🔹 Se não houver token, redireciona para login
+}
 
 // --- VARIÁVEIS GLOBAIS ---
 let alertas = [];
@@ -312,7 +316,7 @@ window.addEventListener('DOMContentLoaded', () => {
   carregarAlertas();
   updateBadgeHistorico();
   exibirHistorico();
-  iniciarPagina();
+  //iniciarPagina();
 });
 
 

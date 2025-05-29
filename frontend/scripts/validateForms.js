@@ -71,12 +71,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    if (formLogin) {
+        if (formLogin) {
         formLogin.addEventListener("submit", async function (e) {
             e.preventDefault();
-            
+
             const email = document.getElementById("loginEmail").value.trim();
             const senha = document.getElementById("loginSenha").value.trim();
+            const lembrar = document.getElementById("lembrar").checked;
             const errorMessage = document.getElementById("erroLogin");
 
             try {
@@ -87,29 +88,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Credenciais inválidas.");
-}
-
-    const data = await response.json();
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("idComerciante", data.idComerciante);
-
-    window.location.href = "inicio.html";
-                } catch (error) {
-                    console.error("Erro de login:", error);
-
-                    if (errorMessage) {
-                        errorMessage.textContent = error.message;
-                        errorMessage.style.display = "block";
-                    } else {
-                        alert(error.message);
-                    }
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Credenciais inválidas.");
                 }
-            });
-        }
-    });
+
+                const data = await response.json();
+
+                localStorage.removeItem("token");
+                localStorage.removeItem("idComerciante");
+                sessionStorage.removeItem("token");
+                sessionStorage.removeItem("idComerciante");
+
+                if (lembrar) {
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("idComerciante", data.idComerciante);
+                } else {
+                    sessionStorage.setItem("token", data.token);
+                    sessionStorage.setItem("idComerciante", data.idComerciante);
+                }
+
+                window.location.href = "inicio.html";
+            } catch (error) {
+                console.error("Erro de login:", error);
+
+                if (errorMessage) {
+                    errorMessage.textContent = error.message;
+                    errorMessage.style.display = "block";
+                } else {
+                    alert(error.message);
+                }
+            }
+        });
+    }
+});
 
 async function registerUser(userData) {
     
