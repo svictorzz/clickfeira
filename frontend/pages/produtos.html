@@ -66,7 +66,7 @@
           <option value="">Todas</option>
           <option value="frutas">Frutas</option>
           <option value="legumes">Legumes</option>
-          <option value="vegetais">Vegetais/option>
+          <option value="vegetais">Vegetais</option>
           <option value="verduras">Verduras</option>
           <option value="temperos">Temperos</option>
           <option value="laticínios">Laticínios</option>
@@ -283,6 +283,24 @@
         })
         .catch(err => console.error("Erro ao carregar menu:", err));
     });
+  </script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
+      authDomain: "click-feira.firebaseapp.com",
+      databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
+      projectId: "click-feira",
+      storageBucket: "click-feira.appspot.com",
+      messagingSenderId: "108583577904",
+      appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
   </script>
 
   <script src="../scripts/produtos.js"></script>
