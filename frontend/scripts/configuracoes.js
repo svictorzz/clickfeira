@@ -119,6 +119,12 @@ async function trocarSenha() {
         return;
     }
 
+    const senhaForteRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+    if (!senhaForteRegex.test(newPassword)) {
+        alert("A nova senha deve ter no mínimo 6 caracteres, incluindo uma letra maiúscula, um número e um caractere especial.");
+        return;
+    }
+
     if (!token) {
         alert("Usuário não autenticado! Faça login novamente.");
         return;
