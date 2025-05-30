@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('codigo').value = gerarCodigoProduto();
     document.getElementById('modal-produto').style.display = 'flex';
     document.getElementById('unidade-atual').value = document.getElementById('unidade-minima').value;
+    document.getElementById('titulo-modal-produto').textContent = 'Adicionar Novo Produto';
     indiceParaEditar = null;
   });
 
@@ -446,6 +447,7 @@ document.getElementById('lista-produtos').addEventListener('click', e => {
     document.getElementById('unidade-atual').value = produto.unidadeMedida;
     document.getElementById('preco').value = produto.preco;
     document.getElementById('preco-por').value = produto.precoPor;
+    document.getElementById('titulo-modal-produto').textContent = 'Editar Produto';
     document.getElementById('modal-produto').style.display = 'flex';
   }
 
