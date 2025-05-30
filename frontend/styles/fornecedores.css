@@ -1,5 +1,6 @@
 body {
   font-family: 'Poppins', sans-serif;
+  background-color: #f9f9f9;
 }
 
 .panel {
@@ -22,7 +23,7 @@ body {
 }
 
 .readonly-field {
-  background-color: #e9ecef;
+  background-color: #fff;
   cursor: not-allowed;
 }
 
@@ -33,13 +34,7 @@ body {
 
 .visualizar-fornecedor .info-value {
   margin-bottom: 10px;
-}
-
-/* Estilo para centralizar o container */
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  padding: 8px 0;
 }
 
 #menu-container {
@@ -60,7 +55,6 @@ body {
   padding-top: 60px;
 }
 
-/* Estilos para o cabeçalho */
 .card-header h2 {
   font-size: 1.5rem;
   margin: 0;
@@ -72,62 +66,90 @@ body {
   font-weight: 400;
 }
 
-/* Estilos para a barra de pesquisa */
 .search-bar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
   align-items: center;
+  margin: 30px 0;
+  gap: 10px;
 }
 
 .input-icon {
   position: relative;
-  flex: 1;
-  max-width: 400px;
+  display: flex;
+  align-items: center;
 }
 
 .input-icon i {
   position: absolute;
   left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
+  color: gray;
 }
 
 .input-icon input {
-  padding-left: 35px;
+  padding: 10px 10px 10px 30px;
   border-radius: 20px;
-  border: 1px solid #ced4da;
-  height: 38px;
-  width: 100%;
+  border: 1px solid #ccc;
+  width: 400px;
+  font-family: 'Poppins', sans-serif;
 }
 
-.filter, .abrir-modal {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-weight: 500;
+.input-icon input:focus {
+  box-shadow: 0 0 5px rgba(0, 127, 48, 0.5);
+  border: 1px solid #007f30;
+  outline: none;
+}
+
+.filter,
+.abrir-modal {
+  padding: 10px 16px;
   border: none;
+  border-radius: 20px;
+  font-weight: bold;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .filter {
-  background-color: #f8f9fa;
-  color: #495057;
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+}
+
+.filter:hover {
+  background-color: #e8f5e9;
 }
 
 .abrir-modal {
-  background-color: #198754;
+  background-color: #007f30;
   color: white;
 }
 
 .abrir-modal:hover {
-  background-color: #157347;
+  background-color: #005f24;
 }
 
-/* Ajustes para a tabela */
+#filtros-container {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#filtros-container label {
+  font-weight: 600;
+  color: #495057;
+}
+
+#filtros-container select {
+  border-radius: 10px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  font-family: 'Poppins', sans-serif;
+  max-width: 200px;
+}
+
 #lista-fornecedores .card {
   width: 100%;
   border: none;
@@ -154,15 +176,6 @@ body {
   font-size: 0.875rem;
 }
 
-/* Estilo para o select de ordenação */
-#ordenar-nome {
-  border-radius: 20px;
-  padding: 5px 10px;
-  border: 1px solid #ced4da;
-  background-color: white;
-}
-
-/* --- ESTILOS PARA OS MODAIS --- */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -197,7 +210,50 @@ body {
   }
 }
 
-/* Botões no Modal */
+.modal-content h3 {
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+}
+
+.form-grid {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.form-col {
+  flex: 1;
+  min-width: 300px;
+}
+
+.form-col label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-control, .form-select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: #fff;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+.form-control[readonly] {
+  background-color: #fff;
+  border-color: #ddd;
+}
+
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
@@ -206,13 +262,19 @@ body {
 }
 
 .modal-buttons .salvar {
-  background-color: #198754;
+  background-color: #007f30;
   color: white;
   border: none;
   padding: 10px 16px;
   border-radius: 20px;
   font-weight: bold;
   cursor: pointer;
+}
+
+.modal-buttons .salvar::before {
+  content: "\f0c7";
+  font-family: "FontAwesome";
+  margin-right: 8px;
 }
 
 .modal-buttons .cancelar {
@@ -223,4 +285,60 @@ body {
   border-radius: 20px;
   font-weight: bold;
   cursor: pointer;
+}
+
+.modal-buttons .cancelar::before {
+  content: "\f057";
+  font-family: "FontAwesome";
+  margin-right: 8px;
+}
+
+.modal-buttons .salvar:hover {
+  background-color: #005f24;
+}
+
+.modal-buttons .cancelar:hover {
+  background-color: #bbb;
+}
+
+.visualizar-fornecedor {
+  padding: 10px 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.info-value {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    flex-direction: column;
+  }
+  
+  .form-col {
+    min-width: 100%;
+  }
+  
+  .search-bar {
+    flex-wrap: wrap;
+  }
+  
+  .input-icon {
+    width: 100%;
+  }
+  
+  .input-icon input {
+    width: 100%;
+  }
+  
+  .filter, .abrir-modal {
+    flex: 1;
+  }
 }
