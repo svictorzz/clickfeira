@@ -670,7 +670,6 @@ td {
   background-color: #5a6268;
 }
 
-/* --- ALERTAS DE MENSAGEM --- */
 .mensagem-alerta {
   position: fixed;
   top: 20px;
@@ -692,6 +691,17 @@ td {
 .mensagem-alerta.warning {
   background-color: #fff3cd;
   color: #856404;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- RESPONSIVIDADE AVANÇADA --- */
@@ -727,4 +737,3 @@ td {
     font-weight: bold;
   }
 }
-
