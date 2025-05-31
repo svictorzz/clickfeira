@@ -35,34 +35,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Sincroniza unidade de medida com tipo de preço e avisa o usuário
-  document.getElementById('preco-por').addEventListener('change', e => {
-    const precoPor = e.target.value;
-    const unidadeMinima = document.getElementById('unidade-minima');
-    const unidadeAtual = document.getElementById('unidade-atual');
+document.getElementById('preco-por').addEventListener('change', e => {
+  const precoPor = e.target.value;
+  const unidade = document.getElementById('unidade-minima').value;
 
-    let novaUnidade = '';
+  const combinacoesValidas = {
+    unidade: ['unidade', 'pacote'],
+    pacote: ['unidade', 'pacote'],
+    litro: ['litro', 'ml'],
+    ml: ['litro', 'ml'],
+    kg: ['kg', 'g', '100g'],
+    g: ['kg', 'g', '100g'],
+    '100g': ['kg', 'g', '100g']
+  };
 
-    switch (precoPor) {
-      case 'unidade':
-      case 'pacote':
-        novaUnidade = 'unidade';
-        break;
-      case 'kg':
-      case '100g':
-        novaUnidade = 'kg';
-        break;
-      case 'litro':
-      case 'ml':
-        novaUnidade = 'l';
-        break;
-    }
-
-    if (unidadeMinima.value !== novaUnidade) {
-      unidadeMinima.value = novaUnidade;
-      unidadeAtual.value = novaUnidade;
-      mostrarMensagem(`ℹ️ A unidade de medida foi ajustada para "${novaUnidade}" conforme o tipo de preço.`, 'warning');
-    }
-  });
+  if (!combinacoesValidas[precoPor]?.includes(unidade)) {
+    mostrarMensagem(`⚠️ A unidade "${unidade}" não é ideal para o tipo de preço "${precoPor}". Considere ajustar para compatibilidade.`, 'warning');
+  }
+});
 
   // Submissão do formulário
   document.getElementById('form-produto').addEventListener('submit', handleFormSubmit);
@@ -129,8 +119,11 @@ function verificarAlertasProdutos() {
   let alertaValidade = false;
 
   produtos.forEach(produto => {
-    const validade = new Date(produto.validade);
-    const dias = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+const [ano, mes, dia] = produto.validade.split('-').map(Number);
+const validade = new Date(ano, mes - 1, dia);
+validade.setHours(0, 0, 0, 0);
+const dias = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+
     const atual = parseFloat(produto.qtdAtual.split(' ')[0]);
     const minima = parseFloat(produto.qtdMinima.split(' ')[0]);
 
@@ -177,8 +170,8 @@ function gerarCodigoProduto() {
 }
 
 function formatarData(dataStr) {
-  const data = new Date(dataStr);
-  return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`;
+  const [ano, mes, dia] = dataStr.split('-');
+  return `${dia}/${mes}/${ano}`;
 }
 
 function adicionarLinhaTabela(produto) {
@@ -190,7 +183,13 @@ function adicionarLinhaTabela(produto) {
   hoje.setHours(0, 0, 0, 0);
 
   // Validade
-  const validade = produto.validade ? new Date(produto.validade) : null;
+let validade = null;
+if (produto.validade) {
+  const [ano, mes, dia] = produto.validade.split('-').map(Number);
+  validade = new Date(ano, mes - 1, dia);
+  validade.setHours(0, 0, 0, 0);
+}
+
   const diasParaVencer = validade ? Math.floor((validade - hoje) / (1000 * 60 * 60 * 24)) : null;
 
   // Estoque e unidade
@@ -212,16 +211,23 @@ function adicionarLinhaTabela(produto) {
   // Código fallback
   const codigo = produto.codigo || produto.firebaseKey.slice(-5).toUpperCase();
 
-  row.innerHTML = `
-    <td><input type="checkbox" class="selecionar-produto"></td>
-    <td>${produto.codigo || '(sem código)'}</td>
-    <td>${produto.nome || 'Sem nome'}</td>
-    <td>${qtdAtual} ${unidade}</td>
-    <td>${validade ? formatarData(produto.validade) : '—'}</td>
-    <td><i class="fa fa-search search-icon" style="cursor:pointer;"></i></td>
-    <td><i class="fa fa-edit edit-icon" style="cursor:pointer;"></i></td>
-    <td><i class="fa fa-trash delete-icon" style="cursor:pointer;"></i></td>
-  `;
+row.innerHTML = `
+  <td><input type="checkbox" class="selecionar-produto"></td>
+  <td data-label="Código: ">${produto.codigo || '(sem código)'}</td>
+  <td data-label="Produto: ">${produto.nome || 'Sem nome'}</td>
+  <td data-label="Estoque: ">${qtdAtual} ${unidade}</td>
+  <td data-label="Validade: ">${validade ? formatarData(produto.validade) : '—'}</td>
+  <td class="col-consultar" data-label="Consultar"><i class="fa fa-search search-icon"></i></td>
+  <td class="col-editar" data-label="Editar"><i class="fa fa-edit edit-icon"></i></td>
+  <td class="col-excluir" data-label="Excluir"><i class="fa fa-trash delete-icon"></i></td>
+  <td class="acoes-mobile" data-label="Ações">
+    <div class="acoes-icones">
+      <i class="fa fa-search search-icon"></i>
+      <i class="fa fa-edit edit-icon"></i>
+      <i class="fa fa-trash delete-icon"></i>
+    </div>
+  </td>
+`;
 
   tbody.appendChild(row);
 }
@@ -310,8 +316,9 @@ function converterImagemParaBase64(file, callback) {
 function handleFormSubmit(e) {
   e.preventDefault();
 
-  const validade = document.getElementById('validade').value;
-  const validadeSelecionada = new Date(validade);
+  const validadeInput = document.getElementById('validade').value;
+  const [ano, mes, dia] = validadeInput.split('-').map(Number);
+  const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
@@ -334,25 +341,26 @@ function handleFormSubmit(e) {
   const file = imagemInput.files[0];
 
   // Validação de campos obrigatórios
-  if (!codigo || !nome || !categoria || isNaN(preco) || !validade || !quantidadeEstoque || !quantidadeMinima || !precoPor) {
+  if (!codigo || !nome || !categoria || isNaN(preco) || !validadeInput || !quantidadeEstoque || !quantidadeMinima || !precoPor) {
     mostrarMensagem('⚠️ Preencha todos os campos obrigatórios!', 'error');
     return;
   }
 
   // Validação de coerência entre unidade e tipo de preço
-  const combinacoesValidas = {
-    unidade: 'unidade',
-    pacote: 'unidade',
-    kg: 'kg',
-    '100g': 'kg',
-    litro: 'l',
-    ml: 'ml'
-  };
+const combinacoesValidas = {
+  unidade: ['unidade', 'pacote'],
+  pacote: ['unidade', 'pacote'],
+  litro: ['litro', 'ml'],
+  ml: ['litro', 'ml'],
+  kg: ['kg', 'g', '100g'],
+  g: ['kg', 'g', '100g'],
+  '100g': ['kg', 'g', '100g']
+};
 
-  if (combinacoesValidas[precoPor] && unidadeMedida !== combinacoesValidas[precoPor]) {
-    mostrarMensagem(`🚫 A unidade de medida deve ser "${combinacoesValidas[precoPor]}" para o tipo de preço "${precoPor}".`, 'error');
-    return;
-  }
+if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
+  mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
+  return;
+}
 
   // Monta o objeto produto
   const produto = {
@@ -360,7 +368,7 @@ function handleFormSubmit(e) {
     nome,
     descricao,
     categoria,
-    validade,
+    validade: validadeInput, // <- Mantida como string para evitar erro de fuso
     preco: preco.toFixed(2),
     precoPor,
     quantidadeEstoque: parseFloat(quantidadeEstoque),
@@ -477,23 +485,38 @@ document.getElementById('btn-cancelar-excluir').addEventListener('click', () => 
 function calcularValorTotalEstoque(produto) {
   const preco = Number(produto.preco);
   const qtd = Number(produto.quantidadeEstoque);
-  const unidade = produto.precoPor;
+  const precoPor = produto.precoPor;
+  const unidade = produto.unidadeMedida;
 
-  let fator = 1;
+  let fator;
 
-  switch (unidade) {
-    case '100g':
-      fator = qtd * 10; // 1kg = 10x 100g
-      break;
-    case 'ml':
-      fator = qtd; // preço por ml, quantidade em ml
-      break;
-    case 'litro':
-    case 'kg':
-    case 'unidade':
-    case 'pacote':
-    default:
-      fator = qtd;
+  // 🧪 Peso
+  if ((precoPor === 'kg' && unidade === 'g')) {
+    fator = qtd / 1000;
+  } else if (precoPor === 'kg' && unidade === '100g') {
+    fator = qtd / 10;
+  } else if (precoPor === '100g' && unidade === 'kg') {
+    fator = qtd * 10;
+  } else if (precoPor === '100g' && unidade === 'g') {
+    fator = qtd / 100;
+  } else if (precoPor === '100g' && unidade === '100g') {
+    fator = qtd;
+  } else if (precoPor === 'g' && unidade === 'kg') {
+    fator = qtd * 1000;
+  } else if (precoPor === 'g' && unidade === '100g') {
+    fator = qtd * 100;
+  }
+
+  // 🧪 Volume
+  else if (precoPor === 'litro' && unidade === 'ml') {
+    fator = qtd / 1000;
+  } else if (precoPor === 'ml' && unidade === 'litro') {
+    fator = qtd * 1000;
+  }
+
+  // 🧪 Unidade ou pacote
+  else {
+    fator = qtd;
   }
 
   const total = preco * fator;
