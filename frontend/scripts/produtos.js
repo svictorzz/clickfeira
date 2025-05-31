@@ -99,6 +99,7 @@ document.getElementById('preco-por').addEventListener('change', e => {
   });
 });
 
+// TRAZER OS PRODUTOS DO FIREBASE À TELA
 function carregarProdutosDoFirebase() {
   firebase.database().ref('produto').once('value').then(snapshot => {
     produtos.length = 0;
@@ -108,41 +109,10 @@ function carregarProdutosDoFirebase() {
       produtos.push(produto);
     });
     atualizarTabela();
-    verificarAlertasProdutos()
   });
 }
 
-function verificarAlertasProdutos() {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  let alertaEstoque = false;
-  let alertaValidade = false;
-
-  produtos.forEach(produto => {
-const [ano, mes, dia] = produto.validade.split('-').map(Number);
-const validade = new Date(ano, mes - 1, dia);
-validade.setHours(0, 0, 0, 0);
-const dias = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
-
-    const atual = parseFloat(produto.qtdAtual.split(' ')[0]);
-    const minima = parseFloat(produto.qtdMinima.split(' ')[0]);
-
-    if (dias <= 7 && dias >= 0) alertaValidade = true;
-    if (atual < minima) alertaEstoque = true;
-  });
-
-  if (alertaValidade && alertaEstoque) {
-    mostrarMensagem('⚠️ Produtos com validade próxima!', 'warning');
-    setTimeout(() => {
-      mostrarMensagem('⚠️ Produtos com estoque abaixo do mínimo!', 'warning');
-    }, 3000);
-  } else if (alertaValidade) {
-    mostrarMensagem('⚠️ Produtos com validade próxima!', 'warning');
-  } else if (alertaEstoque) {
-    mostrarMensagem('⚠️ Produtos com estoque abaixo do mínimo!', 'warning');
-  }
-}
-
+//HISTORICO PARA AÇÕES
 function registrarHistorico(tipo, descricao) {
   firebase.database().ref('historicoAcoes').push({
     tipo,
@@ -151,6 +121,7 @@ function registrarHistorico(tipo, descricao) {
   });
 }
 
+// -- DATA E HORA PARA O FIREBASE (CONVERTIDO PARA BR)
 function obterDataLegivel() {
   const hoje = new Date();
   const dia = String(hoje.getDate()).padStart(2, '0');
@@ -161,6 +132,7 @@ function obterDataLegivel() {
   return `${dia}/${mes}/${ano} às ${hora}:${min}`;
 }
 
+//-- CODIGO ALEATORIO DO PRODUTO
 function gerarCodigoProduto() {
   let novoCodigo;
   do {
@@ -169,11 +141,13 @@ function gerarCodigoProduto() {
   return novoCodigo;
 }
 
+//FORMATAR DATA PARA BR (DD/MM/YYYY)
 function formatarData(dataStr) {
   const [ano, mes, dia] = dataStr.split('-');
   return `${dia}/${mes}/${ano}`;
 }
 
+// -- CADASTRAR NOVO PRODUTO E LINHA NOVA NA TABELA
 function adicionarLinhaTabela(produto) {
   const tbody = document.getElementById('lista-produtos');
   const row = document.createElement('tr');
@@ -232,6 +206,7 @@ row.innerHTML = `
   tbody.appendChild(row);
 }
 
+// ATUALIZAR TABELA
 function atualizarTabela() {
   const tbody = document.getElementById('lista-produtos');
   tbody.innerHTML = '';
@@ -252,6 +227,7 @@ function atualizarTabela() {
   atualizarPaginacao(produtosFiltrados.length);
 }
 
+// -- PAGINACAO ATUALIZADA (10 ITENS POR PAGINA)
 function atualizarPaginacao(totalItens) {
   const controles = document.getElementById('controles-paginacao');
   if (!controles) return;
@@ -283,36 +259,40 @@ function atualizarPaginacao(totalItens) {
   });
 }
 
+// -- EXCLUIR TODOS OS PRODUTOS DA SEÇÃO (PÁGINA)
 function atualizarBotaoExcluirSelecionados() {
   const selecionados = document.querySelectorAll('.selecionar-produto:checked');
   const botao = document.getElementById('btn-excluir-selecionados');
   botao.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
 }
 
+// -- EXCLUIR PRODUTOS INDIVIDUAIS ESCOLHIDOSS
 function excluirSelecionados() {
   const selecionados = Array.from(document.querySelectorAll('.selecionar-produto:checked'));
   if (selecionados.length === 0) return;
 
-  if (!confirm(`Deseja excluir ${selecionados.length} produto(s)?`)) return;
+  // Atualiza texto do modal para múltiplos
+  const modal = document.getElementById('modal-confirmar-exclusao');
+  const titulo = modal.querySelector('h4');
+  const subtitulo = modal.querySelector('p');
+  titulo.textContent = `Deseja realmente excluir ${selecionados.length} produto(s)?`;
+  subtitulo.textContent = 'Essa ação não poderá ser desfeita.';
 
-  selecionados.forEach(cb => {
-    const row = cb.closest('tr');
-    const key = row.getAttribute('data-key');
-    const produto = produtos.find(p => p.firebaseKey === key);
-    firebase.database().ref('produto/' + key).remove();
-    registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
-  });
-
-  mostrarMensagem('Produtos excluídos com sucesso!', 'success');
-  carregarProdutosDoFirebase();
+  // Marca como múltipla
+  modal.setAttribute('data-multiplos', 'true');
+  modal.setAttribute('data-quantidade', selecionados.length);
+  modal.classList.add('ativo');
+  modal.style.display = 'flex';
 }
 
+// -- IMAGEM ACESSIVEL PARA USO NO FIREBASE
 function converterImagemParaBase64(file, callback) {
   const reader = new FileReader();
   reader.onload = e => callback(e.target.result);
   reader.readAsDataURL(file);
 }
 
+// -- ENVIAR FORMULARIO DE CADASTRO
 function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -323,10 +303,15 @@ function handleFormSubmit(e) {
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
-  if (validadeSelecionada < hoje) {
-    const confirmar = confirm('⚠️ A data de validade informada já passou. Deseja continuar mesmo assim?');
-    if (!confirmar) return;
+  // Se a data estiver vencida, exibe o modal e salva o evento para depois
+  if (validadeSelecionada < hoje && !window.continuarMesmoComValidadeVencida) {
+    window.submissaoPendente = e;
+    document.getElementById('modal-validade-vencida').style.display = 'flex';
+    return;
   }
+
+  // Resetar a flag de continuidade
+  window.continuarMesmoComValidadeVencida = false;
 
   const codigo = document.getElementById('codigo').value.trim();
   const nome = document.getElementById('nome').value.trim();
@@ -347,20 +332,21 @@ function handleFormSubmit(e) {
   }
 
   // Validação de coerência entre unidade e tipo de preço
-const combinacoesValidas = {
-  unidade: ['unidade', 'pacote'],
-  pacote: ['unidade', 'pacote'],
-  litro: ['litro', 'ml'],
-  ml: ['litro', 'ml'],
-  kg: ['kg', 'g', '100g'],
-  g: ['kg', 'g', '100g'],
-  '100g': ['kg', 'g', '100g']
-};
+  const combinacoesValidas = {
+    unidade: ['unidade', 'pacote'],
+    pacote: ['unidade', 'pacote'],
+    litro: ['litro', 'ml'],
+    ml: ['litro', 'ml'],
+    kg: ['kg', 'g', '100g'],
+    g: ['kg', 'g', '100g'],
+    '100g': ['kg', 'g', '100g']
+  };
 
-if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
-  mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
-  return;
-}
+  // -- MENSAGEM CASO COERENCIA ENTRE UNIDADE E TIPO DE PREÇO NAO BATER
+  if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
+    mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
+    return;
+  }
 
   // Monta o objeto produto
   const produto = {
@@ -368,22 +354,24 @@ if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
     nome,
     descricao,
     categoria,
-    validade: validadeInput, // <- Mantida como string para evitar erro de fuso
+    validade: validadeInput,
     preco: preco.toFixed(2),
     precoPor,
     quantidadeEstoque: parseFloat(quantidadeEstoque),
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    fornecedor: "a", // Ajuste conforme necessário
+    //fornecedor, // ajuste conforme necessário
     imagemUrl: '',
     dataUltimaAtualizacao: obterDataLegivel()
   };
 
+  // -- EDITAR PRODUTO - DATA DE CADASTRO
   if (indiceParaEditar === null) {
     produto.dataCadastro = obterDataLegivel();
   }
 
+  // -- SALVAR IMG NO FIREBASE
   const salvar = imagem => {
     produto.imagemUrl = imagem;
 
@@ -413,6 +401,7 @@ if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
   }
 }
 
+// -- MOSTRA MENSAGEM NO TOPO DA TELA
 function mostrarMensagem(texto, tipo = 'success') {
   const msg = document.createElement('div');
   msg.textContent = texto;
@@ -465,23 +454,63 @@ document.getElementById('lista-produtos').addEventListener('click', e => {
   }
 });
 
+// -- BOTAO DE CONFIRMAR EXCLUSAO DE PRODUTO
 document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
-  if (!firebaseKeyParaExcluir) return;
-  const produto = produtos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
-  firebase.database().ref('produto/' + firebaseKeyParaExcluir).remove().then(() => {
-    registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
+  const modal = document.getElementById('modal-confirmar-exclusao');
+  const multiplos = modal.getAttribute('data-multiplos') === 'true';
+
+  if (multiplos) {
+    const selecionados = Array.from(document.querySelectorAll('.selecionar-produto:checked'));
+
+    selecionados.forEach(cb => {
+      const row = cb.closest('tr');
+      const key = row.getAttribute('data-key');
+      const produto = produtos.find(p => p.firebaseKey === key);
+      firebase.database().ref('produto/' + key).remove();
+      registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
+    });
+
+    mostrarMensagem('Produtos excluídos com sucesso!', 'success');
+    modal.removeAttribute('data-multiplos');
+    modal.removeAttribute('data-quantidade');
+    modal.style.display = 'none';
     carregarProdutosDoFirebase();
-    mostrarMensagem('Produto excluído com sucesso!', 'success');
-    document.getElementById('modal-confirmar-exclusao').style.display = 'none';
-    firebaseKeyParaExcluir = null;
-  });
+  } else {
+    if (!firebaseKeyParaExcluir) return;
+    const produto = produtos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
+    firebase.database().ref('produto/' + firebaseKeyParaExcluir).remove().then(() => {
+      registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
+      carregarProdutosDoFirebase();
+      mostrarMensagem('Produto excluído com sucesso!', 'success');
+      document.getElementById('modal-confirmar-exclusao').style.display = 'none';
+      firebaseKeyParaExcluir = null;
+    });
+  }
 });
 
+//--BOTAO DE CANCELAR EXCLUSAO DE PRODUTO
 document.getElementById('btn-cancelar-excluir').addEventListener('click', () => {
   firebaseKeyParaExcluir = null;
   document.getElementById('modal-confirmar-exclusao').style.display = 'none';
 });
 
+// --- CONTROLE DO MODAL DE VALIDADE VENCIDA ---
+document.getElementById('btn-confirmar-validade').addEventListener('click', () => {
+  window.continuarMesmoComValidadeVencida = true;
+  document.getElementById('modal-validade-vencida').style.display = 'none';
+  if (window.submissaoPendente) {
+    handleFormSubmit(window.submissaoPendente); // reenviar
+    window.submissaoPendente = null;
+  }
+});
+
+//-- BOTAO SE A PESSOA QUER CADASTRAR PRODUTO VENCIDO/DE VALIDADE ULTRAPASSADA
+document.getElementById('btn-cancelar-validade').addEventListener('click', () => {
+  document.getElementById('modal-validade-vencida').style.display = 'none';
+  window.submissaoPendente = null;
+});
+
+//-- CALCULA VALOR DO ESTOQUE NA HORA DE VISUALIZAR DETALHES DO PRODUTO
 function calcularValorTotalEstoque(produto) {
   const preco = Number(produto.preco);
   const qtd = Number(produto.quantidadeEstoque);
@@ -523,6 +552,43 @@ function calcularValorTotalEstoque(produto) {
   return `R$ ${total.toFixed(2)}`;
 }
 
+// --- FILTROS POR ALERTAS (Validade, Estoque, Vencido) ---
+let filtroEspecialAtivo = null;
+
+const botoesLegenda = document.querySelectorAll('#legenda-alertas span');
+const btnLimparFiltros = document.createElement('button');
+btnLimparFiltros.id = 'btn-limpar-filtros';
+btnLimparFiltros.textContent = 'Limpar Filtros';
+document.getElementById('topo-tabela').appendChild(btnLimparFiltros);
+
+btnLimparFiltros.addEventListener('click', () => {
+  filtroEspecialAtivo = null;
+  paginaAtual = 1;
+  atualizarTabela();
+  botoesLegenda.forEach(btn => btn.classList.remove('filtro-ativo'));
+  btnLimparFiltros.style.display = 'none';
+});
+
+botoesLegenda.forEach(btn => {
+  btn.style.cursor = 'pointer';
+  btn.addEventListener('click', () => {
+    // Define o tipo de filtro
+    const texto = btn.textContent.toLowerCase();
+    if (texto.includes('validade')) filtroEspecialAtivo = 'validade';
+    else if (texto.includes('estoque')) filtroEspecialAtivo = 'estoque';
+    else if (texto.includes('vencido')) filtroEspecialAtivo = 'vencido';
+
+    paginaAtual = 1;
+    atualizarTabela();
+
+    // Aplica destaque
+    botoesLegenda.forEach(outro => outro.classList.remove('filtro-ativo'));
+    btn.classList.add('filtro-ativo');
+
+    btnLimparFiltros.style.display = 'inline-block';
+  });
+});
+
 //--Aplicação de filtros de ordenacao
 
 function aplicarFiltrosOrdenacao(lista) {
@@ -535,9 +601,35 @@ function aplicarFiltrosOrdenacao(lista) {
     const categoria = p.categoria.toLowerCase();
     const matchTermo = nome.includes(termo) || categoria.includes(termo);
     const matchCategoria = categoriaSelecionada ? p.categoria === categoriaSelecionada : true;
-    return matchTermo && matchCategoria;
+
+    let matchEspecial = true;
+    if (filtroEspecialAtivo) {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const validade = new Date(p.validade);
+      validade.setHours(0, 0, 0, 0);
+      const dias = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+      const atual = parseFloat(p.quantidadeEstoque);
+      const minima = parseFloat(p.quantidadeMinima);
+
+      if (filtroEspecialAtivo === 'validade') {
+        matchEspecial = dias <= 7 && dias >= 0;
+      } else if (filtroEspecialAtivo === 'estoque') {
+        matchEspecial = atual < minima;
+      } else if (filtroEspecialAtivo === 'vencido') {
+        matchEspecial = dias < 0;
+      }
+    }
+
+    return matchTermo && matchCategoria && matchEspecial;
   });
 
+  // Exibe mensagem se não houver resultados
+  if (filtroEspecialAtivo && filtrados.length === 0) {
+    mostrarMensagem('🚫 Nenhum produto encontrado com esse critério.', 'warning');
+  }
+
+  // Ordenação
   if (ordem === 'az') filtrados.sort((a, b) => a.nome.localeCompare(b.nome));
   if (ordem === 'za') filtrados.sort((a, b) => b.nome.localeCompare(a.nome));
   if (ordem === 'preco-asc') filtrados.sort((a, b) => parseFloat(a.preco) - parseFloat(b.preco));
@@ -546,3 +638,4 @@ function aplicarFiltrosOrdenacao(lista) {
 
   return filtrados;
 }
+
