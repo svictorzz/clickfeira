@@ -20,14 +20,6 @@ body {
   overflow-y: auto;
 }
 
-/* Ajuste para telas menores */
-@media (max-width: 768px) {
-  .content {
-    margin-top: 56px;
-    padding: 15px;
-  }
-}
-
 /* --- TÍTULO DO HEADER --- */
 header h2 {
   font-size: 28px;
@@ -161,6 +153,19 @@ header h2 {
   border-color: #ff4444;
 }
 
+.mensagem-sem-produtos {
+  text-align: center;
+  padding: 30px 10px;
+  font-weight: 500;
+  color: #777;
+  font-size: 16px;
+  background-color: #fff;
+}
+
+.linha-sem-produtos td {
+  border-bottom: none;
+}
+
 #btn-excluir-selecionados {
   background-color: #d9534f;
   color: white;
@@ -281,6 +286,46 @@ td {
   background: rgba(255, 68, 68, 0.1);
 }
 
+/* Ícones de ação agrupados no mobile */
+.acoes-icones {
+  display: flex;
+  gap: 8px;
+}
+
+.acoes-icones i {
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+/* Reforça o clique/tap-friendly */
+.acoes-icones i:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Agrupamento compacto da label + ícones */
+.acoes-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+@media (min-width: 769px) {
+  .acoes-mobile {
+    display: none !important; /* só mostra no mobile */
+  }
+}
+
+@media (max-width: 768px) {
+  .col-consultar,
+  .col-editar,
+  .col-excluir {
+    display: none;
+  }
+}
+
 /* Alertas por linha */
 .alerta-validade {
   background: #fff9e6 !important;
@@ -372,14 +417,13 @@ td {
   border-radius: 16px;
   width: 95%;
   max-width: 700px;
-  /* Reduzido para caber melhor */
   max-height: 95vh;
-  /* Ajustado para caber na tela */
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   animation: aparecer-modal 0.25s ease;
-  overflow: visible;
-  /* Remove scroll interno */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
 
 /* Animação de entrada */
 @keyframes aparecer-modal {
@@ -427,6 +471,74 @@ td {
   max-height: 100px;
 }
 
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 10px;
+    max-height: 90vh;
+  }
+
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-content input,
+  .modal-content select,
+  .modal-content textarea {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    height: 36px;
+    line-height: 1.2;
+  }
+
+  .modal-content textarea {
+    min-height: 60px;
+    max-height: 80px;
+  }
+
+  .form-col {
+    gap: 6px;
+  }
+
+  .modal-content label {
+    font-size: 0.82rem;
+  }
+
+  .input-group {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .input-group input,
+  .input-group select {
+    flex: 1 1 50%;
+    max-width: 100%;
+    height: 36px;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  #preco-por,
+  #unidade-minima,
+  #unidade-atual {
+    min-width: 80px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
 /* Grid responsivo para formulários - mais compacto */
 .form-grid {
   display: grid;
@@ -449,7 +561,10 @@ td {
 
 .input-group {
   display: flex;
+  flex-direction: row;
   gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 #preco-por {
@@ -458,9 +573,8 @@ td {
 
 .input-group input,
 .input-group select {
-  flex: 1;
+  flex: 1 1 100px;
   min-width: 0;
-  /* Permite que encolham */
 }
 
 /* Botões no Modal - mais compactos */
@@ -492,6 +606,13 @@ td {
   cursor: pointer;
 }
 
+@media (max-width: 480px) {
+  .modal-buttons .salvar,
+  .modal-buttons .cancelar {
+    width: 100%;
+  }
+}
+
 /* Estilo da Imagem e Descrição - mais compactos */
 .product-image {
   max-width: 100%;
@@ -504,13 +625,6 @@ td {
 .image-description {
   font-size: 0.85rem;
   margin-top: 5px;
-}
-
-.descricao-produto {
-  max-height: 100px;
-  padding: 5px;
-  margin-top: 3px;
-  font-size: 0.95rem;
 }
 
 /* Modal de Confirmação de Exclusão - mais compacto */
@@ -528,6 +642,32 @@ td {
 #modal-confirmar-exclusao p {
   font-size: 0.9rem;
   margin-bottom: 15px;
+}
+
+/* --- DESTAQUE PARA BOTÃO DE FILTRO ATIVO --- */
+#legenda-alertas span.filtro-ativo {
+  box-shadow: 0 0 0 3px rgba(0, 127, 48, 0.3);
+  outline: 2px solid #007f30;
+  background-color: #e6f9ec;
+  transition: all 0.3s ease;
+}
+
+/* Estilo para o botão "Limpar Filtro" */
+#btn-limpar-filtros {
+  background-color: #6c757d;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  display: none;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+}
+
+#btn-limpar-filtros:hover {
+  background-color: #5a6268;
 }
 
 /* --- ALERTAS DE MENSAGEM --- */
@@ -588,55 +728,3 @@ td {
   }
 }
 
-/* Layout para telas muito pequenas (até 480px) */
-@media (max-width: 480px) {
-  .search-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .input-icon,
-  .filter,
-  .abrir-modal {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  #topo-tabela {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  #legenda-alertas {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-
-  #btn-excluir-selecionados {
-    align-self: flex-end;
-    margin-top: 10px;
-  }
-
-  .modal-content {
-    padding: 15px;
-  }
-
-  .modal-content h3 {
-    font-size: 1.2rem;
-  }
-
-  .input-group {
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .modal-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .modal-buttons button {
-    width: 100%;
-  }
-}
