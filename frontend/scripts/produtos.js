@@ -112,12 +112,11 @@ function carregarProdutosDoFirebase() {
   });
 }
 
-//HISTORICO PARA AÇÕES
 function registrarHistorico(tipo, descricao) {
   firebase.database().ref('historicoAcoes').push({
     tipo,
     descricao,
-    data: obterDataLegivel()
+    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
   });
 }
 
@@ -638,4 +637,3 @@ function aplicarFiltrosOrdenacao(lista) {
 
   return filtrados;
 }
-
