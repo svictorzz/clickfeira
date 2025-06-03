@@ -1,8 +1,25 @@
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
+  authDomain: "click-feira.firebaseapp.com",
+  databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
+  projectId: "click-feira",
+  storageBucket: "click-feira.appspot.com",
+  messagingSenderId: "108583577904",
+  appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
 // Variáveis globais
 let fornecedores = [];
+let fornecedorParaEditar = null;
 let fornecedorParaExcluir = null;
 const modalExcluir = new bootstrap.Modal(document.getElementById('modal-excluir'));
-let proximoCodigo = 1; // Variável para gerar códigos sequenciais
+let proximoCodigo = 1;
 
 // DOM Elements
 const elements = {
@@ -13,8 +30,41 @@ const elements = {
     ordenarNome: document.getElementById('ordenar-nome')
 };
 
+// Função para obter data legível
+function obterDataLegivel() {
+  const hoje = new Date();
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const ano = hoje.getFullYear();
+  const hora = hoje.getHours().toString().padStart(2, '0');
+  const minutos = hoje.getMinutes().toString().padStart(2, '0');
+  return `${dia}/${mes}/${ano} às ${hora}:${minutos}`;
+}
+
+// Função para formatar data 
+function formatarData(dataISO) {
+  if (!dataISO) return '';
+  
+  if (dataISO.includes('às')) return dataISO;
+  
+  const data = new Date(dataISO);
+  
+  // Garante que a data é válida
+  if (isNaN(data.getTime())) return '';
+  
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const ano = data.getFullYear();
+  const horas = String(data.getHours()).padStart(2, '0');
+  const minutos = String(data.getMinutes()).padStart(2, '0');
+  
+  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+}
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
+    carregarFornecedoresDoFirebase();
+    
     // Event Listeners
     document.getElementById('btn-adicionar').addEventListener('click', mostrarModalAdicionar);
     document.getElementById('btn-cancelar-adicionar').addEventListener('click', fecharModalAdicionar);
@@ -40,10 +90,28 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Máscaras e validações
     aplicarMascaras();
-    
-    // Renderizar tabela
-    renderizarTabela();
 });
+
+// Carregar fornecedores do Firebase
+function carregarFornecedoresDoFirebase() {
+  firebase.database().ref('fornecedor').on('value', (snapshot) => {
+    fornecedores = [];
+    snapshot.forEach((childSnapshot) => {
+      const fornecedor = childSnapshot.val();
+      fornecedor.firebaseKey = childSnapshot.key;
+      fornecedores.push(fornecedor);
+      
+      // Atualizar próximo código disponível
+      if (fornecedor.codigo) {
+        const numCodigo = parseInt(fornecedor.codigo.replace(/\D/g, ''));
+        if (numCodigo >= proximoCodigo) {
+          proximoCodigo = numCodigo + 1;
+        }
+      }
+    });
+    renderizarTabela();
+  });
+}
 
 // Funções para abrir/fechar modais
 function mostrarModalAdicionar() {
@@ -51,17 +119,20 @@ function mostrarModalAdicionar() {
     // Gerar código sequencial para novo fornecedor
     document.getElementById('codigo').value = proximoCodigo.toString().padStart(3, '0');
     document.getElementById('modal-adicionar').style.display = 'flex';
+    fornecedorParaEditar = null;
 }
 
 function fecharModalAdicionar() {
     document.getElementById('modal-adicionar').style.display = 'none';
 }
 
-function mostrarModalEditar(id) {
-    const fornecedor = fornecedores.find(f => f.id === id);
+function mostrarModalEditar(key) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
     
-    document.getElementById('edit-id').value = fornecedor.id;
+    fornecedorParaEditar = fornecedor;
+    
+    document.getElementById('edit-id').value = fornecedor.firebaseKey;
     document.getElementById('edit-codigo').value = fornecedor.codigo || '';
     document.getElementById('edit-nome').value = fornecedor.nome || '';
     document.getElementById('edit-cnpj').value = fornecedor.cnpj || '';
@@ -76,10 +147,11 @@ function mostrarModalEditar(id) {
 
 function fecharModalEditar() {
     document.getElementById('modal-editar').style.display = 'none';
+    fornecedorParaEditar = null;
 }
 
-function mostrarModalVisualizar(id) {
-    const fornecedor = fornecedores.find(f => f.id === id);
+function mostrarModalVisualizar(key) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
     
     // Preencher os dados do fornecedor
@@ -90,14 +162,25 @@ function mostrarModalVisualizar(id) {
     document.getElementById('view-cep').textContent = fornecedor.cep || 'Não informado';
     document.getElementById('view-telefone').textContent = fornecedor.telefone || 'Não informado';
     document.getElementById('view-endereco').textContent = fornecedor.endereco || 'Não informado';
+    document.getElementById('view-dataCadastro').textContent = fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : 'Não informado';
+    document.getElementById('view-dataAtualizacao').textContent = fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : 'Não informado';
     
     // Traduzir o valor dos produtos
     const produtos = {
-        '1': 'Frutas',
-        '2': 'Verduras',
-        '3': 'Legumes'
+        'frutas': 'Frutas',
+        'legumes': 'Legumes',
+        'vegetais': 'Vegetais',
+        'verduras': 'Verduras',
+        'temperos': 'Temperos',
+        'laticínios': 'Laticínios',
+        'doces': 'Doces',
+        'salgados': 'Salgados',
+        'carnes': 'Carnes',
+        'grãos': 'Grãos',
+        'bebidas': 'Bebidas',
+        'outros': 'Outros'
     };
-    document.getElementById('view-produtos').textContent = fornecedor.produtos ? produtos[fornecedor.produtos] : 'Não informado';
+    document.getElementById('view-produtos').textContent = fornecedor.produtos ? produtos[fornecedor.produtos] || fornecedor.produtos : 'Não informado';
     
     document.getElementById('modal-visualizar').style.display = 'flex';
 }
@@ -106,8 +189,8 @@ function fecharModalVisualizar() {
     document.getElementById('modal-visualizar').style.display = 'none';
 }
 
-function mostrarModalExclusao(id, nome) {
-    fornecedorParaExcluir = id;
+function mostrarModalExclusao(key, nome) {
+    fornecedorParaExcluir = key;
     elements.nomeFornecedorExcluir.textContent = nome;
     modalExcluir.show();
 }
@@ -119,7 +202,7 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
     if (fornecedoresParaRenderizar.length === 0) {
         elements.tabelaFornecedores.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-3 text-muted">
+                <td colspan="7" class="text-center py-3 text-muted">
                     Nenhum fornecedor cadastrado
                 </td>
             </tr>
@@ -129,50 +212,52 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
     
     fornecedoresParaRenderizar.forEach(fornecedor => {
         const tr = document.createElement('tr');
+        tr.setAttribute('data-key', fornecedor.firebaseKey);
         tr.innerHTML = `
             <td>${fornecedor.codigo || ''}</td>
             <td>${fornecedor.cnpj || ''}</td>
             <td>${fornecedor.nome || ''}</td>
             <td>${fornecedor.telefone || ''}</td>
+            <td>${fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : ''}</td>
+            <td>${fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : ''}</td>
             <td class="text-center">
-                <i class="fas fa-search text-muted cursor-pointer btn-visualizar" data-id="${fornecedor.id}"></i>
-            </td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-outline-primary btn-editar me-1" data-id="${fornecedor.id}">
+                <i class="fas fa-search text-muted cursor-pointer btn-visualizar"></i>
+                <button class="btn btn-sm btn-outline-primary btn-editar me-1">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger btn-excluir" data-id="${fornecedor.id}" data-nome="${fornecedor.nome}">
+                <button class="btn btn-sm btn-outline-danger btn-excluir" data-nome="${fornecedor.nome}">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </td>
         `;
+        
+        // Adiciona event listeners
+        tr.querySelector('.btn-visualizar').addEventListener('click', () => 
+            mostrarModalVisualizar(fornecedor.firebaseKey));
+            
+        tr.querySelector('.btn-editar').addEventListener('click', () => 
+            mostrarModalEditar(fornecedor.firebaseKey));
+            
+        tr.querySelector('.btn-excluir').addEventListener('click', () => 
+            mostrarModalExclusao(fornecedor.firebaseKey, fornecedor.nome));
+        
         elements.tabelaFornecedores.appendChild(tr);
-    });
-    
-    // Adicionar event listeners aos botões
-    document.querySelectorAll('.btn-editar').forEach(btn => {
-        btn.addEventListener('click', () => mostrarModalEditar(parseInt(btn.dataset.id)));
-    });
-    
-    document.querySelectorAll('.btn-excluir').forEach(btn => {
-        btn.addEventListener('click', () => mostrarModalExclusao(
-            parseInt(btn.dataset.id), 
-            btn.dataset.nome
-        ));
-    });
-    
-    document.querySelectorAll('.btn-visualizar').forEach(btn => {
-        btn.addEventListener('click', () => mostrarModalVisualizar(parseInt(btn.dataset.id)));
     });
 }
 
 // Funções CRUD
 function confirmarExclusao() {
     if (fornecedorParaExcluir) {
-        fornecedores = fornecedores.filter(f => f.id !== fornecedorParaExcluir);
-        renderizarTabela();
-        fornecedorParaExcluir = null;
-        modalExcluir.hide();
+        firebase.database().ref('fornecedor/' + fornecedorParaExcluir).remove()
+            .then(() => {
+                mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
+                modalExcluir.hide();
+                fornecedorParaExcluir = null;
+            })
+            .catch(error => {
+                console.error('Erro ao excluir fornecedor:', error);
+                mostrarMensagem('Erro ao excluir fornecedor', 'error');
+            });
     }
 }
 
@@ -182,7 +267,6 @@ function salvarFornecedor(e) {
     if (!validarFormulario('form-adicionar')) return;
     
     const novoFornecedor = {
-        id: fornecedores.length > 0 ? Math.max(...fornecedores.map(f => f.id)) + 1 : 1,
         codigo: document.getElementById('codigo').value,
         nome: document.getElementById('nome').value,
         cnpj: document.getElementById('cnpj').value,
@@ -190,13 +274,36 @@ function salvarFornecedor(e) {
         cep: document.getElementById('cep').value,
         telefone: document.getElementById('telefone').value,
         endereco: document.getElementById('endereco').value,
-        produtos: document.getElementById('produtos').value
+        produtos: document.getElementById('produtos').value,
+        dataCadastro: obterDataLegivel(),
+        dataUltimaAtualizacao: obterDataLegivel()
     };
     
-    fornecedores.push(novoFornecedor);
-    proximoCodigo++; // Incrementa o código para o próximo fornecedor
-    renderizarTabela();
-    fecharModalAdicionar();
+    if (fornecedorParaEditar) {
+        // Atualizar fornecedor existente
+        firebase.database().ref('fornecedor/' + fornecedorParaEditar.firebaseKey).update(novoFornecedor)
+            .then(() => {
+                mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
+                fecharModalAdicionar();
+                fornecedorParaEditar = null;
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar fornecedor:', error);
+                mostrarMensagem('Erro ao atualizar fornecedor', 'error');
+            });
+    } else {
+        // Criar novo fornecedor
+        firebase.database().ref('fornecedor').push(novoFornecedor)
+            .then(() => {
+                mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
+                fecharModalAdicionar();
+                proximoCodigo++;
+            })
+            .catch(error => {
+                console.error('Erro ao cadastrar fornecedor:', error);
+                mostrarMensagem('Erro ao cadastrar fornecedor', 'error');
+            });
+    }
 }
 
 function atualizarFornecedor(e) {
@@ -204,25 +311,29 @@ function atualizarFornecedor(e) {
     
     if (!validarFormulario('form-editar')) return;
     
-    const id = parseInt(document.getElementById('edit-id').value);
-    const index = fornecedores.findIndex(f => f.id === id);
+    const dadosAtualizados = {
+        codigo: document.getElementById('edit-codigo').value,
+        nome: document.getElementById('edit-nome').value,
+        cnpj: document.getElementById('edit-cnpj').value,
+        email: document.getElementById('edit-email').value,
+        cep: document.getElementById('edit-cep').value,
+        telefone: document.getElementById('edit-telefone').value,
+        endereco: document.getElementById('edit-endereco').value,
+        produtos: document.getElementById('edit-produtos').value,
+        dataUltimaAtualizacao: obterDataLegivel()
+    };
     
-    if (index !== -1) {
-        fornecedores[index] = {
-            id: id,
-            codigo: document.getElementById('edit-codigo').value, // Mantém o código original
-            nome: document.getElementById('edit-nome').value,
-            cnpj: document.getElementById('edit-cnpj').value,
-            email: document.getElementById('edit-email').value,
-            cep: document.getElementById('edit-cep').value,
-            telefone: document.getElementById('edit-telefone').value,
-            endereco: document.getElementById('edit-endereco').value,
-            produtos: document.getElementById('edit-produtos').value
-        };
-        
-        renderizarTabela();
-        fecharModalEditar();
-    }
+    const fornecedorId = document.getElementById('edit-id').value;
+    
+    firebase.database().ref('fornecedor/' + fornecedorId).update(dadosAtualizados)
+        .then(() => {
+            mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
+            fecharModalEditar();
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar fornecedor:', error);
+            mostrarMensagem('Erro ao atualizar fornecedor', 'error');
+        });
 }
 
 // Funções auxiliares
@@ -489,4 +600,13 @@ function validarTelefone(telefone) {
     // Valida formatos: (DDD) 99999-9999 ou (DDD) 9999-9999
     const re = /^\(\d{2}\) \d{4,5}-\d{4}$/;
     return re.test(telefone);
+}
+
+function mostrarMensagem(texto, tipo = 'success') {
+    const msg = document.createElement('div');
+    msg.className = `mensagem-alerta ${tipo}`;
+    msg.textContent = texto;
+    document.body.appendChild(msg);
+    
+    setTimeout(() => msg.remove(), 3000);
 }
