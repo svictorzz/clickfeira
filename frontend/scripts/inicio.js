@@ -151,24 +151,24 @@ function carregarAlertasDoFirebase() {
       validade.setHours(0, 0, 0, 0);
       const diasParaVencer = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
 
-      const alerta = {
-        nome: produto.nome,
-        validade: produto.validade,
-        diasParaVencer,
-        quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
-        quantidadeMinima: parseFloat(produto.quantidadeMinima),
-        unidade: produto.unidadeMedida,
-        tipo: null
-      };
+ const alerta = {
+  nome: produto.nome,
+  validade: produto.validade,
+  diasParaVencer,
+  quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
+  quantidadeMinima: parseFloat(produto.quantidadeMinima),
+  unidade: produto.unidadeMedida,
+  tipos: []  // ← agora é array
+};
 
-      if (diasParaVencer < 0) alerta.tipo = 'vencido';
-      else if (diasParaVencer <= 7) alerta.tipo = 'validade';
+if (diasParaVencer < 0) alerta.tipos.push('vencido');
+else if (diasParaVencer <= 7) alerta.tipos.push('validade');
 
-      if (alerta.quantidadeEstoque < alerta.quantidadeMinima) {
-        alerta.tipo = alerta.tipo === 'validade' ? 'validade_estoque' : 'estoque';
-      }
+if (alerta.quantidadeEstoque < alerta.quantidadeMinima) {
+  alerta.tipos.push('estoque');
+}
 
-      if (alerta.tipo) alertas.push(alerta);
+if (alerta.tipos.length > 0) alertas.push(alerta);
     });
 
     atualizarListaAlertas();
@@ -188,7 +188,7 @@ function mostrarMensagem(texto, tipo = 'success') {
 // --- APLICAR FILTROS ---
 function filtrarAlertas(lista, filtro) {
   if (filtro === 'todos') return lista;
-  return lista.filter(a => a.tipo === filtro || (filtro === 'validade' && a.tipo === 'validade_estoque'));
+  return lista.filter(a => a.tipos.includes(filtro));
 }
 
 // --- EXIBIR LISTA DE ALERTAS ---
@@ -204,18 +204,43 @@ function atualizarListaAlertas() {
   if (pagina.length === 0) {
     container.innerHTML = `<p style="color:gray;">Nenhum alerta encontrado.</p>`;
   } else {
-    pagina.forEach(a => {
+    pagina.forEach(produto => {
       const div = document.createElement('div');
+      let mensagem = '';
+      let tipoClasse = '';
       let iconeClasse = 'fa-info-circle';
-      if (a.tipo === 'vencido') iconeClasse = 'fa-skull-crossbones';
-      else if (a.tipo === 'validade' || a.tipo === 'validade_estoque') iconeClasse = 'fa-exclamation-triangle';
-      else if (a.tipo === 'estoque') iconeClasse = 'fa-box-open';
 
-      div.className = `linha-alerta alerta-${a.tipo.includes('validade') ? 'validade' : a.tipo}`;
+      const temEstoque = produto.tipos.includes('estoque');
+      const temValidade = produto.tipos.includes('validade');
+      const estaVencido = produto.tipos.includes('vencido');
+
+      if (temEstoque && estaVencido) {
+        mensagem = 'Produto com estoque baixo e vencido';
+        tipoClasse = 'vencido';
+        iconeClasse = 'fa-skull-crossbones';
+      } else if (temEstoque && temValidade) {
+        mensagem = `Produto com estoque baixo e vence em ${produto.diasParaVencer} dia(s)`;
+        tipoClasse = 'validade';
+        iconeClasse = 'fa-exclamation-triangle';
+      } else if (temEstoque) {
+        mensagem = 'Produto com estoque baixo';
+        tipoClasse = 'estoque';
+        iconeClasse = 'fa-box-open';
+      } else if (estaVencido) {
+        mensagem = 'Produto vencido';
+        tipoClasse = 'vencido';
+        iconeClasse = 'fa-skull-crossbones';
+      } else if (temValidade) {
+        mensagem = `Produto vence em ${produto.diasParaVencer} dia(s)`;
+        tipoClasse = 'validade';
+        iconeClasse = 'fa-exclamation-triangle';
+      }
+
+      div.className = `linha-alerta alerta-${tipoClasse}`;
       div.innerHTML = `
-  <i class="fa ${iconeClasse}" style="min-width: 22px;"></i>
-  <b>${a.nome}</b> – ${a.tipo === 'vencido' ? 'Produto vencido' : a.tipo === 'validade' ? `Vence em ${a.diasParaVencer} dia(s)` : 'Estoque baixo'}
-`;
+        <i class="fa ${iconeClasse}" style="min-width: 22px;"></i>
+        <b>${produto.nome}</b> – ${mensagem}
+      `;
 
       container.appendChild(div);
     });
