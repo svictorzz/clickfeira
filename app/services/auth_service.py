@@ -74,8 +74,6 @@ def edit_user_info(email: str, new_email: str = None, new_address: str = None, n
 
     return False  
 
-
-
 def change_password(email: str, old_password: str, new_password: str) -> bool:
     ref = db.reference("comerciante")
     resultados = ref.order_by_child("email").equal_to(email).get() or {}
