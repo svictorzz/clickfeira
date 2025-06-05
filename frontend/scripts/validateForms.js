@@ -1,3 +1,5 @@
+import { API_URL } from "./api.js";
+
 document.addEventListener("DOMContentLoaded", function () {
 
     const formCadastro = document.getElementById("formCadastro");
@@ -49,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
             for (const key in campos) {
                 const campo = campos[key];
                 if (!campo.el) {
-                    console.error(`❌ Campo não encontrado: ${key}`);
                     valid = false;
                     continue;
                 }
@@ -64,61 +65,67 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (valid) {
-                console.log("Dados validados e prontos para envio!");
                 const userData = new FormData(formCadastro);
                 registerUser(Object.fromEntries(userData.entries()));
             }
         });
     }
 
-    if (formLogin) {
+        if (formLogin) {
         formLogin.addEventListener("submit", async function (e) {
             e.preventDefault();
-            console.log("📤 Tentando login...");
 
             const email = document.getElementById("loginEmail").value.trim();
             const senha = document.getElementById("loginSenha").value.trim();
+            const lembrar = document.getElementById("lembrar").checked;
             const errorMessage = document.getElementById("erroLogin");
 
             try {
-                const response = await fetch(`${API_URL}/login`, {
+                const response = await fetch(`${API_URL}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, senha }),
                 });
 
                 if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Credenciais inválidas.");
-}
-
-    const data = await response.json();
-
-    // Armazena o token e o ID do usuário no localStorage 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("idComerciante", data.idComerciante); // Id do comerciante
-
-    // Redireciona para a página inicial
-    window.location.href = "inicio.html";
-                } catch (error) {
-                    console.error("Erro de login:", error);
-
-                    if (errorMessage) {
-                        errorMessage.textContent = error.message;
-                        errorMessage.style.display = "block";
-                    } else {
-                        alert(error.message);
-                    }
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Credenciais inválidas.");
                 }
-            });
-        }
-    });
+
+                const data = await response.json();
+
+                localStorage.removeItem("token");
+                localStorage.removeItem("idComerciante");
+                sessionStorage.removeItem("token");
+                sessionStorage.removeItem("idComerciante");
+
+                if (lembrar) {
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("idComerciante", data.idComerciante);
+                } else {
+                    sessionStorage.setItem("token", data.token);
+                    sessionStorage.setItem("idComerciante", data.idComerciante);
+                }
+
+                window.location.href = "inicio.html";
+            } catch (error) {
+                console.error("Erro de login:", error);
+
+                if (errorMessage) {
+                    errorMessage.textContent = error.message;
+                    errorMessage.style.display = "block";
+                } else {
+                    alert(error.message);
+                }
+            }
+        });
+    }
+});
 
 async function registerUser(userData) {
-    console.log("📤 Enviando dados para o backend:", userData);
-
+    
     try {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(userData),

@@ -5,6 +5,11 @@ def get_user_by_id(comerciante_id: str) -> dict | None:
     data = ref.get()
     return data if data else None
 
+def list_all_comerciantes() -> dict:
+    data = db.reference("comerciante").get() or {}
+    if isinstance(data, list):
+        return {str(i): item for i, item in enumerate(data) if item is not None}
+    return data
 
 def update_dados_comerciante(comerciante_id: str, novos_dados: dict) -> bool:
     ref = db.reference(f"comerciante/{comerciante_id}")
@@ -25,17 +30,16 @@ def update_dados_comerciante(comerciante_id: str, novos_dados: dict) -> bool:
         print(f"Erro ao atualizar dados do comerciante: {e}")
         return False
 
-
-def alterar_senha_comerciante(comerciante_id: str, senha_atual: str, nova_senha: str) -> bool:
+def delete_comerciante(comerciante_id: str) -> bool:
     ref = db.reference(f"comerciante/{comerciante_id}")
-    data = ref.get()
+    usuario_existente = ref.get()
 
-    if not data or data.get("senha") != senha_atual:
-        return False  # Senha incorreta ou usuário não existe
+    if not usuario_existente:
+        return False
 
     try:
-        ref.update({"senha": nova_senha})
+        ref.delete()
         return True
     except Exception as e:
-        print(f"Erro ao alterar senha do comerciante: {e}")
+        print(f"Erro ao excluir comerciante: {e}")
         return False

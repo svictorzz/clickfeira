@@ -4,7 +4,7 @@ from app.services.report_service import (
     generate_supplier_report,
 )
 
-report_bp = Blueprint('report', __name__)
+report_bp = Blueprint('report', __name__, url_prefix='/report')
 
 @report_bp.route('/reports', methods=['GET'])
 def fetch_reports():

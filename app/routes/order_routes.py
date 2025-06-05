@@ -5,7 +5,7 @@ from app.services.order_service import (
 )
 from app.routes.auth_routes import login_required
 
-order_bp = Blueprint('order', __name__)
+order_bp = Blueprint('order', __name__, url_prefix='/order')
 
 @order_bp.route('/orders', methods=['POST'])
 @login_required
