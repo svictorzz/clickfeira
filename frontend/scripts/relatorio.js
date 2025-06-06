@@ -152,24 +152,48 @@ function carregarDashboardEstoque() {
 
 // Dashboard 3: Categorias com mais produtos (com filtro)
 function carregarDashboardCategorias() {
-  const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
+
   get(refProdutos).then(snapshot => {
-    let lista = Object.values(snapshot.val() || {});
-    if (filtro !== "todas") {
-      lista = lista.filter(p => p.categoria === filtro);
-    }
+    const lista = Object.values(snapshot.val() || {});
+
+    // Agrupa por categoria, contando o número de produtos únicos em cada
     const agrupado = {};
     lista.forEach(p => {
-      if (!agrupado[p.categoria]) agrupado[p.categoria] = 0;
-      agrupado[p.categoria] += Number(p.quantidadeEstoque || 0);
+      const categoria = p.categoria || "Sem categoria";
+      if (!agrupado[categoria]) {
+        agrupado[categoria] = 0;
+      }
+      agrupado[categoria]++;
     });
-    const categorias = Object.entries(agrupado).map(([cat, qtd]) => ({ categoria: cat, qtd }))
-      .sort((a, b) => b.qtd - a.qtd).slice(0, 5);
+
+    const categorias = Object.entries(agrupado)
+      .map(([categoria, qtd]) => ({ categoria, qtd }))
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 5);
+
     const total = categorias.reduce((soma, c) => soma + c.qtd, 0);
-    desenharGraficoComPercentual("grafico-categorias", categorias.map(c => c.categoria), categorias.map(c => c.qtd), total, "Categorias com Mais Produtos", "rgba(50, 179, 7, 0.6)");
+
+    desenharGraficoComPercentual(
+      "grafico-categorias",
+      categorias.map(c => c.categoria),
+      categorias.map(c => c.qtd),
+      total,
+      "Categorias com Mais Produtos",
+      "rgba(50, 179, 7, 0.6)"
+    );
+
+    // Exportar para Excel
     document.getElementById("btn-exportar-categorias").addEventListener("click", () => {
-      exportarParaExcel(categorias.map(c => ({ Categoria: c.categoria, "Total em Estoque": c.qtd, "Percentual (%)": `${((c.qtd / total) * 100).toFixed(1)}%` })), "Categorias_Mais_Produtos", "Categorias");
+      exportarParaExcel(
+        categorias.map(c => ({
+          Categoria: c.categoria,
+          "Total de Produtos": c.qtd,
+          "Percentual (%)": `${((c.qtd / total) * 100).toFixed(1)}%`
+        })),
+        "Categorias_Mais_Produtos",
+        "Categorias"
+      );
     });
   });
 }
