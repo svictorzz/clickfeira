@@ -94,7 +94,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Submissão do formulário
   document.getElementById('form-produto').addEventListener('submit', handleFormSubmit);
+  carregarFornecedores();
+
 });
+
+// Buscar fornecedores do Firebase
+function carregarFornecedores() {
+  const select = document.getElementById('fornecedor');
+  if (!select) return;
+
+  firebase.database().ref('fornecedor').once('value').then(snapshot => {
+    select.innerHTML = '<option value="">Selecione...</option>';
+    snapshot.forEach(child => {
+      const fornecedor = child.val();
+      const option = document.createElement('option');
+      option.value = fornecedor.nome;
+      option.textContent = fornecedor.nome;
+      select.appendChild(option);
+    });
+  });
+}
 
 // Função para gerar código do produto (copiada de produtos.js)
 function gerarCodigoProduto() {
@@ -151,24 +170,24 @@ function carregarAlertasDoFirebase() {
       validade.setHours(0, 0, 0, 0);
       const diasParaVencer = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
 
- const alerta = {
-  nome: produto.nome,
-  validade: produto.validade,
-  diasParaVencer,
-  quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
-  quantidadeMinima: parseFloat(produto.quantidadeMinima),
-  unidade: produto.unidadeMedida,
-  tipos: []  // ← agora é array
-};
+      const alerta = {
+        nome: produto.nome,
+        validade: produto.validade,
+        diasParaVencer,
+        quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
+        quantidadeMinima: parseFloat(produto.quantidadeMinima),
+        unidade: produto.unidadeMedida,
+        tipos: []  // ← agora é array
+      };
 
-if (diasParaVencer < 0) alerta.tipos.push('vencido');
-else if (diasParaVencer <= 7) alerta.tipos.push('validade');
+      if (diasParaVencer < 0) alerta.tipos.push('vencido');
+      else if (diasParaVencer <= 7) alerta.tipos.push('validade');
 
-if (alerta.quantidadeEstoque < alerta.quantidadeMinima) {
-  alerta.tipos.push('estoque');
-}
+      if (alerta.quantidadeEstoque < alerta.quantidadeMinima) {
+        alerta.tipos.push('estoque');
+      }
 
-if (alerta.tipos.length > 0) alertas.push(alerta);
+      if (alerta.tipos.length > 0) alertas.push(alerta);
     });
 
     atualizarListaAlertas();
@@ -413,6 +432,7 @@ function handleFormSubmit(e) {
   const [ano, mes, dia] = validadeInput.split('-').map(Number);
   const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
+  const fornecedor = document.getElementById('fornecedor').value;
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
@@ -474,7 +494,7 @@ function handleFormSubmit(e) {
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    //fornecedor, // ajuste conforme necessário
+    fornecedor, // ajuste conforme necessário
     imagemUrl: '',
     dataUltimaAtualizacao: obterDataLegivel()
   };
