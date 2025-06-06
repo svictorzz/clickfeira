@@ -41,6 +41,7 @@
       <button class="filter"><i class="fa fa-sliders"></i> Filtros</button>
       <!-- Botão para abrir modal de cadastro -->
       <button class="abrir-modal"><i class="fa fa-plus"></i> Adicionar</button>
+      <button id="btn-exportar-todos"><i class="fa fa-file-excel"></i> Exportar Todos</button>
     </div>
 
     <!-- Menu de Filtros (escondido inicialmente) -->
@@ -107,10 +108,12 @@
       </div>
 
       <!-- Botão de excluir múltiplos produtos -->
-      <button id="btn-excluir-selecionados"
-        style="background-color: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; display: none;">
-        Excluir Selecionados
-      </button>
+      <!-- Botões de ação múltipla -->
+      <div id="acoes-multiplas">
+        <button id="btn-excluir-selecionados">Excluir Selecionados</button>
+        <button id="btn-exportar-selecionados">Exportar Selecionados</button>
+      </div>
+
     </div>
 
     <!-- Tabela de Produtos -->
