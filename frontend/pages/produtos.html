@@ -78,6 +78,14 @@
           <option value="outros">Outros</option>
         </select>
       </div>
+
+      <!-- Filtro por fornecedor -->
+      <div>
+        <label><strong>Filtrar por fornecedor:</strong></label>
+        <select id="filtrar-fornecedor" class="form-select" style="max-width: 200px;">
+          <option value="">Todos</option>
+        </select>
+      </div>
     </div>
 
     <!-- Legenda dos alertas e botão excluir selecionados -->
@@ -176,6 +184,12 @@
               <label for="descricao">Descrição</label>
               <textarea id="descricao" name="descricao" maxlength="150" rows="4"></textarea>
 
+              <label for="fornecedor">Fornecedor</label>
+              <select id="fornecedor" name="fornecedor" required>
+                <option value="">Selecione...</option>
+              </select>
+
+
               <label for="qtd-minima">Quantidade Mínima</label>
               <div class="input-group">
                 <input type="number" step="0.01" min="0" id="qtd-minima" name="qtd-minima" required>
@@ -185,7 +199,7 @@
                   <option value="g">g</option>
                   <option value="kg">kg</option>
                   <option value="ml">ml</option>
-                  <option value="l">l</option>
+                  <option value="litro">litro</option>
                   <option value="pacote">pacote</option>
                 </select>
               </div>
@@ -243,6 +257,7 @@
             <p><strong>Validade:</strong> <span id="ver-validade"></span></p>
             <p><strong>Preço:</strong> <span id="ver-preco"></span></p>
             <p><strong>Valor total estimado em estoque:</strong> <span id="ver-total-estimado"></span></p>
+            <p><strong>Fornecedor:</strong> <span id="ver-fornecedor"></span></p>
 
           </div>
 
