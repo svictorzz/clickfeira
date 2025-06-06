@@ -306,8 +306,8 @@ function atualizarPaginacao(totalItens) {
 // -- EXCLUIR TODOS OS PRODUTOS DA SEÇÃO (PÁGINA)
 function atualizarBotaoExcluirSelecionados() {
   const selecionados = document.querySelectorAll('.selecionar-produto:checked');
-  const botao = document.getElementById('btn-excluir-selecionados');
-  botao.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
+  const container = document.getElementById('acoes-multiplas');
+  container.style.display = selecionados.length > 0 ? 'flex' : 'none';
 }
 
 // -- EXCLUIR PRODUTOS INDIVIDUAIS ESCOLHIDOSS
@@ -720,3 +720,98 @@ function carregarFiltroFornecedores() {
     });
   });
 }
+
+//Função para exportar todos os itens
+function exportarTodosVisiveisParaCSV() {
+  const produtosVisiveis = aplicarFiltrosOrdenacao(produtos); // já respeita busca, filtros e ordenação
+
+  if (produtosVisiveis.length === 0) {
+    mostrarMensagem('⚠️ Nenhum produto disponível para exportar.', 'warning');
+    return;
+  }
+
+  const headers = [
+    'Código', 'Nome', 'Categoria', 'Validade',
+    'Qtd. Mínima', 'Qtd. Atual', 'Unidade',
+    'Preço', 'Preço por', 'Fornecedor', 'Descrição'
+  ];
+
+  const rows = produtosVisiveis.map(produto => [
+    produto.codigo || '',
+    produto.nome || '',
+    produto.categoria || '',
+    produto.validade ? formatarData(produto.validade) : '',
+    produto.quantidadeMinima || '',
+    produto.quantidadeEstoque || '',
+    produto.unidadeMedida || '',
+    produto.preco || '',
+    produto.precoPor || '',
+    produto.fornecedor || '',
+    produto.descricao || ''
+  ]);
+
+  const csvContent = '\uFEFF' + [headers, ...rows]
+    .map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"))
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "produtos_tabela_atual.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+//Ação de exportar todos os produtos
+document.getElementById('btn-exportar-todos').addEventListener('click', exportarTodosVisiveisParaCSV);
+
+//Ação de botão de exportar selecionados
+document.getElementById('btn-exportar-selecionados').addEventListener('click', () => {
+  const linhas = Array.from(document.querySelectorAll('.selecionar-produto:checked'))
+    .map(cb => cb.closest('tr'));
+
+  if (linhas.length === 0) return;
+
+  const headers = [
+    'Código', 'Nome', 'Categoria', 'Validade',
+    'Qtd. Mínima', 'Qtd. Atual', 'Unidade',
+    'Preço', 'Preço por', 'Fornecedor', 'Descrição'
+  ];
+
+  const rows = linhas.map(tr => {
+    const firebaseKey = tr.getAttribute('data-key');
+    const produto = produtos.find(p => p.firebaseKey === firebaseKey);
+
+    return [
+      produto.codigo || '',
+      produto.nome || '',
+      produto.categoria || '',
+      produto.validade ? formatarData(produto.validade) : '',
+      produto.quantidadeMinima || '',
+      produto.quantidadeEstoque || '',
+      produto.unidadeMedida || '',
+      produto.preco || '',
+      produto.precoPor || '',
+      produto.fornecedor || '',
+      produto.descricao || ''
+    ];
+  });
+
+  // Adiciona BOM UTF-8 \uFEFF no início
+  const csvContent = '\uFEFF' + [headers, ...rows]
+    .map(e => e.map(valor => `"${String(valor).replace(/"/g, '""')}"`).join(";"))
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "produtos_selecionados_completos.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
