@@ -55,6 +55,22 @@ document.addEventListener("DOMContentLoaded", () => {
 //
 // UTILITÁRIOS
 
+function calcularFatorConversao(precoPor, unidade, qtd) {
+  if (precoPor === unidade) return qtd;
+  const chave = `${precoPor}_${unidade}`;
+  const mapa = {
+    "kg_g": qtd / 1000,
+    "kg_100g": qtd / 10,
+    "100g_kg": qtd * 10,
+    "100g_g": qtd / 100,
+    "g_kg": qtd * 1000,
+    "g_100g": qtd * 100,
+    "litro_ml": qtd / 1000,
+    "ml_litro": qtd * 1000
+  };
+  return mapa[chave] ?? qtd;
+}
+
 // Exportar dados para Excel
 //
 function exportarParaExcel(dados, nomeArquivo = "relatorio", nomeAba = "Dados") {
@@ -86,12 +102,24 @@ function atualizarTodosDashboards() {
 // DASHBOARD 1: Fornecedores
 function carregarDashboardFornecedores() {
   const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
-    const produtos = Object.values(snapshot.val() || {});
+  const refFornecedores = ref(db, "fornecedor");
+
+  Promise.all([get(refProdutos), get(refFornecedores)]).then(([prodSnap, fornSnap]) => {
+    const produtos = Object.values(prodSnap.val() || {});
+    const fornecedores = fornSnap.val() || {};
+
+    // Mapeia os nomes dos fornecedores
+    const mapaFornecedores = {};
+    for (let id in fornecedores) {
+      mapaFornecedores[id] = fornecedores[id].nome || "Fornecedor desconhecido";
+    }
+
     const fornecedoresMap = {};
 
     produtos.forEach(produto => {
-      const nomeFornecedor = produto.fornecedor || "Fornecedor desconhecido";
+      const idFornecedor = produto.fornecedorId;
+      const nomeFornecedor = mapaFornecedores[idFornecedor] || "Fornecedor desconhecido";
+
       if (!fornecedoresMap[nomeFornecedor]) {
         fornecedoresMap[nomeFornecedor] = 0;
       }
@@ -110,13 +138,15 @@ function carregarDashboardFornecedores() {
       "Top 5 Fornecedores por Produtos",
       "rgba(50, 179, 7, 0.6)"
     );
-
-    document.getElementById("btn-exportar-excel").addEventListener("click", () => {
-      exportarParaExcel(lista.map(f => ({
-        Fornecedor: f.nome,
-        "Total de Produtos": f.qtd
-      })), "Top_Fornecedores", "Fornecedores");
-    });
+    const btnFornecedores = document.getElementById("btn-exportar-fornecedores");
+    if (btnFornecedores) {
+      btnFornecedores.onclick = () => {
+        exportarParaExcel(lista.map(f => ({
+          Fornecedor: f.nome,
+          "Qtd. de Produtos": f.qtd
+        })), "Top_Fornecedores", "Fornecedores");
+      };
+    }
   });
 }
 
@@ -140,13 +170,17 @@ function carregarDashboardEstoque() {
 
     desenharGrafico("grafico-estoque", lista.map(p => p.nome), lista.map(p => p.quantidade), "Top 5 Produtos com Maior Estoque", "rgba(50, 179, 7, 0.6)");
 
-    document.getElementById("btn-exportar-estoque").addEventListener("click", () => {
-      exportarParaExcel(lista.map(p => ({
-        Produto: p.nome,
-        Categoria: p.categoria,
-        "Qtd. em Estoque": p.quantidade
-      })), "Top_Estoque", "Estoque Atual");
-    });
+    const btnEstoque = document.getElementById("btn-exportar-estoque");
+    if (btnEstoque) {
+      btnEstoque.onclick = () => {
+        exportarParaExcel(lista.map(p => ({
+          Produto: p.nome,
+          Categoria: p.categoria,
+          "Qtd. em Estoque": p.quantidade
+        })), "Top_Estoque", "Estoque Atual");
+      };
+    }
+
   });
 }
 
@@ -184,17 +218,21 @@ function carregarDashboardCategorias() {
     );
 
     // Exportar para Excel
-    document.getElementById("btn-exportar-categorias").addEventListener("click", () => {
-      exportarParaExcel(
-        categorias.map(c => ({
-          Categoria: c.categoria,
-          "Total de Produtos": c.qtd,
-          "Percentual (%)": `${((c.qtd / total) * 100).toFixed(1)}%`
-        })),
-        "Categorias_Mais_Produtos",
-        "Categorias"
-      );
-    });
+    const btnCategorias = document.getElementById("btn-exportar-categorias");
+    if (btnCategorias) {
+      btnCategorias.onclick = () => {
+        exportarParaExcel(
+          categorias.map(c => ({
+            Categoria: c.categoria,
+            "Total de Produtos": c.qtd,
+            "Percentual (%)": `${((c.qtd / total) * 100).toFixed(1)}%`
+          })),
+          "Categorias_Mais_Produtos",
+          "Categorias"
+        );
+      };
+    }
+
   });
 }
 
@@ -211,9 +249,19 @@ function carregarDashboardCritico() {
       .map(p => ({ nome: p.nome, categoria: p.categoria, estoque: Number(p.quantidadeEstoque || 0), minimo: Number(p.quantidadeMinima || 0), cor: Number(p.quantidadeEstoque || 0) === 0 ? "#dc3545" : "#fd7e14" }))
       .sort((a, b) => a.estoque - b.estoque).slice(0, 5);
     desenharGrafico("grafico-critico", criticos.map(p => p.nome), criticos.map(p => p.estoque), "Produtos com Estoque Crítico", "rgba(50, 179, 7, 0.6)");
-    document.getElementById("btn-exportar-critico").addEventListener("click", () => {
-      exportarParaExcel(criticos.map(p => ({ Produto: p.nome, Categoria: p.categoria, "Qtd. Atual": p.estoque, "Qtd. Mínima": p.minimo, "Situação": p.estoque === 0 ? "Zerado" : "Abaixo do mínimo" })), "Estoque_Critico", "Estoque Crítico");
-    });
+    const btnCritico = document.getElementById("btn-exportar-critico");
+    if (btnCritico) {
+      btnCritico.onclick = () => {
+        exportarParaExcel(criticos.map(p => ({
+          Produto: p.nome,
+          Categoria: p.categoria,
+          "Qtd. Atual": p.estoque,
+          "Qtd. Mínima": p.minimo,
+          "Situação": p.estoque === 0 ? "Zerado" : "Abaixo do mínimo"
+        })), "Estoque_Critico", "Estoque Crítico");
+      };
+    }
+
   });
 }
 
@@ -232,26 +280,47 @@ function carregarDashboardValorTotal() {
       const qtd = Number(p.quantidadeEstoque);
       const precoPor = p.precoPor;
       const unidade = p.unidadeMedida;
-      let fator = 1;
-      if (precoPor === "kg" && unidade === "g") fator = qtd / 1000;
-      else if (precoPor === "kg" && unidade === "100g") fator = qtd / 10;
-      else if (precoPor === "100g" && unidade === "kg") fator = qtd * 10;
-      else if (precoPor === "100g" && unidade === "g") fator = qtd / 100;
-      else if (precoPor === "g" && unidade === "kg") fator = qtd * 1000;
-      else if (precoPor === "g" && unidade === "100g") fator = qtd * 100;
-      else if (precoPor === "litro" && unidade === "ml") fator = qtd / 1000;
-      else if (precoPor === "ml" && unidade === "litro") fator = qtd * 1000;
-      else fator = qtd;
-      const valorTotal = preco * fator;
-      valorGeral += valorTotal;
-      return { nome: p.nome, categoria: p.categoria || "Sem categoria", preco: preco.toFixed(2), quantidade: qtd, valorTotal: Number(valorTotal.toFixed(2)) };
+      const fator = calcularFatorConversao(precoPor, unidade, qtd);
+      const valor = preco * fator;
+      valorGeral += valor;
+      return {
+        nome: p.nome,
+        categoria: p.categoria || "Sem categoria",
+        preco: preco.toFixed(2),
+        quantidade: qtd,
+        unidadeMedida: p.unidadeMedida || "unidade(s)",
+        valorTotal: Number(valor.toFixed(2))
+      };
+
     });
     const top5 = produtosComValor.sort((a, b) => b.valorTotal - a.valorTotal).slice(0, 5);
-    desenharGrafico("grafico-valor", top5.map(p => p.nome), top5.map(p => p.valorTotal), "Top 5 por Valor em Estoque", "rgba(50, 179, 7, 0.6)");
+    desenharGrafico(
+      "grafico-valor",
+      top5.map(p => p.nome),
+      top5.map(p => p.valorTotal),
+      "Top 5 por Valor em Estoque",
+      "rgba(50, 179, 7, 0.6)",
+      false,
+      (context, index) => {
+        const valor = context.parsed.y;
+        const produto = top5[index];
+        const unidade = produto.quantidade + ' ' + (produto.unidadeMedida || 'unidade(s)');
+        return `R$ ${valor.toFixed(2).replace('.', ',')} (${unidade})`;
+      }
+    );
     document.getElementById("valor-total-geral").textContent = `Total em Estoque: R$ ${valorGeral.toFixed(2).replace('.', ',')}`;
-    document.getElementById("btn-exportar-valor").addEventListener("click", () => {
-      exportarParaExcel(top5.map(p => ({ Produto: p.nome, Categoria: p.categoria, Preço: `R$ ${p.preco}`, Quantidade: p.quantidade, "Valor Total": `R$ ${p.valorTotal.toFixed(2)}` })), "Top_Valor_Estoque", "Valor Total Estoque");
-    });
+    const btnValor = document.getElementById("btn-exportar-valor");
+    if (btnValor) {
+      btnValor.onclick = () => {
+        exportarParaExcel(top5.map(p => ({
+          Produto: p.nome,
+          Categoria: p.categoria,
+          Preço: `R$ ${p.preco}`,
+          Quantidade: p.quantidade,
+          "Valor Total": `R$ ${p.valorTotal.toFixed(2)}`
+        })), "Top_Valor_Estoque", "Valor Total Estoque");
+      };
+    }
   });
 }
 
@@ -278,8 +347,11 @@ function carregarDashboardValidade() {
 
       if (validade) {
         validade.setHours(0, 0, 0, 0);
-        diasParaVencer = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+        if (!isNaN(validade.getTime())) {
+          diasParaVencer = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+        }
       }
+
 
       if (validade && diasParaVencer < 0) {
         vencido++;
@@ -295,9 +367,13 @@ function carregarDashboardValidade() {
 
     desenharGraficoPizza("grafico-validade", ["Vencido", "Próximo", "OK"], [vencido, proximo, ok], ["#dc3545", "#ffc107", "rgba(50, 179, 7, 0.6)"]);
 
-    document.getElementById("btn-exportar-validade").addEventListener("click", () => {
-      exportarParaExcel(exportacao, "Status_Validade", "Validade");
-    });
+    const btnValidade = document.getElementById("btn-exportar-validade");
+    if (btnValidade) {
+      btnValidade.onclick = () => {
+        exportarParaExcel(exportacao, "Status_Validade", "Validade");
+      };
+    }
+
   });
 }
 
@@ -318,17 +394,7 @@ function carregarDashboardValorCritico() {
       const qtd = Number(p.quantidadeEstoque);
       const precoPor = p.precoPor;
       const unidade = p.unidadeMedida;
-      let fator = 1;
-      if (precoPor === "kg" && unidade === "g") fator = qtd / 1000;
-      else if (precoPor === "kg" && unidade === "100g") fator = qtd / 10;
-      else if (precoPor === "100g" && unidade === "kg") fator = qtd * 10;
-      else if (precoPor === "100g" && unidade === "g") fator = qtd / 100;
-      else if (precoPor === "g" && unidade === "kg") fator = qtd * 1000;
-      else if (precoPor === "g" && unidade === "100g") fator = qtd * 100;
-      else if (precoPor === "litro" && unidade === "ml") fator = qtd / 1000;
-      else if (precoPor === "ml" && unidade === "litro") fator = qtd * 1000;
-      else fator = qtd;
-
+      const fator = calcularFatorConversao(precoPor, unidade, qtd);
       const valor = preco * fator;
       valorCriticoTotal += valor;
 
@@ -347,16 +413,7 @@ function carregarDashboardValorCritico() {
       const qtd = Number(p.quantidadeEstoque);
       const precoPor = p.precoPor;
       const unidade = p.unidadeMedida;
-      let fator = 1;
-      if (precoPor === "kg" && unidade === "g") fator = qtd / 1000;
-      else if (precoPor === "kg" && unidade === "100g") fator = qtd / 10;
-      else if (precoPor === "100g" && unidade === "kg") fator = qtd * 10;
-      else if (precoPor === "100g" && unidade === "g") fator = qtd / 100;
-      else if (precoPor === "g" && unidade === "kg") fator = qtd * 1000;
-      else if (precoPor === "g" && unidade === "100g") fator = qtd * 100;
-      else if (precoPor === "litro" && unidade === "ml") fator = qtd / 1000;
-      else if (precoPor === "ml" && unidade === "litro") fator = qtd * 1000;
-      else fator = qtd;
+      const fator = calcularFatorConversao(precoPor, unidade, qtd);
 
       valorEstoqueTotal += preco * fator;
     });
@@ -370,9 +427,20 @@ function carregarDashboardValorCritico() {
       `Total Crítico: R$ ${valorCriticoTotal.toFixed(2).replace('.', ',')}<br>` +
       `<span style="font-size: 14px; color: gray;">💥 Isso representa ${percentual}% do valor total do estoque</span>`;
 
-    document.getElementById("btn-exportar-valor-critico").addEventListener("click", () => {
-      exportarParaExcel(criticos.map(p => ({ Produto: p.nome, Categoria: p.categoria, Preço: `R$ ${p.preco}`, "Qtd. Atual": p.estoque, "Qtd. Mínima": p.minimo, "Valor Total": `R$ ${p.valorTotal.toFixed(2)}` })), "Estoque_Critico_Valor", "Críticos por Valor");
-    });
+    const btnValorCritico = document.getElementById("btn-exportar-valor-critico");
+    if (btnValorCritico) {
+      btnValorCritico.onclick = () => {
+        exportarParaExcel(criticos.map(p => ({
+          Produto: p.nome,
+          Categoria: p.categoria,
+          Preço: `R$ ${p.preco}`,
+          "Qtd. Atual": p.estoque,
+          "Qtd. Mínima": p.minimo,
+          "Valor Total": `R$ ${p.valorTotal.toFixed(2)}`
+        })), "Estoque_Critico_Valor", "Críticos por Valor");
+      };
+    }
+
   });
 }
 
@@ -393,23 +461,20 @@ function carregarDashboardHistoricoEstoque() {
       const precoPor = p.precoPor;
       const unidade = p.unidadeMedida;
 
-      let fator = 1;
-      if (precoPor === "kg" && unidade === "g") fator = qtd / 1000;
-      else if (precoPor === "kg" && unidade === "100g") fator = qtd / 10;
-      else if (precoPor === "100g" && unidade === "kg") fator = qtd * 10;
-      else if (precoPor === "100g" && unidade === "g") fator = qtd / 100;
-      else if (precoPor === "g" && unidade === "kg") fator = qtd * 1000;
-      else if (precoPor === "g" && unidade === "100g") fator = qtd * 100;
-      else if (precoPor === "litro" && unidade === "ml") fator = qtd / 1000;
-      else if (precoPor === "ml" && unidade === "litro") fator = qtd * 1000;
-      else fator = qtd;
+      const fator = calcularFatorConversao(precoPor, unidade, qtd);
 
       const valor = preco * fator;
       const data = p.dataUltimaAtualizacao || p.dataCadastro;
       if (!data) return;
 
-      const [dia, mes, ano] = data.split(" ")[0].split("/");
+      if (!data || !data.includes("/")) return;
+
+      const partes = data.split(" ")[0].split("/");
+      if (partes.length !== 3) return;
+
+      const [dia, mes, ano] = partes;
       const chave = `${ano}-${mes}`;
+
       if (!agrupado[chave]) agrupado[chave] = 0;
       agrupado[chave] += valor;
     });
@@ -426,28 +491,29 @@ function carregarDashboardHistoricoEstoque() {
     desenharGraficoLinhaEBarra("grafico-historico", chavesOrdenadas, valoresOrdenados, mediaMovel, "Valor Total do Estoque por Mês");
 
 
-    document.getElementById("btn-exportar-historico").addEventListener("click", () => {
-      const dadosExportar = chavesOrdenadas.map((mes, i) => ({
-        "Mês": mes,
-        "Valor Total em Estoque": `R$ ${valoresOrdenados[i].toFixed(2)}`,
-        "Média Móvel": mediaMovel[i] != null ? `R$ ${mediaMovel[i].toFixed(2)}` : "—"
-      }));
-      exportarParaExcel(dadosExportar, "Historico_Estoque", "Histórico Estoque");
-    });
+    const btnHistorico = document.getElementById("btn-exportar-historico");
+    if (btnHistorico) {
+      btnHistorico.onclick = () => {
+        const dadosExportar = chavesOrdenadas.map((mes, i) => ({
+          "Mês": mes,
+          "Valor Total em Estoque": `R$ ${valoresOrdenados[i].toFixed(2)}`,
+          "Média Móvel": mediaMovel[i] != null ? `R$ ${mediaMovel[i].toFixed(2)}` : "—"
+        }));
+        exportarParaExcel(dadosExportar, "Historico_Estoque", "Histórico Estoque");
+      };
+    }
+
   });
 }
 
 //
 // Funções genérica para desenhar gráficos
 //
-function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7, 0.6)", mostrarLegenda = false) {
+function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7, 0.6)", mostrarLegenda = false, customTooltipCallback = null) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  // Destroi gráfico anterior, se existir
-  if (graficosAtivos[canvasId]) {
-    graficosAtivos[canvasId].destroy();
-  }
+  if (graficosAtivos[canvasId]) graficosAtivos[canvasId].destroy();
 
   graficosAtivos[canvasId] = new Chart(ctx, {
     type: "bar",
@@ -472,11 +538,11 @@ function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7
         },
         tooltip: {
           callbacks: {
-            label: context => {
-              const valor = context.parsed.y;
-              return typeof valor === 'number'
-                ? `${valor.toLocaleString('pt-BR')} unidade(s)`
-                : valor;
+            label: (context) => {
+              const index = context.dataIndex;
+              return customTooltipCallback
+                ? customTooltipCallback(context, index)
+                : `${context.parsed.y.toLocaleString('pt-BR')} unidade(s)`;
             }
           }
         }
@@ -690,4 +756,3 @@ function carregarCategoriasNoFiltro() {
     atualizarTodosDashboards();
   });
 }
-
