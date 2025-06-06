@@ -168,7 +168,7 @@ function carregarAlertasDoFirebase() {
 
       const validade = new Date(produto.validade);
       validade.setHours(0, 0, 0, 0);
-      const diasParaVencer = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
+      const diasParaVencer = Math.ceil(((validade - hoje) / (1000 * 60 * 60 * 24)) + 1);
 
       const alerta = {
         nome: produto.nome,
@@ -177,7 +177,7 @@ function carregarAlertasDoFirebase() {
         quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
         quantidadeMinima: parseFloat(produto.quantidadeMinima),
         unidade: produto.unidadeMedida,
-        tipos: []  // ← agora é array
+        tipos: []
       };
 
       if (diasParaVencer < 0) alerta.tipos.push('vencido');
