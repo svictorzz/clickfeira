@@ -1,17 +1,17 @@
 // Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
-  authDomain: "click-feira.firebaseapp.com",
-  databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
-  projectId: "click-feira",
-  storageBucket: "click-feira.appspot.com",
-  messagingSenderId: "108583577904",
-  appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
+    apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
+    authDomain: "click-feira.firebaseapp.com",
+    databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
+    projectId: "click-feira",
+    storageBucket: "click-feira.appspot.com",
+    messagingSenderId: "108583577904",
+    appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
 };
 
 // Initialize Firebase
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
 }
 
 // Variáveis globais
@@ -30,41 +30,50 @@ const elements = {
     ordenarNome: document.getElementById('ordenar-nome')
 };
 
+// Registrar ação no histórico
+function registrarHistorico(tipo, descricao) {
+    firebase.database().ref('historicoAcoes').push({
+        tipo,
+        descricao,
+        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    });
+}
+
 // Função para obter data legível
 function obterDataLegivel() {
-  const hoje = new Date();
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const ano = hoje.getFullYear();
-  const hora = hoje.getHours().toString().padStart(2, '0');
-  const minutos = hoje.getMinutes().toString().padStart(2, '0');
-  return `${dia}/${mes}/${ano} às ${hora}:${minutos}`;
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = hoje.getFullYear();
+    const hora = hoje.getHours().toString().padStart(2, '0');
+    const minutos = hoje.getMinutes().toString().padStart(2, '0');
+    return `${dia}/${mes}/${ano} às ${hora}:${minutos}`;
 }
 
 // Função para formatar data 
 function formatarData(dataISO) {
-  if (!dataISO) return '';
-  
-  if (dataISO.includes('às')) return dataISO;
-  
-  const data = new Date(dataISO);
-  
-  // Garante que a data é válida
-  if (isNaN(data.getTime())) return '';
-  
-  const dia = String(data.getDate()).padStart(2, '0');
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const ano = data.getFullYear();
-  const horas = String(data.getHours()).padStart(2, '0');
-  const minutos = String(data.getMinutes()).padStart(2, '0');
-  
-  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+    if (!dataISO) return '';
+
+    if (dataISO.includes('às')) return dataISO;
+
+    const data = new Date(dataISO);
+
+    // Garante que a data é válida
+    if (isNaN(data.getTime())) return '';
+
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const ano = data.getFullYear();
+    const horas = String(data.getHours()).padStart(2, '0');
+    const minutos = String(data.getMinutes()).padStart(2, '0');
+
+    return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
 }
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     carregarFornecedoresDoFirebase();
-    
+
     // Event Listeners
     document.getElementById('btn-adicionar').addEventListener('click', mostrarModalAdicionar);
     document.getElementById('btn-cancelar-adicionar').addEventListener('click', fecharModalAdicionar);
@@ -74,43 +83,43 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-confirmar-exclusao').addEventListener('click', confirmarExclusao);
     elements.pesquisarFornecedor.addEventListener('input', pesquisarFornecedores);
     elements.ordenarNome.addEventListener('change', ordenarFornecedores);
-    
+
     // Toggle para mostrar/ocultar filtros
-    document.querySelector('.filter').addEventListener('click', function() {
+    document.querySelector('.filter').addEventListener('click', function () {
         if (elements.filtrosContainer.style.display === 'none') {
             elements.filtrosContainer.style.display = 'flex';
         } else {
             elements.filtrosContainer.style.display = 'none';
         }
     });
-    
+
     // Formulários
     document.getElementById('form-adicionar').addEventListener('submit', salvarFornecedor);
     document.getElementById('form-editar').addEventListener('submit', atualizarFornecedor);
-    
+
     // Máscaras e validações
     aplicarMascaras();
 });
 
 // Carregar fornecedores do Firebase
 function carregarFornecedoresDoFirebase() {
-  firebase.database().ref('fornecedor').on('value', (snapshot) => {
-    fornecedores = [];
-    snapshot.forEach((childSnapshot) => {
-      const fornecedor = childSnapshot.val();
-      fornecedor.firebaseKey = childSnapshot.key;
-      fornecedores.push(fornecedor);
-      
-      // Atualizar próximo código disponível
-      if (fornecedor.codigo) {
-        const numCodigo = parseInt(fornecedor.codigo.replace(/\D/g, ''));
-        if (numCodigo >= proximoCodigo) {
-          proximoCodigo = numCodigo + 1;
-        }
-      }
+    firebase.database().ref('fornecedor').on('value', (snapshot) => {
+        fornecedores = [];
+        snapshot.forEach((childSnapshot) => {
+            const fornecedor = childSnapshot.val();
+            fornecedor.firebaseKey = childSnapshot.key;
+            fornecedores.push(fornecedor);
+
+            // Atualizar próximo código disponível
+            if (fornecedor.codigo) {
+                const numCodigo = parseInt(fornecedor.codigo.replace(/\D/g, ''));
+                if (numCodigo >= proximoCodigo) {
+                    proximoCodigo = numCodigo + 1;
+                }
+            }
+        });
+        renderizarTabela();
     });
-    renderizarTabela();
-  });
 }
 
 // Funções para abrir/fechar modais
@@ -129,9 +138,9 @@ function fecharModalAdicionar() {
 function mostrarModalEditar(key) {
     const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
-    
+
     fornecedorParaEditar = fornecedor;
-    
+
     document.getElementById('edit-id').value = fornecedor.firebaseKey;
     document.getElementById('edit-codigo').value = fornecedor.codigo || '';
     document.getElementById('edit-nome').value = fornecedor.nome || '';
@@ -141,7 +150,7 @@ function mostrarModalEditar(key) {
     document.getElementById('edit-telefone').value = fornecedor.telefone || '';
     document.getElementById('edit-endereco').value = fornecedor.endereco || '';
     document.getElementById('edit-produtos').value = fornecedor.produtos || '';
-    
+
     document.getElementById('modal-editar').style.display = 'flex';
 }
 
@@ -153,7 +162,7 @@ function fecharModalEditar() {
 function mostrarModalVisualizar(key) {
     const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
-    
+
     // Preencher os dados do fornecedor
     document.getElementById('view-codigo').textContent = fornecedor.codigo || 'Não informado';
     document.getElementById('view-nome').textContent = fornecedor.nome || 'Não informado';
@@ -164,7 +173,7 @@ function mostrarModalVisualizar(key) {
     document.getElementById('view-endereco').textContent = fornecedor.endereco || 'Não informado';
     document.getElementById('view-dataCadastro').textContent = fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : 'Não informado';
     document.getElementById('view-dataAtualizacao').textContent = fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : 'Não informado';
-    
+
     // Traduzir o valor dos produtos
     const produtos = {
         'frutas': 'Frutas',
@@ -181,7 +190,7 @@ function mostrarModalVisualizar(key) {
         'outros': 'Outros'
     };
     document.getElementById('view-produtos').textContent = fornecedor.produtos ? produtos[fornecedor.produtos] || fornecedor.produtos : 'Não informado';
-    
+
     document.getElementById('modal-visualizar').style.display = 'flex';
 }
 
@@ -198,7 +207,7 @@ function mostrarModalExclusao(key, nome) {
 // Funções de renderização
 function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
     elements.tabelaFornecedores.innerHTML = '';
-    
+
     if (fornecedoresParaRenderizar.length === 0) {
         elements.tabelaFornecedores.innerHTML = `
             <tr>
@@ -209,7 +218,7 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
         `;
         return;
     }
-    
+
     fornecedoresParaRenderizar.forEach(fornecedor => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-key', fornecedor.firebaseKey);
@@ -230,62 +239,63 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
                 </button>
             </td>
         `;
-        
+
         // Adiciona event listeners
-        tr.querySelector('.btn-visualizar').addEventListener('click', () => 
+        tr.querySelector('.btn-visualizar').addEventListener('click', () =>
             mostrarModalVisualizar(fornecedor.firebaseKey));
-            
-        tr.querySelector('.btn-editar').addEventListener('click', () => 
+
+        tr.querySelector('.btn-editar').addEventListener('click', () =>
             mostrarModalEditar(fornecedor.firebaseKey));
-            
-        tr.querySelector('.btn-excluir').addEventListener('click', () => 
+
+        tr.querySelector('.btn-excluir').addEventListener('click', () =>
             mostrarModalExclusao(fornecedor.firebaseKey, fornecedor.nome));
-        
+
         elements.tabelaFornecedores.appendChild(tr);
     });
 }
 
 // Funções CRUD
 function confirmarExclusao() {
-  if (fornecedorParaExcluir) {
-    const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir);
+    if (fornecedorParaExcluir) {
+        const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir);
 
-    fornecedorRef.once('value').then(snapshot => {
-      const fornecedor = snapshot.val();
-      const nomeFornecedor = fornecedor?.nome;
+        fornecedorRef.once('value').then(snapshot => {
+            const fornecedor = snapshot.val();
+            const nomeFornecedor = fornecedor?.nome;
 
-      // Remover fornecedor
-      return fornecedorRef.remove().then(() => {
-        mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
-        modalExcluir.hide();
-        excluirProdutosDoFornecedor(fornecedorParaExcluir); // Chave usada como ID
-        fornecedorParaExcluir = null;
-      });
-    }).catch(error => {
-      console.error('Erro ao excluir fornecedor:', error);
-      mostrarMensagem('Erro ao excluir fornecedor', 'error');
-    });
-  }
+            // Remover fornecedor
+            return fornecedorRef.remove().then(() => {
+                mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
+                modalExcluir.hide();
+                registrarHistorico('Exclusão de fornecedor', `Fornecedor "${nomeFornecedor}" foi excluído.`);
+                excluirProdutosDoFornecedor(fornecedorParaExcluir); // Chave usada como ID
+                fornecedorParaExcluir = null;
+            });
+        }).catch(error => {
+            console.error('Erro ao excluir fornecedor:', error);
+            mostrarMensagem('Erro ao excluir fornecedor', 'error');
+        });
+    }
 }
 
 function excluirProdutosDoFornecedor(fornecedorId) {
-  firebase.database().ref('produto').once('value').then(snapshot => {
-    snapshot.forEach(child => {
-      const produto = child.val();
-      const key = child.key;
-      if (produto.fornecedorId === fornecedorId) {
-        firebase.database().ref('produto/' + key).remove();
-        registrarHistorico('Exclusão automática', `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`);
-      }
+    firebase.database().ref('produto').once('value').then(snapshot => {
+        snapshot.forEach(child => {
+            const produto = child.val();
+            const key = child.key;
+            if (produto.fornecedorId === fornecedorId) {
+                firebase.database().ref('produto/' + key).remove();
+                registrarHistorico('Exclusão automática', `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`);
+            }
+        });
     });
-  });
 }
 
 function salvarFornecedor(e) {
     e.preventDefault();
-    
+
     if (!validarFormulario('form-adicionar')) return;
-    
+
     const novoFornecedor = {
         codigo: document.getElementById('codigo').value,
         nome: document.getElementById('nome').value,
@@ -298,7 +308,7 @@ function salvarFornecedor(e) {
         dataCadastro: obterDataLegivel(),
         dataUltimaAtualizacao: obterDataLegivel()
     };
-    
+
     if (fornecedorParaEditar) {
         // Atualizar fornecedor existente
         firebase.database().ref('fornecedor/' + fornecedorParaEditar.firebaseKey).update(novoFornecedor)
@@ -306,6 +316,7 @@ function salvarFornecedor(e) {
                 mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
                 fecharModalAdicionar();
                 fornecedorParaEditar = null;
+                registrarHistorico('Edição de fornecedor', `Fornecedor "${novoFornecedor.nome}" atualizado.`);
             })
             .catch(error => {
                 console.error('Erro ao atualizar fornecedor:', error);
@@ -318,6 +329,8 @@ function salvarFornecedor(e) {
                 mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
                 fecharModalAdicionar();
                 proximoCodigo++;
+                registrarHistorico('Cadastro de fornecedor', `Fornecedor "${novoFornecedor.nome}" cadastrado.`);
+
             })
             .catch(error => {
                 console.error('Erro ao cadastrar fornecedor:', error);
@@ -328,9 +341,9 @@ function salvarFornecedor(e) {
 
 function atualizarFornecedor(e) {
     e.preventDefault();
-    
+
     if (!validarFormulario('form-editar')) return;
-    
+
     const dadosAtualizados = {
         codigo: document.getElementById('edit-codigo').value,
         nome: document.getElementById('edit-nome').value,
@@ -342,13 +355,15 @@ function atualizarFornecedor(e) {
         produtos: document.getElementById('edit-produtos').value,
         dataUltimaAtualizacao: obterDataLegivel()
     };
-    
+
     const fornecedorId = document.getElementById('edit-id').value;
-    
+
     firebase.database().ref('fornecedor/' + fornecedorId).update(dadosAtualizados)
         .then(() => {
             mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
             fecharModalEditar();
+            registrarHistorico('Edição de fornecedor', `Fornecedor "${dadosAtualizados.nome}" atualizado.`);
+
         })
         .catch(error => {
             console.error('Erro ao atualizar fornecedor:', error);
@@ -359,26 +374,26 @@ function atualizarFornecedor(e) {
 // Funções auxiliares
 function pesquisarFornecedores() {
     const termo = elements.pesquisarFornecedor.value.toLowerCase();
-    
+
     if (!termo) {
         renderizarTabela();
         return;
     }
-    
-    const resultados = fornecedores.filter(fornecedor => 
-        (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termo)) || 
+
+    const resultados = fornecedores.filter(fornecedor =>
+        (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termo)) ||
         (fornecedor.cnpj && fornecedor.cnpj.includes(termo)) ||
         (fornecedor.codigo && fornecedor.codigo.includes(termo))
     );
-    
+
     renderizarTabela(resultados);
 }
 
 function ordenarFornecedores() {
     const ordenacao = elements.ordenarNome.value;
     let fornecedoresOrdenados = [...fornecedores];
-    
-    switch(ordenacao) {
+
+    switch (ordenacao) {
         case 'az':
             fornecedoresOrdenados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
             break;
@@ -389,36 +404,36 @@ function ordenarFornecedores() {
             // Mantém a ordenação original
             break;
     }
-    
+
     renderizarTabela(fornecedoresOrdenados);
 }
 
 
 document.getElementById('filtrar-tipo').addEventListener('change', function () {
-  const tipoSelecionado = this.value;
-  aplicarFiltroTipo(tipoSelecionado);
+    const tipoSelecionado = this.value;
+    aplicarFiltroTipo(tipoSelecionado);
 });
 
 function aplicarFiltroTipo(tipo) {
-  let filtrados = [...fornecedores];
+    let filtrados = [...fornecedores];
 
-  if (tipo === 'cpf') {
-    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
-  } else if (tipo === 'cnpj') {
-    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
-  }
+    if (tipo === 'cpf') {
+        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
+    } else if (tipo === 'cnpj') {
+        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
+    }
 
-  renderizarTabela(filtrados);
+    renderizarTabela(filtrados);
 }
 
 function validarFormulario(formId) {
     let valido = true;
     const form = document.getElementById(formId);
-    
+
     // Validar campos obrigatórios
     form.querySelectorAll('[required]').forEach(campo => {
         const errorElement = document.getElementById(campo.id + '-error');
-        
+
         if (!campo.value.trim()) {
             campo.classList.add('is-invalid');
             if (errorElement) errorElement.style.display = 'block';
@@ -428,7 +443,7 @@ function validarFormulario(formId) {
             if (errorElement) errorElement.style.display = 'none';
         }
     });
-    
+
     // Validações específicas
     if (formId === 'form-adicionar' || formId === 'form-editar') {
         // Validar CNPJ/CPF
@@ -444,7 +459,7 @@ function validarFormulario(formId) {
                 valido = false;
             }
         }
-        
+
         // Validar e-mail
         const emailField = form.querySelector('#email, #edit-email');
         if (emailField && emailField.value.trim()) {
@@ -455,7 +470,7 @@ function validarFormulario(formId) {
                 valido = false;
             }
         }
-        
+
         // Validar nome (apenas letras e espaços)
         const nomeField = form.querySelector('#nome, #edit-nome');
         if (nomeField && nomeField.value.trim()) {
@@ -469,7 +484,7 @@ function validarFormulario(formId) {
                 valido = false;
             }
         }
-        
+
         // Validar telefone
         const telefoneField = form.querySelector('#telefone, #edit-telefone');
         if (telefoneField && telefoneField.value.trim()) {
@@ -484,7 +499,7 @@ function validarFormulario(formId) {
             }
         }
     }
-    
+
     return valido;
 }
 
@@ -492,9 +507,9 @@ function aplicarMascaras() {
     // Máscara para CNPJ/CPF
     const cnpjFields = document.querySelectorAll('#cnpj, #edit-cnpj');
     cnpjFields.forEach(field => {
-        field.addEventListener('input', function(e) {
+        field.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
-            
+
             if (value.length <= 11) { // CPF
                 value = value.replace(/(\d{3})(\d)/, '$1.$2');
                 value = value.replace(/(\d{3})(\d)/, '$1.$2');
@@ -505,27 +520,27 @@ function aplicarMascaras() {
                 value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
                 value = value.replace(/(\d{4})(\d)/, '$1-$2');
             }
-            
+
             e.target.value = value;
         });
     });
-    
+
     // Máscara para CEP
     const cepFields = document.querySelectorAll('#cep, #edit-cep');
     cepFields.forEach(field => {
-        field.addEventListener('input', function(e) {
+        field.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
             value = value.replace(/^(\d{5})(\d)/, '$1-$2');
             e.target.value = value;
         });
     });
-    
+
     // Máscara para telefone (com DDD e 9º dígito ou sem 9º dígito)
     const telefoneFields = document.querySelectorAll('#telefone, #edit-telefone');
     telefoneFields.forEach(field => {
-        field.addEventListener('input', function(e) {
+        field.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
-            
+
             if (value.length > 10) { // Com DDD e 9º dígito (celular)
                 value = value.replace(/^(\d{2})(\d)/, '($1) $2');
                 value = value.replace(/(\d{5})(\d)/, '$1-$2');
@@ -533,15 +548,15 @@ function aplicarMascaras() {
                 value = value.replace(/^(\d{2})(\d)/, '($1) $2');
                 value = value.replace(/(\d{4})(\d)/, '$1-$2');
             }
-            
+
             e.target.value = value;
         });
     });
-    
+
     // Validar apenas letras e espaços no nome
     const nomeFields = document.querySelectorAll('#nome, #edit-nome');
     nomeFields.forEach(field => {
-        field.addEventListener('input', function(e) {
+        field.addEventListener('input', function (e) {
             e.target.value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
         });
     });
@@ -550,7 +565,7 @@ function aplicarMascaras() {
 // Funções de validação
 function validarCnpjCpf(valor) {
     const str = valor.replace(/[^\d]+/g, '');
-    
+
     if (str.length === 11) {
         return validarCPF(str);
     } else if (str.length === 14) {
@@ -561,13 +576,13 @@ function validarCnpjCpf(valor) {
 
 function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, '');
-    
+
     // Elimina CPFs invalidos conhecidos
-    if (cpf.length !== 11 || 
+    if (cpf.length !== 11 ||
         /^(\d)\1{10}$/.test(cpf)) {
         return false;
     }
-    
+
     // Valida 1o digito
     let add = 0;
     for (let i = 0; i < 9; i++) {
@@ -576,7 +591,7 @@ function validarCPF(cpf) {
     let rev = 11 - (add % 11);
     if (rev === 10 || rev === 11) rev = 0;
     if (rev !== parseInt(cpf.charAt(9))) return false;
-    
+
     // Valida 2o digito
     add = 0;
     for (let i = 0; i < 10; i++) {
@@ -585,47 +600,47 @@ function validarCPF(cpf) {
     rev = 11 - (add % 11);
     if (rev === 10 || rev === 11) rev = 0;
     if (rev !== parseInt(cpf.charAt(10))) return false;
-    
+
     return true;
 }
 
 function validarCNPJ(cnpj) {
     cnpj = cnpj.replace(/[^\d]+/g, '');
-    
+
     // Elimina CNPJs invalidos conhecidos
-    if (cnpj.length !== 14 || 
+    if (cnpj.length !== 14 ||
         /^(\d)\1{13}$/.test(cnpj)) {
         return false;
     }
-    
+
     // Valida DVs
     let tamanho = cnpj.length - 2;
     let numeros = cnpj.substring(0, tamanho);
     const digitos = cnpj.substring(tamanho);
     let soma = 0;
     let pos = tamanho - 7;
-    
+
     for (let i = tamanho; i >= 1; i--) {
         soma += numeros.charAt(tamanho - i) * pos--;
         if (pos < 2) pos = 9;
     }
-    
+
     let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
     if (resultado !== parseInt(digitos.charAt(0))) return false;
-    
+
     tamanho = tamanho + 1;
     numeros = cnpj.substring(0, tamanho);
     soma = 0;
     pos = tamanho - 7;
-    
+
     for (let i = tamanho; i >= 1; i--) {
         soma += numeros.charAt(tamanho - i) * pos--;
         if (pos < 2) pos = 9;
     }
-    
+
     resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
     if (resultado !== parseInt(digitos.charAt(1))) return false;
-    
+
     return true;
 }
 
@@ -645,6 +660,6 @@ function mostrarMensagem(texto, tipo = 'success') {
     msg.className = `mensagem-alerta ${tipo}`;
     msg.textContent = texto;
     document.body.appendChild(msg);
-    
+
     setTimeout(() => msg.remove(), 3000);
 }
