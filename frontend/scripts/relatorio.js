@@ -83,35 +83,44 @@ function atualizarTodosDashboards() {
   carregarDashboardHistoricoEstoque();
 }
 
-//
 // DASHBOARD 1: Fornecedores
-//
 function carregarDashboardFornecedores() {
-  const refFornecedores = ref(db, "fornecedor");
-  get(refFornecedores).then(snapshot => {
-    const lista = Object.values(snapshot.val() || {}).map(f => ({
-      nome: f.nome,
-      cnpj: f.cnpj,
-      contato: f.contato,
-      qtd: f.produtosFornecidos ? Object.keys(f.produtosFornecidos).length : 0
-    })).sort((a, b) => b.qtd - a.qtd).slice(0, 5);
+  const refProdutos = ref(db, "produto");
+  get(refProdutos).then(snapshot => {
+    const produtos = Object.values(snapshot.val() || {});
+    const fornecedoresMap = {};
 
-    desenharGrafico("grafico-fornecedores", lista.map(f => f.nome), lista.map(f => f.qtd), "Top 5 Fornecedores por Produtos", "rgba(50, 179, 7, 0.6)");
+    produtos.forEach(produto => {
+      const nomeFornecedor = produto.fornecedor || "Fornecedor desconhecido";
+      if (!fornecedoresMap[nomeFornecedor]) {
+        fornecedoresMap[nomeFornecedor] = 0;
+      }
+      fornecedoresMap[nomeFornecedor]++;
+    });
+
+    const lista = Object.entries(fornecedoresMap)
+      .map(([nome, qtd]) => ({ nome, qtd }))
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 5);
+
+    desenharGrafico(
+      "grafico-fornecedores",
+      lista.map(f => f.nome),
+      lista.map(f => f.qtd),
+      "Top 5 Fornecedores por Produtos",
+      "rgba(50, 179, 7, 0.6)"
+    );
 
     document.getElementById("btn-exportar-excel").addEventListener("click", () => {
       exportarParaExcel(lista.map(f => ({
         Fornecedor: f.nome,
-        Contato: f.contato,
-        CNPJ: f.cnpj,
         "Total de Produtos": f.qtd
       })), "Top_Fornecedores", "Fornecedores");
     });
   });
 }
 
-//
 // DASHBOARD 2: Estoque Atual
-//
 function carregarDashboardEstoque() {
   const filtro = document.getElementById("filtro-categoria").value;
 
@@ -657,3 +666,4 @@ function carregarCategoriasNoFiltro() {
     atualizarTodosDashboards();
   });
 }
+
