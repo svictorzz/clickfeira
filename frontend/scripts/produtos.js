@@ -490,6 +490,7 @@ document.getElementById('lista-produtos').addEventListener('click', e => {
     document.getElementById('unidade-atual').value = produto.unidadeMedida;
     document.getElementById('preco').value = produto.preco;
     document.getElementById('preco-por').value = produto.precoPor;
+    document.getElementById('fornecedor').value = produto.fornecedor || '';
     document.getElementById('titulo-modal-produto').textContent = 'Editar Produto';
     document.getElementById('modal-produto').style.display = 'flex';
   }
