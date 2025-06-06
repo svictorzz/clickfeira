@@ -247,18 +247,38 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
 
 // Funções CRUD
 function confirmarExclusao() {
-    if (fornecedorParaExcluir) {
-        firebase.database().ref('fornecedor/' + fornecedorParaExcluir).remove()
-            .then(() => {
-                mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
-                modalExcluir.hide();
-                fornecedorParaExcluir = null;
-            })
-            .catch(error => {
-                console.error('Erro ao excluir fornecedor:', error);
-                mostrarMensagem('Erro ao excluir fornecedor', 'error');
-            });
-    }
+  if (fornecedorParaExcluir) {
+    const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir);
+
+    fornecedorRef.once('value').then(snapshot => {
+      const fornecedor = snapshot.val();
+      const nomeFornecedor = fornecedor?.nome;
+
+      // Remover fornecedor
+      return fornecedorRef.remove().then(() => {
+        mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
+        modalExcluir.hide();
+        excluirProdutosDoFornecedor(fornecedorParaExcluir); // Chave usada como ID
+        fornecedorParaExcluir = null;
+      });
+    }).catch(error => {
+      console.error('Erro ao excluir fornecedor:', error);
+      mostrarMensagem('Erro ao excluir fornecedor', 'error');
+    });
+  }
+}
+
+function excluirProdutosDoFornecedor(fornecedorId) {
+  firebase.database().ref('produto').once('value').then(snapshot => {
+    snapshot.forEach(child => {
+      const produto = child.val();
+      const key = child.key;
+      if (produto.fornecedorId === fornecedorId) {
+        firebase.database().ref('produto/' + key).remove();
+        registrarHistorico('Exclusão automática', `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`);
+      }
+    });
+  });
 }
 
 function salvarFornecedor(e) {
