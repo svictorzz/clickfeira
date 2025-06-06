@@ -15,12 +15,13 @@ function inicializarApp() {
   carregarFornecedores();
   carregarFiltroFornecedores();
   criarBotaoLimparFiltros();
+  carregarMapaFornecedores();
 }
 
 function configurarEventListeners() {
   // Modal de cadastro
   document.querySelector('.abrir-modal').addEventListener('click', abrirModalCadastro);
-  
+
   // Cancelamentos
   document.querySelector('.cancelar').addEventListener('click', () => {
     document.getElementById('modal-produto').style.display = 'none';
@@ -28,21 +29,21 @@ function configurarEventListeners() {
   document.querySelector('.cancelar-visualizar').addEventListener('click', () => {
     document.getElementById('modal-visualizar').style.display = 'none';
   });
-  
+
   // Controles de unidade
   document.getElementById('unidade-minima').addEventListener('change', e => {
     document.getElementById('unidade-atual').value = e.target.value;
   });
-  
+
   // Validação de compatibilidade unidade/preço
   document.getElementById('preco-por').addEventListener('change', validarCompatibilidadeUnidadePreco);
-  
+
   // Formulário
   document.getElementById('form-produto').addEventListener('submit', handleFormSubmit);
-  
+
   // Exclusão múltipla
   document.getElementById('btn-excluir-selecionados').addEventListener('click', excluirSelecionados);
-  
+
   // Seleção de itens
   document.getElementById('selecionar-todos').addEventListener('change', toggleSelecaoTodos);
   document.addEventListener('change', e => {
@@ -50,7 +51,7 @@ function configurarEventListeners() {
       atualizarSelecaoIndividual();
     }
   });
-  
+
   // Filtros e ordenação
   document.querySelector('.input-icon input').addEventListener('input', () => {
     paginaAtual = 1;
@@ -72,27 +73,27 @@ function configurarEventListeners() {
     atualizarTabela();
     verificarFiltrosAtivos();
   });
-  
+
   // Botão de filtros
   document.querySelector('.filter')?.addEventListener('click', toggleFiltros);
-  
+
   // Ações na tabela
   document.getElementById('lista-produtos').addEventListener('click', handleAcoesTabela);
-  
+
   // Confirmação de exclusão
   document.getElementById('btn-confirmar-excluir').addEventListener('click', confirmarExclusao);
   document.getElementById('btn-cancelar-excluir').addEventListener('click', () => {
     firebaseKeyParaExcluir = null;
     document.getElementById('modal-confirmar-exclusao').style.display = 'none';
   });
-  
+
   // Validade vencida
   document.getElementById('btn-confirmar-validade').addEventListener('click', confirmarValidadeVencida);
   document.getElementById('btn-cancelar-validade').addEventListener('click', () => {
     document.getElementById('modal-validade-vencida').style.display = 'none';
     window.submissaoPendente = null;
   });
-  
+
   // Exportação
   document.getElementById('btn-exportar-todos').addEventListener('click', exportarTodosVisiveisParaCSV);
   document.getElementById('btn-exportar-selecionados').addEventListener('click', exportarSelecionadosParaCSV);
@@ -120,10 +121,22 @@ function carregarFornecedores() {
     snapshot.forEach(child => {
       const fornecedor = child.val();
       const option = document.createElement('option');
-      option.value = fornecedor.nome;
+      option.value = child.key;
       option.textContent = fornecedor.nome;
       select.appendChild(option);
     });
+  });
+}
+
+let mapaFornecedores = {};
+
+function carregarMapaFornecedores() {
+  firebase.database().ref('fornecedor').once('value').then(snapshot => {
+    mapaFornecedores = {};
+    snapshot.forEach(child => {
+      mapaFornecedores[child.key] = child.val().nome;
+    });
+    atualizarTabela(); // Para exibir nomes na tabela após carregar o mapa
   });
 }
 
@@ -136,7 +149,7 @@ function carregarFiltroFornecedores() {
     snapshot.forEach(child => {
       const fornecedor = child.val();
       const option = document.createElement('option');
-      option.value = fornecedor.nome;
+      option.value = child.key;
       option.textContent = fornecedor.nome;
       select.appendChild(option);
     });
@@ -361,7 +374,6 @@ function handleFormSubmit(e) {
   const [ano, mes, dia] = validadeInput.split('-').map(Number);
   const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
-  const fornecedor = document.getElementById('fornecedor').value;
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
@@ -411,6 +423,8 @@ function handleFormSubmit(e) {
   }
 
   // Montar objeto produto
+  const fornecedorId = document.getElementById('fornecedor').value;
+
   const produto = {
     codigo,
     nome,
@@ -423,7 +437,7 @@ function handleFormSubmit(e) {
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    fornecedor,
+    fornecedorId,
     imagemUrl: '',
     dataUltimaAtualizacao: obterDataLegivel()
   };
@@ -468,7 +482,7 @@ function handleFormSubmit(e) {
 function handleAcoesTabela(e) {
   const row = e.target.closest('tr');
   if (!row) return;
-  
+
   const firebaseKey = row.getAttribute('data-key');
   const index = produtos.findIndex(p => p.firebaseKey === firebaseKey);
   const produto = produtos[index];
@@ -503,7 +517,7 @@ function preencherModalVisualizacao(produto) {
   document.getElementById('ver-qtd-minima').textContent = `${produto.quantidadeMinima} ${produto.unidadeMedida}`;
   document.getElementById('ver-qtd-atual').textContent = `${produto.quantidadeEstoque} ${produto.unidadeMedida}`;
   document.getElementById('ver-imagem').src = produto.imagemUrl;
-  document.getElementById('ver-fornecedor').textContent = produto.fornecedor || '—';
+  document.getElementById('ver-fornecedor').textContent = mapaFornecedores[produto.fornecedorId] || '—';
 }
 
 function preencherFormEdicao(produto, index) {
@@ -519,7 +533,7 @@ function preencherFormEdicao(produto, index) {
   document.getElementById('unidade-atual').value = produto.unidadeMedida;
   document.getElementById('preco').value = produto.preco;
   document.getElementById('preco-por').value = produto.precoPor;
-  document.getElementById('fornecedor').value = produto.fornecedor || '';
+  document.getElementById('fornecedor').value = produto.fornecedorId || '';
   document.getElementById('titulo-modal-produto').textContent = 'Editar Produto';
 }
 
@@ -575,6 +589,19 @@ function confirmarExclusao() {
   }
 }
 
+function excluirProdutosDoFornecedor(nomeFornecedor) {
+  firebase.database().ref('produto').once('value').then(snapshot => {
+    snapshot.forEach(child => {
+      const produto = child.val();
+      const key = child.key;
+      if (produto.fornecedorId === nomeFornecedor) {
+        firebase.database().ref('produto/' + key).remove();
+        registrarHistorico('Exclusão automática', `Produto "${produto.nome}" excluído pois o fornecedor "${nomeFornecedor}" foi removido.`);
+      }
+    });
+  });
+}
+
 // --- VALIDADE VENCIDA ---
 function confirmarValidadeVencida() {
   window.continuarMesmoComValidadeVencida = true;
@@ -597,7 +624,7 @@ function aplicarFiltrosOrdenacao(lista) {
     const categoria = p.categoria.toLowerCase();
     const matchTermo = nome.includes(termo) || categoria.includes(termo);
     const matchCategoria = categoriaSelecionada ? p.categoria === categoriaSelecionada : true;
-    const matchFornecedor = fornecedorSelecionado ? p.fornecedor === fornecedorSelecionado : true;
+    const matchFornecedor = fornecedorSelecionado ? p.fornecedorId === fornecedorSelecionado : true;
 
     let matchEspecial = true;
     if (filtroEspecialAtivo) {
@@ -704,7 +731,7 @@ function gerarCSV(dados, nomeArquivo) {
     produto.unidadeMedida || '',
     produto.preco || '',
     produto.precoPor || '',
-    produto.fornecedor || '',
+    mapaFornecedores[produto.fornecedorId] || '',
     produto.descricao || ''
   ]);
 
