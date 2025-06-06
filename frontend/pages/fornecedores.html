@@ -57,8 +57,6 @@
     <div class="container-centralizado">
       <div class="row w-100 justify-content-center">
         <div class="col-md-12 p-4">
-          <section id="lista-fornecedores" class="panel active">
-            <div class="card">
               <div class="card-header bg-white">
                 <h2><b>Fornecedores</b> <span class="cinza">/ Gerenciar</span></h2>
               </div>
@@ -109,8 +107,6 @@
                   </table>
                 </div>
               </div>
-            </div>
-          </section>
         </div>
       </div>
     </div>
@@ -142,17 +138,17 @@
 
           <div class="form-col">
             <label for="email">E-mail:</label>
-            <input id="email" class="form-control" type="email"/>
+            <input id="email" class="form-control" type="email" required/>
             <div id="email-error" class="error-message">E-mail inválido</div>
             
             <label for="cep">CEP:</label>
-            <input id="cep" class="form-control"/>
+            <input id="cep" class="form-control" required/>
             
             <label for="endereco">Endereço:</label>
-            <input id="endereco" class="form-control"/>
+            <input id="endereco" class="form-control" required/>
             
             <label for="produtos">Produtos Fornecidos:</label>
-            <select id="produtos" class="form-select">
+            <select id="produtos" class="form-select" required>
               <option value="">Selecione os produtos</option>
               <option value="frutas">Frutas</option>
               <option value="legumes">Legumes</option>
