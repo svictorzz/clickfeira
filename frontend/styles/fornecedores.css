@@ -204,10 +204,6 @@ body {
   animation: aparecer-modal 0.3s ease;
 }
 
-#modal-visualizar{
- 
-}
-
 @keyframes aparecer-modal {
   from {
     transform: scale(0.9);

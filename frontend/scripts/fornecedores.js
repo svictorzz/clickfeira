@@ -373,6 +373,24 @@ function ordenarFornecedores() {
     renderizarTabela(fornecedoresOrdenados);
 }
 
+
+document.getElementById('filtrar-tipo').addEventListener('change', function () {
+  const tipoSelecionado = this.value;
+  aplicarFiltroTipo(tipoSelecionado);
+});
+
+function aplicarFiltroTipo(tipo) {
+  let filtrados = [...fornecedores];
+
+  if (tipo === 'cpf') {
+    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
+  } else if (tipo === 'cnpj') {
+    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
+  }
+
+  renderizarTabela(filtrados);
+}
+
 function validarFormulario(formId) {
     let valido = true;
     const form = document.getElementById(formId);
