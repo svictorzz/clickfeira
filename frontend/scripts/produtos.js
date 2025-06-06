@@ -35,24 +35,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Sincroniza unidade de medida com tipo de preço e avisa o usuário
-document.getElementById('preco-por').addEventListener('change', e => {
-  const precoPor = e.target.value;
-  const unidade = document.getElementById('unidade-minima').value;
+  document.getElementById('preco-por').addEventListener('change', e => {
+    const precoPor = e.target.value;
+    const unidade = document.getElementById('unidade-minima').value;
 
-  const combinacoesValidas = {
-    unidade: ['unidade', 'pacote'],
-    pacote: ['unidade', 'pacote'],
-    litro: ['litro', 'ml'],
-    ml: ['litro', 'ml'],
-    kg: ['kg', 'g', '100g'],
-    g: ['kg', 'g', '100g'],
-    '100g': ['kg', 'g', '100g']
-  };
+    const combinacoesValidas = {
+      unidade: ['unidade', 'pacote'],
+      pacote: ['unidade', 'pacote'],
+      litro: ['litro', 'ml'],
+      ml: ['litro', 'ml'],
+      kg: ['kg', 'g', '100g'],
+      g: ['kg', 'g', '100g'],
+      '100g': ['kg', 'g', '100g']
+    };
 
-  if (!combinacoesValidas[precoPor]?.includes(unidade)) {
-    mostrarMensagem(`⚠️ A unidade "${unidade}" não é ideal para o tipo de preço "${precoPor}". Considere ajustar para compatibilidade.`, 'warning');
-  }
-});
+    if (!combinacoesValidas[precoPor]?.includes(unidade)) {
+      mostrarMensagem(`⚠️ A unidade "${unidade}" não é ideal para o tipo de preço "${precoPor}". Considere ajustar para compatibilidade.`, 'warning');
+    }
+  });
 
   // Submissão do formulário
   document.getElementById('form-produto').addEventListener('submit', handleFormSubmit);
@@ -81,22 +81,38 @@ document.getElementById('preco-por').addEventListener('change', e => {
   document.querySelector('.input-icon input').addEventListener('input', () => {
     paginaAtual = 1;
     atualizarTabela();
+    verificarFiltrosAtivos();
   });
 
   document.getElementById('filtrar-categoria').addEventListener('change', () => {
     paginaAtual = 1;
     atualizarTabela();
+    verificarFiltrosAtivos();
   });
 
   document.getElementById('ordenar-nome').addEventListener('change', () => {
     paginaAtual = 1;
     atualizarTabela();
+    verificarFiltrosAtivos();
   });
 
+  //Filtro de fornecedor
+  document.getElementById('filtrar-fornecedor').addEventListener('change', () => {
+    paginaAtual = 1;
+    atualizarTabela();
+    verificarFiltrosAtivos();
+  });
+
+  // Botão para mostrar/ocultar os filtros
   document.querySelector('.filter')?.addEventListener('click', () => {
     const filtros = document.getElementById('filtros-container');
-    filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
+    if (filtros) {
+      filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
+    }
   });
+
+  carregarFornecedores();
+  carregarFiltroFornecedores();
 });
 
 // TRAZER OS PRODUTOS DO FIREBASE À TELA
@@ -112,6 +128,24 @@ function carregarProdutosDoFirebase() {
   });
 }
 
+// PUXAR FORNECEDORES DE FIREBASE
+function carregarFornecedores() {
+  const select = document.getElementById('fornecedor');
+  if (!select) return;
+
+  firebase.database().ref('fornecedor').once('value').then(snapshot => {
+    select.innerHTML = '<option value="">Selecione...</option>';
+    snapshot.forEach(child => {
+      const fornecedor = child.val();
+      const option = document.createElement('option');
+      option.value = fornecedor.nome;
+      option.textContent = fornecedor.nome;
+      select.appendChild(option);
+    });
+  });
+}
+
+// HISTÓRICO DE AÇÕES FEITAS EM CADASTRO
 function registrarHistorico(tipo, descricao) {
   firebase.database().ref('historicoAcoes').push({
     tipo,
@@ -156,12 +190,12 @@ function adicionarLinhaTabela(produto) {
   hoje.setHours(0, 0, 0, 0);
 
   // Validade
-let validade = null;
-if (produto.validade) {
-  const [ano, mes, dia] = produto.validade.split('-').map(Number);
-  validade = new Date(ano, mes - 1, dia);
-  validade.setHours(0, 0, 0, 0);
-}
+  let validade = null;
+  if (produto.validade) {
+    const [ano, mes, dia] = produto.validade.split('-').map(Number);
+    validade = new Date(ano, mes - 1, dia);
+    validade.setHours(0, 0, 0, 0);
+  }
 
   const diasParaVencer = validade ? Math.floor((validade - hoje) / (1000 * 60 * 60 * 24)) : null;
 
@@ -184,7 +218,7 @@ if (produto.validade) {
   // Código fallback
   const codigo = produto.codigo || produto.firebaseKey.slice(-5).toUpperCase();
 
-row.innerHTML = `
+  row.innerHTML = `
   <td><input type="checkbox" class="selecionar-produto"></td>
   <td data-label="Código: ">${produto.codigo || '(sem código)'}</td>
   <td data-label="Produto: ">${produto.nome || 'Sem nome'}</td>
@@ -224,6 +258,17 @@ function atualizarTabela() {
   produtosPaginados.forEach(produto => adicionarLinhaTabela(produto));
   atualizarBotaoExcluirSelecionados();
   atualizarPaginacao(produtosFiltrados.length);
+}
+
+function verificarFiltrosAtivos() {
+  const termo = document.querySelector('.input-icon input')?.value || '';
+  const categoria = document.getElementById('filtrar-categoria')?.value || '';
+  const fornecedor = document.getElementById('filtrar-fornecedor')?.value || '';
+  const ordenacao = document.getElementById('ordenar-nome')?.value || '';
+  const filtroAlerta = filtroEspecialAtivo;
+
+  const algumAtivo = termo || categoria || fornecedor || ordenacao || filtroAlerta;
+  document.getElementById('btn-limpar-filtros').style.display = algumAtivo ? 'inline-block' : 'none';
 }
 
 // -- PAGINACAO ATUALIZADA (10 ITENS POR PAGINA)
@@ -299,6 +344,7 @@ function handleFormSubmit(e) {
   const [ano, mes, dia] = validadeInput.split('-').map(Number);
   const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
+  const fornecedor = document.getElementById('fornecedor').value;
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
@@ -360,7 +406,7 @@ function handleFormSubmit(e) {
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    //fornecedor, // ajuste conforme necessário
+    fornecedor,
     imagemUrl: '',
     dataUltimaAtualizacao: obterDataLegivel()
   };
@@ -427,6 +473,7 @@ document.getElementById('lista-produtos').addEventListener('click', e => {
     document.getElementById('ver-qtd-minima').textContent = `${produto.quantidadeMinima} ${produto.unidadeMedida}`;
     document.getElementById('ver-qtd-atual').textContent = `${produto.quantidadeEstoque} ${produto.unidadeMedida}`;
     document.getElementById('ver-imagem').src = produto.imagemUrl;
+    document.getElementById('ver-fornecedor').textContent = produto.fornecedor || '—';
     document.getElementById('modal-visualizar').style.display = 'flex';
   }
 
@@ -563,9 +610,24 @@ document.getElementById('topo-tabela').appendChild(btnLimparFiltros);
 btnLimparFiltros.addEventListener('click', () => {
   filtroEspecialAtivo = null;
   paginaAtual = 1;
-  atualizarTabela();
+
+  // Limpar campo de busca
+  const inputBusca = document.querySelector('.input-icon input');
+  if (inputBusca) inputBusca.value = '';
+
+  // Resetar selects
+  document.getElementById('filtrar-categoria').value = '';
+  document.getElementById('filtrar-fornecedor').value = '';
+  document.getElementById('ordenar-nome').value = '';
+
+  // Resetar destaques de alerta
   botoesLegenda.forEach(btn => btn.classList.remove('filtro-ativo'));
-  btnLimparFiltros.style.display = 'none';
+
+  // Atualizar a tabela
+  atualizarTabela();
+
+  // Esconder botão de limpar
+  verificarFiltrosAtivos();
 });
 
 botoesLegenda.forEach(btn => {
@@ -583,6 +645,7 @@ botoesLegenda.forEach(btn => {
     // Aplica destaque
     botoesLegenda.forEach(outro => outro.classList.remove('filtro-ativo'));
     btn.classList.add('filtro-ativo');
+    verificarFiltrosAtivos();
 
     btnLimparFiltros.style.display = 'inline-block';
   });
@@ -593,6 +656,7 @@ botoesLegenda.forEach(btn => {
 function aplicarFiltrosOrdenacao(lista) {
   const termo = document.querySelector('.input-icon input')?.value.toLowerCase() || '';
   const categoriaSelecionada = document.getElementById('filtrar-categoria')?.value || '';
+  const fornecedorSelecionado = document.getElementById('filtrar-fornecedor')?.value || '';
   const ordem = document.getElementById('ordenar-nome')?.value || '';
 
   let filtrados = lista.filter(p => {
@@ -600,6 +664,7 @@ function aplicarFiltrosOrdenacao(lista) {
     const categoria = p.categoria.toLowerCase();
     const matchTermo = nome.includes(termo) || categoria.includes(termo);
     const matchCategoria = categoriaSelecionada ? p.categoria === categoriaSelecionada : true;
+    const matchFornecedor = fornecedorSelecionado ? p.fornecedor === fornecedorSelecionado : true;
 
     let matchEspecial = true;
     if (filtroEspecialAtivo) {
@@ -620,7 +685,7 @@ function aplicarFiltrosOrdenacao(lista) {
       }
     }
 
-    return matchTermo && matchCategoria && matchEspecial;
+    return matchTermo && matchCategoria && matchFornecedor && matchEspecial;
   });
 
   // Exibe mensagem se não houver resultados
@@ -636,4 +701,21 @@ function aplicarFiltrosOrdenacao(lista) {
   if (ordem === 'validade') filtrados.sort((a, b) => new Date(a.validade) - new Date(b.validade));
 
   return filtrados;
+}
+
+//Filtro por fornecedores
+function carregarFiltroFornecedores() {
+  const select = document.getElementById('filtrar-fornecedor');
+  if (!select) return;
+
+  firebase.database().ref('fornecedor').once('value').then(snapshot => {
+    select.innerHTML = '<option value="">Todos</option>';
+    snapshot.forEach(child => {
+      const fornecedor = child.val();
+      const option = document.createElement('option');
+      option.value = fornecedor.nome;
+      option.textContent = fornecedor.nome;
+      select.appendChild(option);
+    });
+  });
 }
