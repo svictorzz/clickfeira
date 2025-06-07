@@ -47,7 +47,6 @@
 
       <div class="painel-relatorios-grid">
         <!-- Dashboard 1: Fornecedores -->
-        <!-- Dashboard 1: Fornecedores -->
         <div class="dashboard-card">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="titulo-relatorio d-flex align-items-center gap-2">
@@ -60,23 +59,6 @@
             </button>
           </div>
           <canvas id="grafico-fornecedores"></canvas>
-        </div>
-
-
-        <!-- Dashboard 2: Top 5 Produtos em Estoque -->
-        <div class="dashboard-card">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="titulo-relatorio d-flex align-items-center gap-2">
-              Top 5 Produtos em Estoque
-              <span class="custom-tooltip"
-                data-tooltip="Exibe os produtos com maior quantidade atual em estoque.">?</span>
-            </h4>
-            <button id="btn-exportar-estoque" class="btn btn-exportar btn-sm">
-              <i class="fas fa-file-excel me-1"></i>Exportar
-            </button>
-
-          </div>
-          <canvas id="grafico-estoque"></canvas>
         </div>
 
         <!-- Dashboard 3: Categorias com Mais Produtos -->
@@ -103,11 +85,11 @@
               <span class="custom-tooltip"
                 data-tooltip="Lista os produtos cuja quantidade está abaixo da mínima definida.">?</span>
             </h4>
-            <button id="btn-exportar-valor-critico" class="btn btn-exportar btn-sm">
+            <button id="btn-exportar-critico" class="btn btn-exportar btn-sm">
               <i class="fas fa-file-excel me-1"></i>Exportar
             </button>
           </div>
-          <canvas id="grafico-valor-critico" data-cor="grafico-barras"></canvas>
+          <canvas id="grafico-critico" data-cor="grafico-barras"></canvas>
         </div>
 
         <!-- Dashboard 5: Valor Total em Estoque -->
@@ -151,11 +133,11 @@
               <span class="custom-tooltip"
                 data-tooltip="Soma o valor total de todos os produtos que estão com estoque abaixo do mínimo.">?</span>
             </h4>
-            <button id="btn-exportar-critico" class="btn btn-exportar btn-sm">
+            <button id="btn-exportar-valor-critico" class="btn btn-exportar btn-sm">
               <i class="fas fa-file-excel me-1"></i>Exportar
             </button>
           </div>
-          <canvas id="grafico-critico"></canvas>
+          <canvas id="grafico-valor-critico"></canvas>
           <p id="valor-total-critico" style="margin-top: 10px; font-weight: bold; font-size: 15px; text-align: right;">
             Total Crítico: R$ 0,00
           </p>
