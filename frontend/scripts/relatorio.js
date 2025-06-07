@@ -90,8 +90,7 @@ function corDoGrafico(idCanvas) {
 //Atualizar todos os dashboards
 function atualizarTodosDashboards() {
   carregarDashboardFornecedores(); // continua sem filtro
-  carregarDashboardEstoque();
-  carregarDashboardCategorias();
+  carregarDashboardCategorias(); //continua sem filtro
   carregarDashboardCritico();
   carregarDashboardValorTotal();
   carregarDashboardValidade();
@@ -108,79 +107,89 @@ function carregarDashboardFornecedores() {
     const produtos = Object.values(prodSnap.val() || {});
     const fornecedores = fornSnap.val() || {};
 
-    // Mapeia os nomes dos fornecedores
+    // Mapeia os dados dos fornecedores
     const mapaFornecedores = {};
     for (let id in fornecedores) {
-      mapaFornecedores[id] = fornecedores[id].nome || "Fornecedor desconhecido";
+      mapaFornecedores[id] = {
+        nome: fornecedores[id].nome || "Fornecedor desconhecido",
+        codigo: fornecedores[id].codigo || "—"
+      };
     }
 
+    // Agrupar produtos por fornecedor
     const fornecedoresMap = {};
-
     produtos.forEach(produto => {
       const idFornecedor = produto.fornecedorId;
-      const nomeFornecedor = mapaFornecedores[idFornecedor] || "Fornecedor desconhecido";
+      if (!idFornecedor) return;
 
-      if (!fornecedoresMap[nomeFornecedor]) {
-        fornecedoresMap[nomeFornecedor] = 0;
+      if (!fornecedoresMap[idFornecedor]) {
+        fornecedoresMap[idFornecedor] = {
+          nome: mapaFornecedores[idFornecedor]?.nome || "Fornecedor desconhecido",
+          codigo: mapaFornecedores[idFornecedor]?.codigo || "—",
+          produtos: []
+        };
       }
-      fornecedoresMap[nomeFornecedor]++;
+
+      fornecedoresMap[idFornecedor].produtos.push({
+        nome: produto.nome || "—",
+        codigo: produto.codigo || "—",
+        categoria: produto.categoria || "—"
+      });
     });
 
     const lista = Object.entries(fornecedoresMap)
-      .map(([nome, qtd]) => ({ nome, qtd }))
-      .sort((a, b) => b.qtd - a.qtd)
+      .map(([id, dados]) => ({
+        id,
+        nome: dados.nome,
+        codigo: dados.codigo,
+        produtos: dados.produtos
+      }))
+      .sort((a, b) => b.produtos.length - a.produtos.length)
       .slice(0, 5);
 
     desenharGrafico(
       "grafico-fornecedores",
       lista.map(f => f.nome),
-      lista.map(f => f.qtd),
+      lista.map(f => f.produtos.length),
       "Top 5 Fornecedores por Produtos",
       "rgba(50, 179, 7, 0.6)"
     );
+
     const btnFornecedores = document.getElementById("btn-exportar-fornecedores");
     if (btnFornecedores) {
-      btnFornecedores.onclick = () => {
-        exportarParaExcel(lista.map(f => ({
-          Fornecedor: f.nome,
-          "Qtd. de Produtos": f.qtd
-        })), "Top_Fornecedores", "Fornecedores");
-      };
+      if (btnFornecedores) {
+        btnFornecedores.onclick = () => {
+          const dadosExportacao = [];
+
+          lista.forEach(fornecedor => {
+            const qtdProdutos = fornecedor.produtos.length;
+
+            fornecedor.produtos.forEach(produto => {
+              dadosExportacao.push({
+                "Fornecedor": fornecedor.nome,
+                "Código do Fornecedor": fornecedor.codigo,
+                "Qtd. de Produtos": qtdProdutos,
+                "Código do Produto": produto.codigo,
+                "Nome do Produto": produto.nome,
+                "Categoria do Produto": produto.categoria
+              });
+            });
+          });
+
+          if (dadosExportacao.length === 0) {
+            alert("Nenhum produto encontrado para exportação.");
+            return;
+          }
+
+          exportarParaExcel(
+            dadosExportacao,
+            "Top_Fornecedores",
+            "Fornecedores"
+          );
+        };
+      }
+
     }
-  });
-}
-
-// DASHBOARD 2: Estoque Atual
-function carregarDashboardEstoque() {
-  const filtro = document.getElementById("filtro-categoria").value;
-
-  const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
-    let lista = Object.values(snapshot.val() || {});
-
-    if (filtro !== "todas") {
-      lista = lista.filter(p => p.categoria === filtro);
-    }
-
-    lista = lista.map(p => ({
-      nome: p.nome,
-      categoria: p.categoria,
-      quantidade: p.quantidadeEstoque || 0
-    })).sort((a, b) => b.quantidade - a.quantidade).slice(0, 5);
-
-    desenharGrafico("grafico-estoque", lista.map(p => p.nome), lista.map(p => p.quantidade), "Top 5 Produtos com Maior Estoque", "rgba(50, 179, 7, 0.6)");
-
-    const btnEstoque = document.getElementById("btn-exportar-estoque");
-    if (btnEstoque) {
-      btnEstoque.onclick = () => {
-        exportarParaExcel(lista.map(p => ({
-          Produto: p.nome,
-          Categoria: p.categoria,
-          "Qtd. em Estoque": p.quantidade
-        })), "Top_Estoque", "Estoque Atual");
-      };
-    }
-
   });
 }
 
@@ -220,17 +229,49 @@ function carregarDashboardCategorias() {
     // Exportar para Excel
     const btnCategorias = document.getElementById("btn-exportar-categorias");
     if (btnCategorias) {
-      btnCategorias.onclick = () => {
-        exportarParaExcel(
-          categorias.map(c => ({
-            Categoria: c.categoria,
-            "Total de Produtos": c.qtd,
-            "Percentual (%)": `${((c.qtd / total) * 100).toFixed(1)}%`
-          })),
-          "Categorias_Mais_Produtos",
-          "Categorias"
-        );
-      };
+      if (btnCategorias) {
+        btnCategorias.onclick = async () => {
+          const refProdutos = ref(db, "produto");
+          const refFornecedores = ref(db, "fornecedor");
+          const [snapshotProdutos, snapshotFornecedores] = await Promise.all([
+            get(refProdutos),
+            get(refFornecedores)
+          ]);
+
+          const todosProdutos = Object.entries(snapshotProdutos.val() || {});
+          const fornecedores = snapshotFornecedores.val() || {};
+
+          const mapaFornecedores = {};
+          for (let id in fornecedores) {
+            mapaFornecedores[id] = {
+              nome: fornecedores[id].nome || "Fornecedor desconhecido",
+              codigo: fornecedores[id].codigo || "-"
+            };
+          }
+
+          const produtosCompletos = todosProdutos.map(([id, p]) => {
+            const fornecedor = mapaFornecedores[p.fornecedorId] || { nome: "Fornecedor desconhecido", codigo: "-" };
+            return {
+              categoria: p.categoria || "Sem categoria",
+              codigoProduto: p.codigo || "-",
+              nomeProduto: p.nome || "-",
+              quantidade: `${p.quantidadeEstoque || 0} ${p.unidadeMedida || "unidade(s)"}`,
+              fornecedor: fornecedor.nome,
+              codigoFornecedor: fornecedor.codigo
+            };
+          });
+
+          // Ordenar por categoria, depois nome
+          produtosCompletos.sort((a, b) => {
+            if (a.categoria < b.categoria) return -1;
+            if (a.categoria > b.categoria) return 1;
+            return a.nomeProduto.localeCompare(b.nomeProduto);
+          });
+
+          exportarParaExcel(produtosCompletos, "Categorias_Produtos", "Produtos por Categoria");
+        };
+      }
+
     }
 
   });
@@ -240,28 +281,90 @@ function carregarDashboardCategorias() {
 function carregarDashboardCritico() {
   const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
+
   get(refProdutos).then(snapshot => {
     let lista = Object.values(snapshot.val() || {});
     if (filtro !== "todas") {
       lista = lista.filter(p => p.categoria === filtro);
     }
-    const criticos = lista.filter(p => Number(p.quantidadeEstoque || 0) < Number(p.quantidadeMinima || 0))
-      .map(p => ({ nome: p.nome, categoria: p.categoria, estoque: Number(p.quantidadeEstoque || 0), minimo: Number(p.quantidadeMinima || 0), cor: Number(p.quantidadeEstoque || 0) === 0 ? "#dc3545" : "#fd7e14" }))
-      .sort((a, b) => a.estoque - b.estoque).slice(0, 5);
-    desenharGrafico("grafico-critico", criticos.map(p => p.nome), criticos.map(p => p.estoque), "Produtos com Estoque Crítico", "rgba(50, 179, 7, 0.6)");
-    const btnCritico = document.getElementById("btn-exportar-critico");
-    if (btnCritico) {
-      btnCritico.onclick = () => {
-        exportarParaExcel(criticos.map(p => ({
-          Produto: p.nome,
-          Categoria: p.categoria,
-          "Qtd. Atual": p.estoque,
-          "Qtd. Mínima": p.minimo,
-          "Situação": p.estoque === 0 ? "Zerado" : "Abaixo do mínimo"
-        })), "Estoque_Critico", "Estoque Crítico");
-      };
-    }
 
+    const criticos = [];
+    const ok = [];
+
+    lista.forEach(p => {
+      const atual = Number(p.quantidadeEstoque);
+      const minima = Number(p.quantidadeMinima);
+      const unidade = p.unidadeMedida || "unidade(s)";
+      const situacao = atual === 0 ? "Zerado" : "Abaixo do mínimo";
+
+      const produto = {
+        codigo: p.codigo || "-",
+        nome: p.nome,
+        categoria: p.categoria,
+        atual,
+        minima,
+        unidade,
+        situacao,
+        fornecedorId: p.fornecedorId || "-"
+      };
+
+
+      if (atual < minima) {
+        criticos.push(produto);
+      } else {
+        ok.push(produto);
+      }
+    });
+
+    const dadosPizza = [criticos.length, ok.length];
+    const labels = ["Abaixo do Mínimo", "Dentro do Estoque"];
+
+    desenharGraficoPizza(
+      "grafico-critico",
+      labels,
+      dadosPizza,
+      ["#dc3545", "rgba(50, 179, 7, 0.6)"]
+    );
+
+    const btn = document.getElementById("btn-exportar-critico");
+    if (btn) {
+      if (btn) {
+        btn.onclick = async () => {
+          if (criticos.length === 0) {
+            alert("Não há produtos abaixo do mínimo para exportar.");
+            return;
+          }
+
+          const refFornecedores = ref(db, "fornecedor");
+          const snapshotFornecedores = await get(refFornecedores);
+          const fornecedores = snapshotFornecedores.val() || {};
+
+          const mapaFornecedores = {};
+          for (let id in fornecedores) {
+            mapaFornecedores[id] = {
+              nome: fornecedores[id].nome || "Fornecedor desconhecido",
+              codigo: fornecedores[id].codigo || "-"
+            };
+          }
+
+          const dadosExportar = criticos.map(p => {
+            const fornecedor = mapaFornecedores[p.fornecedorId] || { nome: "Fornecedor desconhecido", codigo: "-" };
+            return {
+              "Código do Produto": p.codigo || "-",
+              "Produto": p.nome,
+              "Categoria": p.categoria,
+              "Qtd. Atual": `${p.atual} ${p.unidade}`,
+              "Qtd. Mínima": `${p.minima} ${p.unidade}`,
+              "Situação": p.situacao,
+              "Fornecedor": fornecedor.nome,
+              "Código do Fornecedor": fornecedor.codigo
+            };
+          });
+
+          exportarParaExcel(dadosExportar, "Produtos_Estoque_Critico", "Estoque Crítico");
+        };
+      }
+    }
   });
 }
 
@@ -269,11 +372,16 @@ function carregarDashboardCritico() {
 function carregarDashboardValorTotal() {
   const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
+  const refFornecedores = ref(db, "fornecedor");
+
+  Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapshot, snapshotFornecedores]) => {
     let lista = Object.values(snapshot.val() || {});
+    const fornecedores = snapshotFornecedores.val() || {};
+
     if (filtro !== "todas") {
       lista = lista.filter(p => p.categoria === filtro);
     }
+
     let valorGeral = 0;
     const produtosComValor = lista.map(p => {
       const preco = Number(p.preco);
@@ -283,17 +391,26 @@ function carregarDashboardValorTotal() {
       const fator = calcularFatorConversao(precoPor, unidade, qtd);
       const valor = preco * fator;
       valorGeral += valor;
+
+      const fornecedor = fornecedores[p.fornecedorId] || {};
+      const codigoFornecedor = fornecedor.codigo || "-";
+      const nomeFornecedor = fornecedor.nome || "Desconhecido";
+
       return {
+        codigo: p.codigo || "-",
         nome: p.nome,
         categoria: p.categoria || "Sem categoria",
         preco: preco.toFixed(2),
         quantidade: qtd,
-        unidadeMedida: p.unidadeMedida || "unidade(s)",
-        valorTotal: Number(valor.toFixed(2))
+        unidadeMedida: unidade || "unidade(s)",
+        valorTotal: Number(valor.toFixed(2)),
+        codigoFornecedor,
+        nomeFornecedor
       };
-
     });
+
     const top5 = produtosComValor.sort((a, b) => b.valorTotal - a.valorTotal).slice(0, 5);
+
     desenharGrafico(
       "grafico-valor",
       top5.map(p => p.nome),
@@ -304,20 +421,26 @@ function carregarDashboardValorTotal() {
       (context, index) => {
         const valor = context.parsed.y;
         const produto = top5[index];
-        const unidade = produto.quantidade + ' ' + (produto.unidadeMedida || 'unidade(s)');
+        const unidade = produto.quantidade + ' ' + produto.unidadeMedida;
         return `R$ ${valor.toFixed(2).replace('.', ',')} (${unidade})`;
       }
     );
+
     document.getElementById("valor-total-geral").textContent = `Total em Estoque: R$ ${valorGeral.toFixed(2).replace('.', ',')}`;
+
     const btnValor = document.getElementById("btn-exportar-valor");
     if (btnValor) {
       btnValor.onclick = () => {
         exportarParaExcel(top5.map(p => ({
-          Produto: p.nome,
-          Categoria: p.categoria,
-          Preço: `R$ ${p.preco}`,
-          Quantidade: p.quantidade,
-          "Valor Total": `R$ ${p.valorTotal.toFixed(2)}`
+          "Código do Produto": p.codigo,
+          "Produto": p.nome,
+          "Categoria": p.categoria,
+          "Código do Fornecedor": p.codigoFornecedor,
+          "Nome do Fornecedor": p.nomeFornecedor,
+          "Preço (R$)": `R$ ${p.preco}`,
+          "Qtd. em Estoque": p.quantidade,
+          "Unidade": p.unidadeMedida,
+          "Valor Total (R$)": `R$ ${p.valorTotal.toFixed(2)}`
         })), "Top_Valor_Estoque", "Valor Total Estoque");
       };
     }
@@ -328,11 +451,16 @@ function carregarDashboardValorTotal() {
 function carregarDashboardValidade() {
   const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
-    let lista = Object.values(snapshot.val() || {});
+  const refFornecedores = ref(db, "fornecedor");
+
+  Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapProdutos, snapFornecedores]) => {
+    let lista = Object.values(snapProdutos.val() || {});
+    const fornecedores = snapFornecedores.val() || {};
+
     if (filtro !== "todas") {
       lista = lista.filter(p => p.categoria === filtro);
     }
+
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
@@ -352,20 +480,39 @@ function carregarDashboardValidade() {
         }
       }
 
+      const fornecedor = fornecedores[p.fornecedorId] || {};
+      const nomeFornecedor = fornecedor.nome || "Desconhecido";
+      const codigoFornecedor = fornecedor.codigo || "-";
+
+      const itemExportar = {
+        "Código do Produto": p.codigo || "-",
+        "Produto": p.nome || "-",
+        "Categoria": p.categoria || "-",
+        "Validade": validade ? formatarData(p.validade) : "—",
+        "Fornecedor": nomeFornecedor,
+        "Código do Fornecedor": codigoFornecedor
+      };
 
       if (validade && diasParaVencer < 0) {
         vencido++;
-        exportacao.push({ Produto: p.nome, Status: "VENCIDO", Validade: formatarData(p.validade) });
+        itemExportar["Status de Validade"] = "VENCIDO";
       } else if (validade && diasParaVencer <= 7) {
         proximo++;
-        exportacao.push({ Produto: p.nome, Status: "PRÓXIMO", Validade: formatarData(p.validade) });
+        itemExportar["Status de Validade"] = "PRÓXIMO DE VENCER";
       } else {
         ok++;
-        exportacao.push({ Produto: p.nome, Status: "OK", Validade: validade ? formatarData(p.validade) : "—" });
+        itemExportar["Status de Validade"] = "OK";
       }
+
+      exportacao.push(itemExportar);
     });
 
-    desenharGraficoPizza("grafico-validade", ["Vencido", "Próximo", "OK"], [vencido, proximo, ok], ["#dc3545", "#ffc107", "rgba(50, 179, 7, 0.6)"]);
+    desenharGraficoPizza(
+      "grafico-validade",
+      ["Vencido", "Próximo", "OK"],
+      [vencido, proximo, ok],
+      ["#dc3545", "#ffc107", "rgba(50, 179, 7, 0.6)"]
+    );
 
     const btnValidade = document.getElementById("btn-exportar-validade");
     if (btnValidade) {
@@ -373,7 +520,6 @@ function carregarDashboardValidade() {
         exportarParaExcel(exportacao, "Status_Validade", "Validade");
       };
     }
-
   });
 }
 
@@ -381,47 +527,82 @@ function carregarDashboardValidade() {
 function carregarDashboardValorCritico() {
   const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
-    let lista = Object.values(snapshot.val() || {});
+  const refFornecedores = ref(db, "fornecedor");
+
+  Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapProdutos, snapFornecedores]) => {
+    let lista = Object.entries(snapProdutos.val() || {});
+    const fornecedores = snapFornecedores.val() || {};
+
     if (filtro !== "todas") {
-      lista = lista.filter(p => p.categoria === filtro);
+      lista = lista.filter(([_, p]) => p.categoria === filtro);
     }
+
     let valorCriticoTotal = 0;
     let valorEstoqueTotal = 0;
 
-    const criticos = lista.filter(p => Number(p.quantidadeEstoque || 0) < Number(p.quantidadeMinima || 0)).map(p => {
-      const preco = Number(p.preco);
-      const qtd = Number(p.quantidadeEstoque);
-      const precoPor = p.precoPor;
-      const unidade = p.unidadeMedida;
-      const fator = calcularFatorConversao(precoPor, unidade, qtd);
-      const valor = preco * fator;
-      valorCriticoTotal += valor;
-
-      return {
-        nome: p.nome,
-        categoria: p.categoria || "Sem categoria",
-        preco: preco.toFixed(2),
-        estoque: qtd,
-        minimo: p.quantidadeMinima,
-        valorTotal: Number(valor.toFixed(2))
+    const mapaFornecedores = {};
+    for (const id in fornecedores) {
+      const forn = fornecedores[id];
+      mapaFornecedores[id] = {
+        nome: forn.nome || "Desconhecido",
+        codigo: forn.codigo || "—"
       };
-    });
+    }
 
-    lista.forEach(p => {
+    const criticos = lista
+      .filter(([_, p]) => Number(p.quantidadeEstoque || 0) < Number(p.quantidadeMinima || 0))
+      .map(([firebaseKey, p]) => {
+        const preco = Number(p.preco || 0);
+        const qtd = Number(p.quantidadeEstoque || 0);
+        const precoPor = p.precoPor;
+        const unidade = p.unidadeMedida;
+        const fator = calcularFatorConversao(precoPor, unidade, qtd);
+        const valor = preco * fator;
+        valorCriticoTotal += valor;
+
+        const fornecedor = mapaFornecedores[p.fornecedorId] || {};
+        return {
+          firebaseKey,
+          codigoProduto: p.codigo || "—",
+          nome: p.nome || "Sem nome",
+          categoria: p.categoria || "Sem categoria",
+          preco: preco.toFixed(2),
+          estoque: qtd,
+          minimo: p.quantidadeMinima,
+          unidadeMedida: unidade || "unidade(s)",
+          valorTotal: Number(valor.toFixed(2)),
+          codigoFornecedor: fornecedor.codigo || "—",
+          nomeFornecedor: fornecedor.nome || "Fornecedor desconhecido"
+        };
+      });
+
+    lista.forEach(([_, p]) => {
       const preco = Number(p.preco);
       const qtd = Number(p.quantidadeEstoque);
       const precoPor = p.precoPor;
       const unidade = p.unidadeMedida;
       const fator = calcularFatorConversao(precoPor, unidade, qtd);
-
       valorEstoqueTotal += preco * fator;
     });
 
     const percentual = valorEstoqueTotal > 0 ? ((valorCriticoTotal / valorEstoqueTotal) * 100).toFixed(1) : 0;
-    const top5 = criticos.sort((a, b) => a.estoque - b.estoque).slice(0, 5);
 
-    desenharGrafico("grafico-valor-critico", top5.map(p => p.nome), top5.map(p => p.valorTotal), "Top 5 Críticos por Valor", "rgba(50, 179, 7, 0.6)");
+    const top5 = criticos
+      .sort((a, b) => b.valorTotal - a.valorTotal)
+      .slice(0, 5);
+
+    desenharGrafico(
+      "grafico-valor-critico",
+      top5.map(p => p.nome),
+      top5.map(p => p.valorTotal),
+      "Top 5 Críticos por Valor",
+      "rgba(220, 53, 69, 0.7)", // vermelho claro
+      false,
+      (context, index) => {
+        const p = top5[index];
+        return `R$ ${p.valorTotal.toFixed(2).replace('.', ',')} (${p.estoque} ${p.unidadeMedida})`;
+      }
+    );
 
     document.getElementById("valor-total-critico").innerHTML =
       `Total Crítico: R$ ${valorCriticoTotal.toFixed(2).replace('.', ',')}<br>` +
@@ -431,16 +612,18 @@ function carregarDashboardValorCritico() {
     if (btnValorCritico) {
       btnValorCritico.onclick = () => {
         exportarParaExcel(criticos.map(p => ({
-          Produto: p.nome,
-          Categoria: p.categoria,
-          Preço: `R$ ${p.preco}`,
-          "Qtd. Atual": p.estoque,
+          "Código do Produto": p.codigoProduto,
+          "Produto": p.nome,
+          "Categoria": p.categoria,
+          "Código do Fornecedor": p.codigoFornecedor,
+          "Fornecedor": p.nomeFornecedor,
+          "Preço Unitário": `R$ ${p.preco}`,
+          "Qtd. Atual": `${p.estoque} ${p.unidadeMedida}`,
           "Qtd. Mínima": p.minimo,
-          "Valor Total": `R$ ${p.valorTotal.toFixed(2)}`
+          "Valor Total Crítico": `R$ ${p.valorTotal.toFixed(2)}`
         })), "Estoque_Critico_Valor", "Críticos por Valor");
       };
     }
-
   });
 }
 
@@ -528,6 +711,9 @@ function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7
     },
     options: {
       responsive: true,
+      parsing: {
+        yAxisKey: typeof dados[0] === 'object' ? 'y' : undefined
+      },
       plugins: {
         title: {
           display: true,
@@ -538,11 +724,18 @@ function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7
         },
         tooltip: {
           callbacks: {
-            label: (context) => {
+            label: function (context) {
               const index = context.dataIndex;
-              return customTooltipCallback
-                ? customTooltipCallback(context, index)
-                : `${context.parsed.y.toLocaleString('pt-BR')} unidade(s)`;
+              if (customTooltipCallback) {
+                return customTooltipCallback(context, index);
+              }
+              const raw = context.raw;
+              if (raw && typeof raw === "object" && "y" in raw && "unidade" in raw) {
+                return `${raw.y.toLocaleString('pt-BR')} ${raw.unidade}`;
+              } else if (typeof raw === "number") {
+                return `${raw.toLocaleString('pt-BR')}`;
+              }
+              return `${context.parsed.y.toLocaleString('pt-BR')} unidade(s)`;
             }
           }
         }
@@ -550,7 +743,9 @@ function desenharGrafico(canvasId, labels, dados, titulo, cor = "rgba(50, 179, 7
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { precision: 0 }
+          ticks: {
+            precision: 0
+          }
         }
       }
     }
