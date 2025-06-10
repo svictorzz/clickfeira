@@ -103,14 +103,17 @@ function carregarFornecedores() {
   const select = document.getElementById('fornecedor');
   if (!select) return;
 
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
     select.innerHTML = '<option value="">Selecione...</option>';
     snapshot.forEach(child => {
       const fornecedor = child.val();
-      const option = document.createElement('option');
-      option.value = fornecedor.nome;
-      option.textContent = fornecedor.nome;
-      select.appendChild(option);
+      if (fornecedor.idComerciante === idComerciante) {
+        const option = document.createElement('option');
+        option.value = child.key; // <-- ESSENCIAL!
+        option.textContent = fornecedor.nome;
+        select.appendChild(option);
+      }
     });
   });
 }
@@ -448,7 +451,7 @@ function handleFormSubmit(e) {
   const [ano, mes, dia] = validadeInput.split('-').map(Number);
   const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
-  const fornecedor = document.getElementById('fornecedor').value;
+  const fornecedorId = document.getElementById('fornecedor').value;
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
@@ -512,7 +515,7 @@ function handleFormSubmit(e) {
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    fornecedor, // ajuste conforme necessário
+    fornecedorId,
     imagemUrl: '',
     dataUltimaAtualizacao: obterDataLegivel(),
     idComerciante
