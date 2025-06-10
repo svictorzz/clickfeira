@@ -34,11 +34,20 @@ const elements = {
 
 // Registrar ação no histórico
 function registrarHistorico(tipo, descricao) {
-    firebase.database().ref('historicoAcoes').push({
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (!idComerciante) {
+        console.warn("ID do comerciante não encontrado. Histórico não registrado.");
+        return;
+    }
+
+    const historico = {
         tipo,
         descricao,
-        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-    });
+        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+        idComerciante
+    };
+
+    firebase.database().ref('historicoAcoes').push(historico);
 }
 
 // Função para obter data legível
@@ -106,17 +115,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Carregar fornecedores do Firebase
 function carregarFornecedoresDoFirebase() {
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (!idComerciante) {
+        console.warn("ID do comerciante não encontrado.");
+        return;
+    }
+
     firebase.database().ref('fornecedor').on('value', (snapshot) => {
         fornecedores = [];
         snapshot.forEach((childSnapshot) => {
             const fornecedor = childSnapshot.val();
-            fornecedor.firebaseKey = childSnapshot.key;
-            fornecedores.push(fornecedor);
+            if (fornecedor.idComerciante === idComerciante) {
+                fornecedor.firebaseKey = childSnapshot.key;
+                fornecedores.push(fornecedor);
 
-            // Atualizar próximo código disponível
-            if (fornecedor.codigo) {
-                const numCodigo = parseInt(fornecedor.codigo.replace(/\D/g, ''));
-                if (numCodigo >= proximoCodigo) {
+                // Atualiza o proximoCodigo, se necessário
+                const numCodigo = parseInt(fornecedor.codigo?.replace(/\D/g, ''));
+                if (!isNaN(numCodigo) && numCodigo >= proximoCodigo) {
                     proximoCodigo = numCodigo + 1;
                 }
             }
@@ -172,13 +187,39 @@ function fecharModalAdicionar() {
     document.getElementById('modal-adicionar').style.display = 'none';
 }
 
-function mostrarModalEditar(key) {
-    const fornecedor = fornecedores.find(f => f.firebaseKey === key);
-    if (!fornecedor) return;
+function mostrarModalExclusao(firebaseKey) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
+    if (!fornecedor) {
+        mostrarMensagem("Fornecedor não encontrado.", "error");
+        return;
+    }
 
-    fornecedorParaEditar = fornecedor;
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (fornecedor.idComerciante !== idComerciante) {
+        mostrarMensagem("Você não tem permissão para excluir este fornecedor.", "error");
+        return;
+    }
 
-    document.getElementById('edit-id').value = fornecedor.firebaseKey;
+    fornecedorParaExcluir = fornecedor;
+    document.getElementById('nome-fornecedor-excluir').textContent = fornecedor.nome;
+    modalExcluir.show(); // <- corrigido aqui
+}
+
+function mostrarModalEditar(firebaseKey) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
+    if (!fornecedor) {
+        mostrarMensagem("Fornecedor não encontrado.", "error");
+        return;
+    }
+
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (fornecedor.idComerciante !== idComerciante) {
+        mostrarMensagem("Você não tem permissão para editar este fornecedor.", "error");
+        return;
+    }
+
+    // Preencher os campos do formulário de edição
+    document.getElementById('edit-id').value = firebaseKey;
     document.getElementById('edit-codigo').value = fornecedor.codigo || '';
     document.getElementById('edit-nome').value = fornecedor.nome || '';
     document.getElementById('edit-cnpj').value = fornecedor.cnpj || '';
@@ -189,6 +230,7 @@ function mostrarModalEditar(key) {
     document.getElementById('edit-produtos').value = fornecedor.produtos || '';
 
     document.getElementById('modal-editar').style.display = 'flex';
+    fornecedorParaEditar = fornecedor;
 }
 
 function fecharModalEditar() {
@@ -196,35 +238,30 @@ function fecharModalEditar() {
     fornecedorParaEditar = null;
 }
 
-function mostrarModalVisualizar(key) {
-    const fornecedor = fornecedores.find(f => f.firebaseKey === key);
-    if (!fornecedor) return;
+function mostrarModalVisualizar(firebaseKey) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
+    if (!fornecedor) {
+        mostrarMensagem("Fornecedor não encontrado.", "error");
+        return;
+    }
 
-    document.getElementById('view-codigo').textContent = fornecedor.codigo || 'Não informado';
-    document.getElementById('view-nome').textContent = fornecedor.nome || 'Não informado';
-    document.getElementById('view-cnpj').textContent = fornecedor.cnpj || 'Não informado';
-    document.getElementById('view-email').textContent = fornecedor.email || 'Não informado';
-    document.getElementById('view-cep').textContent = fornecedor.cep || 'Não informado';
-    document.getElementById('view-telefone').textContent = fornecedor.telefone || 'Não informado';
-    document.getElementById('view-endereco').textContent = fornecedor.endereco || 'Não informado';
-    document.getElementById('view-dataCadastro').textContent = fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : 'Não informado';
-    document.getElementById('view-dataAtualizacao').textContent = fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : 'Não informado';
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (fornecedor.idComerciante !== idComerciante) {
+        mostrarMensagem("Você não tem permissão para acessar este fornecedor.", "error");
+        return;
+    }
 
-    const produtos = {
-        'frutas': 'Frutas',
-        'legumes': 'Legumes',
-        'vegetais': 'Vegetais',
-        'verduras': 'Verduras',
-        'temperos': 'Temperos',
-        'laticínios': 'Laticínios',
-        'doces': 'Doces',
-        'salgados': 'Salgados',
-        'carnes': 'Carnes',
-        'grãos': 'Grãos',
-        'bebidas': 'Bebidas',
-        'outros': 'Outros'
-    };
-    document.getElementById('view-produtos').textContent = fornecedor.produtos ? produtos[fornecedor.produtos] || fornecedor.produtos : 'Não informado';
+    // Preenchimento do modal com dados do fornecedor
+    document.getElementById('view-codigo').textContent = fornecedor.codigo || '';
+    document.getElementById('view-nome').textContent = fornecedor.nome || '';
+    document.getElementById('view-cnpj').textContent = fornecedor.cnpj || '';
+    document.getElementById('view-email').textContent = fornecedor.email || '';
+    document.getElementById('view-cep').textContent = fornecedor.cep || '';
+    document.getElementById('view-telefone').textContent = fornecedor.telefone || '';
+    document.getElementById('view-endereco').textContent = fornecedor.endereco || '';
+    document.getElementById('view-dataCadastro').textContent = formatarData(fornecedor.dataCadastro) || '';
+    document.getElementById('view-dataAtualizacao').textContent = formatarData(fornecedor.dataUltimaAtualizacao) || '';
+    document.getElementById('view-produtos').textContent = fornecedor.produtos || '';
 
     document.getElementById('modal-visualizar').style.display = 'flex';
 }
@@ -233,9 +270,21 @@ function fecharModalVisualizar() {
     document.getElementById('modal-visualizar').style.display = 'none';
 }
 
-function mostrarModalExclusao(key, nome) {
-    fornecedorParaExcluir = key;
-    elements.nomeFornecedorExcluir.textContent = nome;
+function mostrarModalExclusao(firebaseKey) {
+    const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
+    if (!fornecedor) {
+        mostrarMensagem("Fornecedor não encontrado.", "error");
+        return;
+    }
+
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (fornecedor.idComerciante !== idComerciante) {
+        mostrarMensagem("Você não tem permissão para excluir este fornecedor.", "error");
+        return;
+    }
+
+    fornecedorParaExcluir = fornecedor;
+    document.getElementById('nome-fornecedor-excluir').textContent = fornecedor.nome;
     modalExcluir.show();
 }
 
@@ -281,8 +330,9 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
         tr.querySelector('.btn-editar').addEventListener('click', () =>
             mostrarModalEditar(fornecedor.firebaseKey));
 
+
         tr.querySelector('.btn-excluir').addEventListener('click', () =>
-            mostrarModalExclusao(fornecedor.firebaseKey, fornecedor.nome));
+            mostrarModalExclusao(fornecedor.firebaseKey));
 
         elements.tabelaFornecedores.appendChild(tr);
     });
@@ -291,7 +341,7 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
 // Funções CRUD
 function confirmarExclusao() {
     if (fornecedorParaExcluir) {
-        const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir);
+        const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir.firebaseKey);
 
         fornecedorRef.once('value').then(snapshot => {
             const fornecedor = snapshot.val();
@@ -301,7 +351,7 @@ function confirmarExclusao() {
                 mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
                 modalExcluir.hide();
                 registrarHistorico('Exclusão de fornecedor', `Fornecedor "${nomeFornecedor}" foi excluído.`);
-                excluirProdutosDoFornecedor(fornecedorParaExcluir);
+                excluirProdutosDoFornecedor(fornecedorParaExcluir.firebaseKey); // também corrige aqui!
                 fornecedorParaExcluir = null;
             });
         }).catch(error => {
@@ -329,6 +379,13 @@ function salvarFornecedor(e) {
 
     if (!validarFormulario('form-adicionar')) return;
 
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (!idComerciante) {
+        console.warn("ID do comerciante não encontrado. Redirecionando para login.");
+        window.location.href = "login.html";
+        return;
+    }
+
     const novoFornecedor = {
         codigo: document.getElementById('codigo').value,
         nome: document.getElementById('nome').value,
@@ -339,7 +396,8 @@ function salvarFornecedor(e) {
         endereco: document.getElementById('endereco').value,
         produtos: document.getElementById('produtos').value,
         dataCadastro: obterDataLegivel(),
-        dataUltimaAtualizacao: obterDataLegivel()
+        dataUltimaAtualizacao: obterDataLegivel(),
+        idComerciante: idComerciante
     };
 
     if (fornecedorParaEditar) {
@@ -374,6 +432,12 @@ function atualizarFornecedor(e) {
 
     if (!validarFormulario('form-editar')) return;
 
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    if (!idComerciante) {
+        console.warn("ID do comerciante não encontrado.");
+        return;
+    }
+
     const dadosAtualizados = {
         codigo: document.getElementById('edit-codigo').value,
         nome: document.getElementById('edit-nome').value,
@@ -383,7 +447,8 @@ function atualizarFornecedor(e) {
         telefone: document.getElementById('edit-telefone').value,
         endereco: document.getElementById('edit-endereco').value,
         produtos: document.getElementById('edit-produtos').value,
-        dataUltimaAtualizacao: obterDataLegivel()
+        dataUltimaAtualizacao: obterDataLegivel(),
+        idComerciante: idComerciante
     };
 
     const fornecedorId = document.getElementById('edit-id').value;
