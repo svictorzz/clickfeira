@@ -4,8 +4,6 @@ import {
   atualizarTodosDashboards,
 } from './dashboard.js';
 
-console.log("🧾 idComerciante atual:", localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante"));
-
 // Exporta funções utilitárias para uso em dashboard.js
 
 export function obterIdComerciante() {
