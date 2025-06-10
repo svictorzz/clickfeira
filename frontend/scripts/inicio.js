@@ -156,6 +156,8 @@ document.getElementById('toggle-historia').addEventListener('click', () => {
 
 // --- BUSCAR PRODUTOS COM ALERTAS ---
 function carregarAlertasDoFirebase() {
+  const idComercianteAtual = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
   firebase.database().ref('produto').once('value').then(snapshot => {
     alertas = [];
 
@@ -164,6 +166,10 @@ function carregarAlertasDoFirebase() {
 
     snapshot.forEach(childSnapshot => {
       const produto = childSnapshot.val();
+
+      // ✅ Só inclui produtos do comerciante logado
+      if (produto.idComerciante !== idComercianteAtual) return;
+
       produto.firebaseKey = childSnapshot.key;
 
       const validade = new Date(produto.validade);
@@ -193,6 +199,7 @@ function carregarAlertasDoFirebase() {
     atualizarListaAlertas();
     atualizarBadge();
   });
+
 }
 
 // -- MOSTRAR MENSAGEM --
@@ -297,10 +304,16 @@ function exibirHistorico() {
   firebase.database().ref('historicoAcoes').once('value').then(snapshot => {
     historicoCompleto = [];
 
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
     snapshot.forEach(childSnapshot => {
       const item = childSnapshot.val();
       item.firebaseKey = childSnapshot.key;
-      historicoCompleto.unshift(item); // ordem mais recente primeiro
+
+      // ✅ Exibir apenas ações do comerciante logado
+      if (item.idComerciante === idComerciante) {
+        historicoCompleto.unshift(item);
+      }
     });
 
     atualizarBadgeHistorico();
@@ -310,10 +323,13 @@ function exibirHistorico() {
 
 // Registra histórico
 function registrarHistorico(tipo, descricao) {
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
   firebase.database().ref('historicoAcoes').push({
     tipo,
     descricao,
-    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+    idComerciante // ✅ associando o histórico ao comerciante
   });
 }
 
@@ -496,7 +512,8 @@ function handleFormSubmit(e) {
     ativo: true,
     fornecedor, // ajuste conforme necessário
     imagemUrl: '',
-    dataUltimaAtualizacao: obterDataLegivel()
+    dataUltimaAtualizacao: obterDataLegivel(),
+    idComerciante
   };
 
   // -- EDITAR PRODUTO - DATA DE CADASTRO
