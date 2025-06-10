@@ -1,10 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-import { 
+import {
   atualizarTodosDashboards,
 } from './dashboard.js';
 
+console.log("🧾 idComerciante atual:", localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante"));
+
 // Exporta funções utilitárias para uso em dashboard.js
+
+export function obterIdComerciante() {
+  return localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+}
+
 export function calcularFatorConversao(precoPor, unidade, qtd) {
   if (precoPor === unidade) return qtd;
   const chave = `${precoPor}_${unidade}`;
@@ -95,7 +102,9 @@ export function exportarParaExcel(dados, nomeArquivo = "relatorio", nomeAba = "D
 function carregarCategoriasNoFiltro() {
   const refProdutos = ref(db, "produto");
   get(refProdutos).then(snapshot => {
-    const lista = Object.values(snapshot.val() || {});
+    const idComerciante = obterIdComerciante();
+    const lista = Object.values(snapshot.val() || {}).filter(p => p.idComerciante === idComerciante);
+
     const categoriasUnicas = [...new Set(lista.map(p => p.categoria).filter(Boolean))];
 
     const select = document.getElementById("filtro-categoria");
