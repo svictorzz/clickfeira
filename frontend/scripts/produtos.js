@@ -126,14 +126,17 @@ function carregarFornecedores() {
   const select = document.getElementById('fornecedor');
   if (!select) return;
 
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
     select.innerHTML = '<option value="">Selecione...</option>';
     snapshot.forEach(child => {
       const fornecedor = child.val();
-      const option = document.createElement('option');
-      option.value = child.key;
-      option.textContent = fornecedor.nome;
-      select.appendChild(option);
+      if (fornecedor.idComerciante === idComerciante) {
+        const option = document.createElement('option');
+        option.value = child.key;
+        option.textContent = fornecedor.nome;
+        select.appendChild(option);
+      }
     });
   });
 }
@@ -141,12 +144,17 @@ function carregarFornecedores() {
 let mapaFornecedores = {};
 
 function carregarMapaFornecedores() {
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
     mapaFornecedores = {};
     snapshot.forEach(child => {
-      mapaFornecedores[child.key] = child.val().nome;
+      const fornecedor = child.val();
+      if (fornecedor.idComerciante === idComerciante) {
+        mapaFornecedores[child.key] = fornecedor.nome;
+      }
     });
-    atualizarTabela(); // Para exibir nomes na tabela após carregar o mapa
+    atualizarTabela(); // só depois que o mapa estiver preenchido
   });
 }
 
@@ -154,14 +162,17 @@ function carregarFiltroFornecedores() {
   const select = document.getElementById('filtrar-fornecedor');
   if (!select) return;
 
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
     select.innerHTML = '<option value="">Todos</option>';
     snapshot.forEach(child => {
       const fornecedor = child.val();
-      const option = document.createElement('option');
-      option.value = child.key;
-      option.textContent = fornecedor.nome;
-      select.appendChild(option);
+      if (fornecedor.idComerciante === idComerciante) {
+        const option = document.createElement('option');
+        option.value = child.key;
+        option.textContent = fornecedor.nome;
+        select.appendChild(option);
+      }
     });
   });
 }
@@ -531,7 +542,9 @@ function preencherModalVisualizacao(produto) {
   document.getElementById('ver-qtd-minima').textContent = `${produto.quantidadeMinima} ${produto.unidadeMedida}`;
   document.getElementById('ver-qtd-atual').textContent = `${produto.quantidadeEstoque} ${produto.unidadeMedida}`;
   document.getElementById('ver-imagem').src = produto.imagemUrl;
-  document.getElementById('ver-fornecedor').textContent = mapaFornecedores[produto.fornecedorId] || '—';
+  const nomeFornecedor = mapaFornecedores[produto.fornecedorId];
+  document.getElementById('ver-fornecedor').textContent = nomeFornecedor ? nomeFornecedor : 'Fornecedor não disponível';
+
 }
 
 function preencherFormEdicao(produto, index) {
