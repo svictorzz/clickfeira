@@ -20,6 +20,7 @@ let fornecedorParaEditar = null;
 let fornecedorParaExcluir = null;
 const modalExcluir = new bootstrap.Modal(document.getElementById('modal-excluir'));
 let proximoCodigo = 1;
+let ordenacaoAtual = ''; // Adicionado para controlar a ordenação atual
 
 // DOM Elements
 const elements = {
@@ -27,7 +28,8 @@ const elements = {
     pesquisarFornecedor: document.getElementById('pesquisar-fornecedor'),
     nomeFornecedorExcluir: document.getElementById('nome-fornecedor-excluir'),
     filtrosContainer: document.getElementById('filtros-container'),
-    ordenarNome: document.getElementById('ordenar-nome')
+    ordenarNome: document.getElementById('ordenar-nome'),
+    filtrarTipo: document.getElementById('filtrar-tipo')
 };
 
 // Registrar ação no histórico
@@ -83,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-confirmar-exclusao').addEventListener('click', confirmarExclusao);
     elements.pesquisarFornecedor.addEventListener('input', pesquisarFornecedores);
     elements.ordenarNome.addEventListener('change', ordenarFornecedores);
+    elements.filtrarTipo.addEventListener('change', () => aplicarOrdenacaoEFiltros());
 
     // Toggle para mostrar/ocultar filtros
     document.querySelector('.filter').addEventListener('click', function () {
@@ -118,14 +121,48 @@ function carregarFornecedoresDoFirebase() {
                 }
             }
         });
-        renderizarTabela();
+        aplicarOrdenacaoEFiltros();
     });
+}
+
+// Função para aplicar ordenação e filtros juntos
+function aplicarOrdenacaoEFiltros() {
+    let filtrados = [...fornecedores];
+    const tipoFiltro = elements.filtrarTipo.value;
+    const termoPesquisa = elements.pesquisarFornecedor.value.toLowerCase();
+
+    // Aplicar filtro por tipo (CPF/CNPJ)
+    if (tipoFiltro === 'cpf') {
+        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
+    } else if (tipoFiltro === 'cnpj') {
+        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
+    }
+
+    // Aplicar pesquisa se houver termo
+    if (termoPesquisa) {
+        filtrados = filtrados.filter(fornecedor =>
+            (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termoPesquisa)) ||
+            (fornecedor.cnpj && fornecedor.cnpj.includes(termoPesquisa)) ||
+            (fornecedor.codigo && fornecedor.codigo.includes(termoPesquisa))
+        );
+    }
+
+    // Aplicar ordenação
+    switch (ordenacaoAtual) {
+        case 'az':
+            filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+            break;
+        case 'za':
+            filtrados.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
+            break;
+    }
+
+    renderizarTabela(filtrados);
 }
 
 // Funções para abrir/fechar modais
 function mostrarModalAdicionar() {
     document.getElementById('form-adicionar').reset();
-    // Gerar código sequencial para novo fornecedor
     document.getElementById('codigo').value = proximoCodigo.toString().padStart(3, '0');
     document.getElementById('modal-adicionar').style.display = 'flex';
     fornecedorParaEditar = null;
@@ -163,7 +200,6 @@ function mostrarModalVisualizar(key) {
     const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
 
-    // Preencher os dados do fornecedor
     document.getElementById('view-codigo').textContent = fornecedor.codigo || 'Não informado';
     document.getElementById('view-nome').textContent = fornecedor.nome || 'Não informado';
     document.getElementById('view-cnpj').textContent = fornecedor.cnpj || 'Não informado';
@@ -174,7 +210,6 @@ function mostrarModalVisualizar(key) {
     document.getElementById('view-dataCadastro').textContent = fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : 'Não informado';
     document.getElementById('view-dataAtualizacao').textContent = fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : 'Não informado';
 
-    // Traduzir o valor dos produtos
     const produtos = {
         'frutas': 'Frutas',
         'legumes': 'Legumes',
@@ -212,7 +247,7 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
         elements.tabelaFornecedores.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center py-3 text-muted">
-                    Nenhum fornecedor cadastrado
+                    Nenhum fornecedor encontrado
                 </td>
             </tr>
         `;
@@ -240,7 +275,6 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
             </td>
         `;
 
-        // Adiciona event listeners
         tr.querySelector('.btn-visualizar').addEventListener('click', () =>
             mostrarModalVisualizar(fornecedor.firebaseKey));
 
@@ -263,12 +297,11 @@ function confirmarExclusao() {
             const fornecedor = snapshot.val();
             const nomeFornecedor = fornecedor?.nome;
 
-            // Remover fornecedor
             return fornecedorRef.remove().then(() => {
                 mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
                 modalExcluir.hide();
                 registrarHistorico('Exclusão de fornecedor', `Fornecedor "${nomeFornecedor}" foi excluído.`);
-                excluirProdutosDoFornecedor(fornecedorParaExcluir); // Chave usada como ID
+                excluirProdutosDoFornecedor(fornecedorParaExcluir);
                 fornecedorParaExcluir = null;
             });
         }).catch(error => {
@@ -310,7 +343,6 @@ function salvarFornecedor(e) {
     };
 
     if (fornecedorParaEditar) {
-        // Atualizar fornecedor existente
         firebase.database().ref('fornecedor/' + fornecedorParaEditar.firebaseKey).update(novoFornecedor)
             .then(() => {
                 mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
@@ -323,14 +355,12 @@ function salvarFornecedor(e) {
                 mostrarMensagem('Erro ao atualizar fornecedor', 'error');
             });
     } else {
-        // Criar novo fornecedor
         firebase.database().ref('fornecedor').push(novoFornecedor)
             .then(() => {
                 mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
                 fecharModalAdicionar();
                 proximoCodigo++;
                 registrarHistorico('Cadastro de fornecedor', `Fornecedor "${novoFornecedor.nome}" cadastrado.`);
-
             })
             .catch(error => {
                 console.error('Erro ao cadastrar fornecedor:', error);
@@ -363,7 +393,6 @@ function atualizarFornecedor(e) {
             mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
             fecharModalEditar();
             registrarHistorico('Edição de fornecedor', `Fornecedor "${dadosAtualizados.nome}" atualizado.`);
-
         })
         .catch(error => {
             console.error('Erro ao atualizar fornecedor:', error);
@@ -373,64 +402,18 @@ function atualizarFornecedor(e) {
 
 // Funções auxiliares
 function pesquisarFornecedores() {
-    const termo = elements.pesquisarFornecedor.value.toLowerCase();
-
-    if (!termo) {
-        renderizarTabela();
-        return;
-    }
-
-    const resultados = fornecedores.filter(fornecedor =>
-        (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termo)) ||
-        (fornecedor.cnpj && fornecedor.cnpj.includes(termo)) ||
-        (fornecedor.codigo && fornecedor.codigo.includes(termo))
-    );
-
-    renderizarTabela(resultados);
+    aplicarOrdenacaoEFiltros();
 }
 
 function ordenarFornecedores() {
-    const ordenacao = elements.ordenarNome.value;
-    let fornecedoresOrdenados = [...fornecedores];
-
-    switch (ordenacao) {
-        case 'az':
-            fornecedoresOrdenados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-            break;
-        case 'za':
-            fornecedoresOrdenados.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
-            break;
-        default:
-            // Mantém a ordenação original
-            break;
-    }
-
-    renderizarTabela(fornecedoresOrdenados);
-}
-
-
-document.getElementById('filtrar-tipo').addEventListener('change', function () {
-    const tipoSelecionado = this.value;
-    aplicarFiltroTipo(tipoSelecionado);
-});
-
-function aplicarFiltroTipo(tipo) {
-    let filtrados = [...fornecedores];
-
-    if (tipo === 'cpf') {
-        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
-    } else if (tipo === 'cnpj') {
-        filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
-    }
-
-    renderizarTabela(filtrados);
+    ordenacaoAtual = elements.ordenarNome.value;
+    aplicarOrdenacaoEFiltros();
 }
 
 function validarFormulario(formId) {
     let valido = true;
     const form = document.getElementById(formId);
 
-    // Validar campos obrigatórios
     form.querySelectorAll('[required]').forEach(campo => {
         const errorElement = document.getElementById(campo.id + '-error');
 
@@ -444,9 +427,7 @@ function validarFormulario(formId) {
         }
     });
 
-    // Validações específicas
     if (formId === 'form-adicionar' || formId === 'form-editar') {
-        // Validar CNPJ/CPF
         const cnpjField = form.querySelector('#cnpj, #edit-cnpj');
         if (cnpjField && cnpjField.value.trim()) {
             const cnpjError = document.getElementById(cnpjField.id + '-error');
@@ -460,7 +441,6 @@ function validarFormulario(formId) {
             }
         }
 
-        // Validar e-mail
         const emailField = form.querySelector('#email, #edit-email');
         if (emailField && emailField.value.trim()) {
             const emailError = document.getElementById(emailField.id + '-error');
@@ -471,7 +451,6 @@ function validarFormulario(formId) {
             }
         }
 
-        // Validar nome (apenas letras e espaços)
         const nomeField = form.querySelector('#nome, #edit-nome');
         if (nomeField && nomeField.value.trim()) {
             const nomeError = document.getElementById(nomeField.id + '-error');
@@ -485,7 +464,6 @@ function validarFormulario(formId) {
             }
         }
 
-        // Validar telefone
         const telefoneField = form.querySelector('#telefone, #edit-telefone');
         if (telefoneField && telefoneField.value.trim()) {
             const telefoneError = document.getElementById(telefoneField.id + '-error');
@@ -504,17 +482,16 @@ function validarFormulario(formId) {
 }
 
 function aplicarMascaras() {
-    // Máscara para CNPJ/CPF
     const cnpjFields = document.querySelectorAll('#cnpj, #edit-cnpj');
     cnpjFields.forEach(field => {
         field.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
 
-            if (value.length <= 11) { // CPF
+            if (value.length <= 11) {
                 value = value.replace(/(\d{3})(\d)/, '$1.$2');
                 value = value.replace(/(\d{3})(\d)/, '$1.$2');
                 value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-            } else { // CNPJ
+            } else {
                 value = value.replace(/^(\d{2})(\d)/, '$1.$2');
                 value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
                 value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
@@ -525,7 +502,6 @@ function aplicarMascaras() {
         });
     });
 
-    // Máscara para CEP
     const cepFields = document.querySelectorAll('#cep, #edit-cep');
     cepFields.forEach(field => {
         field.addEventListener('input', function (e) {
@@ -535,16 +511,15 @@ function aplicarMascaras() {
         });
     });
 
-    // Máscara para telefone (com DDD e 9º dígito ou sem 9º dígito)
     const telefoneFields = document.querySelectorAll('#telefone, #edit-telefone');
     telefoneFields.forEach(field => {
         field.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
 
-            if (value.length > 10) { // Com DDD e 9º dígito (celular)
+            if (value.length > 10) {
                 value = value.replace(/^(\d{2})(\d)/, '($1) $2');
                 value = value.replace(/(\d{5})(\d)/, '$1-$2');
-            } else if (value.length > 6) { // Com DDD (telefone fixo)
+            } else if (value.length > 6) {
                 value = value.replace(/^(\d{2})(\d)/, '($1) $2');
                 value = value.replace(/(\d{4})(\d)/, '$1-$2');
             }
@@ -553,7 +528,6 @@ function aplicarMascaras() {
         });
     });
 
-    // Validar apenas letras e espaços no nome
     const nomeFields = document.querySelectorAll('#nome, #edit-nome');
     nomeFields.forEach(field => {
         field.addEventListener('input', function (e) {
@@ -577,13 +551,10 @@ function validarCnpjCpf(valor) {
 function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, '');
 
-    // Elimina CPFs invalidos conhecidos
-    if (cpf.length !== 11 ||
-        /^(\d)\1{10}$/.test(cpf)) {
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
         return false;
     }
 
-    // Valida 1o digito
     let add = 0;
     for (let i = 0; i < 9; i++) {
         add += parseInt(cpf.charAt(i)) * (10 - i);
@@ -592,7 +563,6 @@ function validarCPF(cpf) {
     if (rev === 10 || rev === 11) rev = 0;
     if (rev !== parseInt(cpf.charAt(9))) return false;
 
-    // Valida 2o digito
     add = 0;
     for (let i = 0; i < 10; i++) {
         add += parseInt(cpf.charAt(i)) * (11 - i);
@@ -607,13 +577,10 @@ function validarCPF(cpf) {
 function validarCNPJ(cnpj) {
     cnpj = cnpj.replace(/[^\d]+/g, '');
 
-    // Elimina CNPJs invalidos conhecidos
-    if (cnpj.length !== 14 ||
-        /^(\d)\1{13}$/.test(cnpj)) {
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) {
         return false;
     }
 
-    // Valida DVs
     let tamanho = cnpj.length - 2;
     let numeros = cnpj.substring(0, tamanho);
     const digitos = cnpj.substring(tamanho);
@@ -650,7 +617,6 @@ function validarEmail(email) {
 }
 
 function validarTelefone(telefone) {
-    // Valida formatos: (DDD) 99999-9999 ou (DDD) 9999-9999
     const re = /^\(\d{2}\) \d{4,5}-\d{4}$/;
     return re.test(telefone);
 }
