@@ -498,6 +498,8 @@ function handleFormSubmit(e) {
   }
 
   // Monta o objeto produto
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
   const produto = {
     codigo,
     nome,
