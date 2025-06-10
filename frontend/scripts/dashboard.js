@@ -11,14 +11,31 @@ export function atualizarTodosDashboards() {
   carregarDashboardHistoricoEstoque();
 }
 
-import { 
-  db, 
-  exportarParaExcel, 
-  calcularFatorConversao, 
+import {
+  db,
+  exportarParaExcel,
+  calcularFatorConversao,
   formatarData,
   mostrarCarregando,
-  esconderCarregando
+  esconderCarregando,
+  obterIdComerciante
 } from './relatorio.js';
+
+//Auxiliar, para buscar por comerciante
+function obterListaFiltrada(snapshot) {
+  const idComerciante = obterIdComerciante();
+  return Object.values(snapshot.val() || {}).filter(p => p.idComerciante === idComerciante);
+}
+
+//Garantir conversão de data
+function parseDataValidade(str) {
+  if (!str) return null;
+  if (str.includes("/")) {
+    const [dia, mes, ano] = str.split("/");
+    return new Date(`${ano}-${mes}-${dia}T00:00:00`);
+  }
+  return new Date(str);
+}
 
 // DASHBOARD 1: Fornecedores
 export function carregarDashboardFornecedores() {
@@ -26,7 +43,7 @@ export function carregarDashboardFornecedores() {
   const refFornecedores = ref(db, "fornecedor");
 
   Promise.all([get(refProdutos), get(refFornecedores)]).then(([prodSnap, fornSnap]) => {
-    const produtos = Object.values(prodSnap.val() || {});
+    const produtos = obterListaFiltrada(prodSnap);
     const fornecedores = fornSnap.val() || {};
 
     console.log("📦 Produtos carregados:", produtos);
@@ -123,7 +140,7 @@ export function carregarDashboardCategorias() {
   const refProdutos = ref(db, "produto");
 
   get(refProdutos).then(snapshot => {
-    const lista = Object.values(snapshot.val() || {});
+    const lista = obterListaFiltrada(snapshot);
 
     // Agrupa por categoria, contando o número de produtos únicos em cada
     const agrupado = {};
@@ -208,7 +225,7 @@ export function carregarDashboardCritico() {
   const refProdutos = ref(db, "produto");
 
   get(refProdutos).then(snapshot => {
-    let lista = Object.values(snapshot.val() || {});
+    let lista = obterListaFiltrada(snapshot);
     if (filtro !== "todas") {
       lista = lista.filter(p => p.categoria === filtro);
     }
@@ -300,7 +317,7 @@ export function carregarDashboardValorTotal() {
   const refFornecedores = ref(db, "fornecedor");
 
   Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapshot, snapshotFornecedores]) => {
-    let lista = Object.values(snapshot.val() || {});
+    let lista = obterListaFiltrada(snapshot);
     const fornecedores = snapshotFornecedores.val() || {};
 
     if (filtro !== "todas") {
@@ -379,7 +396,7 @@ export function carregarDashboardValidade() {
   const refFornecedores = ref(db, "fornecedor");
 
   Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapProdutos, snapFornecedores]) => {
-    let lista = Object.values(snapProdutos.val() || {});
+    let lista = obterListaFiltrada(snapProdutos);
     const fornecedores = snapFornecedores.val() || {};
 
     if (filtro !== "todas") {
@@ -395,7 +412,7 @@ export function carregarDashboardValidade() {
     const exportacao = [];
 
     lista.forEach(p => {
-      const validade = p.validade ? new Date(p.validade) : null;
+      const validade = parseDataValidade(p.validade);
       let diasParaVencer = null;
 
       if (validade) {
@@ -455,7 +472,9 @@ export function carregarDashboardValorCritico() {
   const refFornecedores = ref(db, "fornecedor");
 
   Promise.all([get(refProdutos), get(refFornecedores)]).then(([snapProdutos, snapFornecedores]) => {
-    let lista = Object.entries(snapProdutos.val() || {});
+    const todosProdutos = Object.entries(snapProdutos.val() || {});
+const lista = todosProdutos.filter(([_, p]) => p.idComerciante === obterIdComerciante());
+
     const fornecedores = snapFornecedores.val() || {};
 
     if (filtro !== "todas") {
@@ -557,7 +576,7 @@ export function carregarDashboardHistoricoEstoque() {
   const filtro = document.getElementById("filtro-categoria").value;
   const refProdutos = ref(db, "produto");
   get(refProdutos).then(snapshot => {
-    let produtos = Object.values(snapshot.val() || {});
+    let produtos = obterListaFiltrada(snapshot);
     if (filtro !== "todas") {
       produtos = produtos.filter(p => p.categoria === filtro);
     }
