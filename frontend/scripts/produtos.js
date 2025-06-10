@@ -1,4 +1,3 @@
-// --- VARIÁVEIS GLOBAIS ---
 const produtos = [];
 let indiceParaEditar = null;
 let firebaseKeyParaExcluir = null;
@@ -101,12 +100,23 @@ function configurarEventListeners() {
 
 // --- FUNÇÕES DO FIREBASE ---
 function carregarProdutosDoFirebase() {
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+  if (!idComerciante) {
+    console.warn("ID do comerciante não encontrado. Redirecionando para login.");
+    window.location.href = "login.html";
+    return;
+  }
+
   firebase.database().ref('produto').once('value').then(snapshot => {
     produtos.length = 0;
     snapshot.forEach(childSnapshot => {
       const produto = childSnapshot.val();
       produto.firebaseKey = childSnapshot.key;
-      produtos.push(produto);
+
+      // ✅ Somente produtos do comerciante logado
+      if (produto.idComerciante === idComerciante) {
+        produtos.push(produto);
+      }
     });
     atualizarTabela();
   });
@@ -157,10 +167,13 @@ function carregarFiltroFornecedores() {
 }
 
 function registrarHistorico(tipo, descricao) {
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
   firebase.database().ref('historicoAcoes').push({
     tipo,
     descricao,
-    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+    idComerciante // associando o histórico ao comerciante
   });
 }
 
@@ -439,7 +452,8 @@ function handleFormSubmit(e) {
     ativo: true,
     fornecedorId,
     imagemUrl: '',
-    dataUltimaAtualizacao: obterDataLegivel()
+    dataUltimaAtualizacao: obterDataLegivel(),
+    idComerciante: localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante"),
   };
 
   // Adicionar data de cadastro para novos produtos
