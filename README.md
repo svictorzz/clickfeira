@@ -19,6 +19,6 @@ venv\Scripts\activate  # (Windows)
 pip install -r requirements.txt
 
 3️⃣ Execute o servidor
-python app.py
+python run.py
 
 python -m http.server 5500
