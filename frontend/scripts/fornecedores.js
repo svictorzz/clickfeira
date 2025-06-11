@@ -29,7 +29,10 @@ const elements = {
     nomeFornecedorExcluir: document.getElementById('nome-fornecedor-excluir'),
     filtrosContainer: document.getElementById('filtros-container'),
     ordenarNome: document.getElementById('ordenar-nome'),
-    filtrarTipo: document.getElementById('filtrar-tipo')
+    filtrarTipo: document.getElementById('filtrar-tipo'),
+    filtrarCategoria: document.getElementById('filtrar-categoria'),
+    btnExportarTodos: document.getElementById('btn-exportar-todos'),
+    btnLimparFiltros: document.getElementById('btn-limpar-filtros'),
 };
 
 // Registrar ação no histórico
@@ -95,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.pesquisarFornecedor.addEventListener('input', pesquisarFornecedores);
     elements.ordenarNome.addEventListener('change', ordenarFornecedores);
     elements.filtrarTipo.addEventListener('change', () => aplicarOrdenacaoEFiltros());
+    elements.filtrarCategoria.addEventListener('change', aplicarOrdenacaoEFiltros);
 
     // Toggle para mostrar/ocultar filtros
     document.querySelector('.filter').addEventListener('click', function () {
@@ -105,6 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    //Evitar envio com Enter
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        });
+    });
+
     // Formulários
     document.getElementById('form-adicionar').addEventListener('submit', salvarFornecedor);
     document.getElementById('form-editar').addEventListener('submit', atualizarFornecedor);
@@ -112,6 +125,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Máscaras e validações
     aplicarMascaras();
 });
+
+//Limpar Filtro
+elements.btnLimparFiltros.addEventListener('click', () => {
+    elements.filtrarTipo.value = '';
+    elements.filtrarCategoria.value = '';
+    aplicarOrdenacaoEFiltros();
+});
+
+//Exportar fornecedores (todos)
+elements.btnExportarTodos.addEventListener('click', exportarTodosFornecedores);
 
 // Carregar fornecedores do Firebase
 function carregarFornecedoresDoFirebase() {
@@ -145,12 +168,20 @@ function aplicarOrdenacaoEFiltros() {
     let filtrados = [...fornecedores];
     const tipoFiltro = elements.filtrarTipo.value;
     const termoPesquisa = elements.pesquisarFornecedor.value.toLowerCase();
+    const categoriaSelecionada = elements.filtrarCategoria.value;
 
     // Aplicar filtro por tipo (CPF/CNPJ)
     if (tipoFiltro === 'cpf') {
         filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
     } else if (tipoFiltro === 'cnpj') {
         filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
+    }
+
+    // Filtrar por categoria de produtos
+    if (categoriaSelecionada) {
+        filtrados = filtrados.filter(f =>
+            Array.isArray(f.produtos) && f.produtos.includes(categoriaSelecionada)
+        );
     }
 
     // Aplicar pesquisa se houver termo
@@ -172,6 +203,9 @@ function aplicarOrdenacaoEFiltros() {
             break;
     }
 
+    const algumFiltroAtivo = elements.filtrarTipo.value || elements.filtrarCategoria.value;
+    elements.btnLimparFiltros.style.display = algumFiltroAtivo ? 'inline-block' : 'none';
+
     renderizarTabela(filtrados);
 }
 
@@ -185,24 +219,6 @@ function mostrarModalAdicionar() {
 
 function fecharModalAdicionar() {
     document.getElementById('modal-adicionar').style.display = 'none';
-}
-
-function mostrarModalExclusao(firebaseKey) {
-    const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
-    if (!fornecedor) {
-        mostrarMensagem("Fornecedor não encontrado.", "error");
-        return;
-    }
-
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-    if (fornecedor.idComerciante !== idComerciante) {
-        mostrarMensagem("Você não tem permissão para excluir este fornecedor.", "error");
-        return;
-    }
-
-    fornecedorParaExcluir = fornecedor;
-    document.getElementById('nome-fornecedor-excluir').textContent = fornecedor.nome;
-    modalExcluir.show(); // <- corrigido aqui
 }
 
 function mostrarModalEditar(firebaseKey) {
@@ -227,8 +243,10 @@ function mostrarModalEditar(firebaseKey) {
     document.getElementById('edit-cep').value = fornecedor.cep || '';
     document.getElementById('edit-telefone').value = fornecedor.telefone || '';
     document.getElementById('edit-endereco').value = fornecedor.endereco || '';
-    document.getElementById('edit-produtos').value = fornecedor.produtos || '';
-
+    const checkboxes = document.querySelectorAll('#edit-produtos-checkboxes input[name="produtos"]');
+    checkboxes.forEach(cb => {
+        cb.checked = Array.isArray(fornecedor.produtos) && fornecedor.produtos.includes(cb.value);
+    });
     document.getElementById('modal-editar').style.display = 'flex';
     fornecedorParaEditar = fornecedor;
 }
@@ -261,8 +279,9 @@ function mostrarModalVisualizar(firebaseKey) {
     document.getElementById('view-endereco').textContent = fornecedor.endereco || '';
     document.getElementById('view-dataCadastro').textContent = formatarData(fornecedor.dataCadastro) || '';
     document.getElementById('view-dataAtualizacao').textContent = formatarData(fornecedor.dataUltimaAtualizacao) || '';
-    document.getElementById('view-produtos').textContent = fornecedor.produtos || '';
-
+    document.getElementById('view-produtos').textContent = Array.isArray(fornecedor.produtos)
+        ? fornecedor.produtos.join(', ')
+        : fornecedor.produtos || '';
     document.getElementById('modal-visualizar').style.display = 'flex';
 }
 
@@ -394,11 +413,37 @@ function salvarFornecedor(e) {
         cep: document.getElementById('cep').value,
         telefone: document.getElementById('telefone').value,
         endereco: document.getElementById('endereco').value,
-        produtos: document.getElementById('produtos').value,
+        produtos: Array.from(document.querySelectorAll('#produtos-checkboxes input[name="produtos"]:checked'))
+            .map(cb => cb.value),
         dataCadastro: obterDataLegivel(),
         dataUltimaAtualizacao: obterDataLegivel(),
         idComerciante: idComerciante
     };
+
+    // Sanitize
+    novoFornecedor.nome = limparTextoHTML(novoFornecedor.nome);
+    novoFornecedor.email = limparTextoHTML(novoFornecedor.email);
+    novoFornecedor.endereco = limparTextoHTML(novoFornecedor.endereco);
+
+    // Limite de tamanho
+    if (!validarTamanhoMaximo(novoFornecedor.nome, 80)) {
+        mostrarMensagem('Nome muito longo (máximo 80 caracteres)', 'error');
+        return;
+    }
+    if (!validarTamanhoMaximo(novoFornecedor.email, 100)) {
+        mostrarMensagem('E-mail muito longo (máximo 100 caracteres)', 'error');
+        return;
+    }
+
+    // Validação de endereço
+    if (!validarEndereco(novoFornecedor.endereco)) {
+        mostrarMensagem('Endereço inválido. Use letras, números, vírgulas e pontos.', 'error');
+        return;
+    }
+
+    // Produtos válidos
+    novoFornecedor.produtos = novoFornecedor.produtos.filter(p => produtosValidos.includes(p));
+
 
     if (fornecedorParaEditar) {
         firebase.database().ref('fornecedor/' + fornecedorParaEditar.firebaseKey).update(novoFornecedor)
@@ -413,6 +458,26 @@ function salvarFornecedor(e) {
                 mostrarMensagem('Erro ao atualizar fornecedor', 'error');
             });
     } else {
+        const cnpjNormalizado = novoFornecedor.cnpj.replace(/\D/g, '');
+        const cnpjDuplicado = fornecedores.some(f =>
+            f.cnpj.replace(/\D/g, '') === cnpjNormalizado &&
+            (!fornecedorParaEditar || f.firebaseKey !== fornecedorParaEditar.firebaseKey)
+        );
+
+        if (cnpjDuplicado) {
+            mostrarMensagem('CNPJ/CPF já cadastrado para outro fornecedor.', 'error');
+            return;
+        }
+
+        const emailNormalizado = normalizarTexto(novoFornecedor.email || '');
+        const emailDuplicado = fornecedores.some(f =>
+            normalizarTexto(f.email || '') === emailNormalizado &&
+            (!fornecedorParaEditar || f.firebaseKey !== fornecedorParaEditar.firebaseKey)
+        );
+        if (emailDuplicado) {
+            mostrarMensagem('E-mail já cadastrado para outro fornecedor.', 'error');
+            return;
+        }
         firebase.database().ref('fornecedor').push(novoFornecedor)
             .then(() => {
                 mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
@@ -446,7 +511,8 @@ function atualizarFornecedor(e) {
         cep: document.getElementById('edit-cep').value,
         telefone: document.getElementById('edit-telefone').value,
         endereco: document.getElementById('edit-endereco').value,
-        produtos: document.getElementById('edit-produtos').value,
+        produtos: Array.from(document.querySelectorAll('#edit-produtos-checkboxes input[name="produtos"]:checked'))
+            .map(cb => cb.value),
         dataUltimaAtualizacao: obterDataLegivel(),
         idComerciante: idComerciante
     };
@@ -519,10 +585,11 @@ function validarFormulario(formId) {
         const nomeField = form.querySelector('#nome, #edit-nome');
         if (nomeField && nomeField.value.trim()) {
             const nomeError = document.getElementById(nomeField.id + '-error');
-            if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nomeField.value)) {
+            const nome = nomeField.value.trim();
+            if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nome) || nome.split(" ").length < 2) {
                 nomeField.classList.add('is-invalid');
                 if (nomeError) {
-                    nomeError.textContent = 'Nome deve conter apenas letras e espaços';
+                    nomeError.textContent = 'Nome inválido. Use apenas letras e espaços (mínimo 2 palavras).';
                     nomeError.style.display = 'block';
                 }
                 valido = false;
@@ -540,6 +607,27 @@ function validarFormulario(formId) {
                 }
                 valido = false;
             }
+        }
+    }
+
+    if (formId === 'form-adicionar' || formId === 'form-editar') {
+        const produtosSelecionados = form.querySelectorAll('input[name="produtos"]:checked');
+        if (produtosSelecionados.length === 0) {
+            mostrarMensagem("Selecione pelo menos um produto fornecido.", "error");
+            valido = false;
+        }
+    }
+
+    const cepField = form.querySelector('#cep, #edit-cep');
+    if (cepField && cepField.value.trim()) {
+        const cepError = document.getElementById(cepField.id + '-error');
+        if (!validarCEP(cepField.value)) {
+            cepField.classList.add('is-invalid');
+            if (cepError) {
+                cepError.textContent = 'CEP inválido. Ex: 12345-678';
+                cepError.style.display = 'block';
+            }
+            valido = false;
         }
     }
 
@@ -681,10 +769,37 @@ function validarEmail(email) {
     return re.test(email);
 }
 
+function validarCEP(cep) {
+    return /^[0-9]{5}-?[0-9]{3}$/.test(cep);
+}
+
 function validarTelefone(telefone) {
     const re = /^\(\d{2}\) \d{4,5}-\d{4}$/;
     return re.test(telefone);
 }
+
+function limparTextoHTML(texto) {
+    const div = document.createElement('div');
+    div.innerText = texto;
+    return div.innerHTML.trim().replace(/\s+/g, ' ');
+}
+
+function validarEndereco(endereco) {
+    return /^[\wÀ-ÿ0-9\s,.-]{1,100}$/.test(endereco);
+}
+
+function validarTamanhoMaximo(campo, max) {
+    return campo.trim().length <= max;
+}
+
+function normalizarTexto(texto) {
+    return texto.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+const produtosValidos = [
+    "frutas", "legumes", "vegetais", "verduras", "temperos",
+    "laticínios", "doces", "salgados", "carnes", "grãos", "bebidas", "outros"
+];
 
 function mostrarMensagem(texto, tipo = 'success') {
     const msg = document.createElement('div');
@@ -693,4 +808,39 @@ function mostrarMensagem(texto, tipo = 'success') {
     document.body.appendChild(msg);
 
     setTimeout(() => msg.remove(), 3000);
+}
+
+//Exportar fornecedores
+function exportarTodosFornecedores() {
+    if (fornecedores.length === 0) {
+        mostrarMensagem("Nenhum fornecedor para exportar.", "warning");
+        return;
+    }
+
+    const dadosExportar = fornecedores.map(f => ({
+        Código: f.codigo || '',
+        Nome: f.nome || '',
+        CNPJ_CPF: f.cnpj || '',
+        Email: f.email || '',
+        Telefone: f.telefone || '',
+        Endereço: f.endereco || '',
+        CEP: f.cep || '',
+        Produtos: Array.isArray(f.produtos) ? f.produtos.join(', ') : '',
+        Data_Cadastro: f.dataCadastro || '',
+        Última_Atualização: f.dataUltimaAtualizacao || ''
+    }));
+
+    const csv = Papa.unparse(dadosExportar, {
+        quotes: true,
+        delimiter: ";"
+    });
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "fornecedores.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
