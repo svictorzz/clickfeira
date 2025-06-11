@@ -3,6 +3,31 @@ body {
   background-color: #f9f9f9;
 }
 
+.container-centralizado {
+  max-height: calc(100vh - 80px);
+  /* ajusta conforme altura do menu/header */
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Scrollbar bonita */
+.container-centralizado::-webkit-scrollbar {
+  width: 8px;
+}
+
+.container-centralizado::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.container-centralizado::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.container-centralizado::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 .panel {
   display: none;
 }
@@ -20,6 +45,23 @@ body {
 
 .is-invalid {
   border-color: red !important;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 .readonly-field {
@@ -53,8 +95,9 @@ body {
   margin: 0;
   font-weight: 600;
   font-size: 28px;
-  background-color: #f9f9f9;;
-  
+  background-color: #f9f9f9;
+  ;
+
 }
 
 .card-header .cinza {
@@ -146,7 +189,7 @@ body {
   max-width: 200px;
 }
 
-.table{
+.table {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
@@ -164,7 +207,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.table td{
+.table td {
   color: #444;
   border-bottom: 1px solid #f0f4f7;
   transition: all 0.2s ease;
@@ -173,7 +216,8 @@ body {
   padding: 16px;
 }
 
-.btn-outline-primary, .btn-outline-danger {
+.btn-outline-primary,
+.btn-outline-danger {
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
 }
@@ -193,22 +237,43 @@ body {
 
 .modal-content {
   background-color: white;
-  padding: 20px; /* reduzido de 30px */
+  padding: 20px;
   border-radius: 12px;
-  width: 700px; /* reduzido de 1000px */
-  max-width: 90%; /* mais responsivo */
-  max-height: 95vh; /* evita ultrapassar a altura da tela */
-  overflow-y: auto; /* ativa rolagem se necessário */
-  scrollbar-width: none;
+  width: 700px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   animation: aparecer-modal 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
 }
+
+/* Estilizando scrollbar dos modais no Chrome e derivados */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 
 @keyframes aparecer-modal {
   from {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -240,7 +305,8 @@ body {
   color: #333;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -249,7 +315,8 @@ body {
   background-color: #fff;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: #198754;
   box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
 }
@@ -326,24 +393,91 @@ body {
   .form-grid {
     flex-direction: column;
   }
-  
+
   .form-col {
     min-width: 100%;
   }
-  
+
   .search-bar {
     flex-wrap: wrap;
   }
-  
+
   .input-icon {
     width: 100%;
   }
-  
+
   .input-icon input {
     width: 100%;
   }
-  
-  .filter, .abrir-modal {
+
+  .filter,
+  .abrir-modal {
     flex: 1;
   }
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* 3 colunas fixas */
+  gap: 6px 10px;
+  margin-top: 4px;
+}
+
+.checkbox-grid label {
+  background-color: #f3f3f3;
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.checkbox-grid label:hover {
+  background-color: #e6f6ec;
+  border-color: #007f30;
+}
+
+.checkbox-grid input[type="checkbox"] {
+  margin: 0;
+  accent-color: #007f30;
+}
+
+#btn-exportar-todos {
+  background-color: #0062cc;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+#btn-exportar-todos:hover {
+  background-color: #004999;
+}
+
+#btn-limpar-filtros {
+  background-color: #6c757d;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+  display: none;
+}
+
+#btn-limpar-filtros:hover {
+  background-color: #5a6268;
 }
