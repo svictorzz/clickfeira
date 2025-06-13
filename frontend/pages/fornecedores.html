@@ -11,53 +11,6 @@
   <link rel="stylesheet" href="../styles/menu.css">
   <link rel="stylesheet" href="../styles/fornecedores.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <style>
-    .mensagem-alerta {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1000;
-      animation: fadeIn 0.3s;
-    }
-
-    .mensagem-alerta.success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-
-    .mensagem-alerta.error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        top: 0;
-      }
-
-      to {
-        opacity: 1;
-        top: 20px;
-      }
-    }
-
-    .error-message {
-      color: #dc3545;
-      font-size: 0.8rem;
-      display: none;
-      margin-top: 0.25rem;
-    }
-
-    .is-invalid {
-      border-color: #dc3545 !important;
-    }
-  </style>
 </head>
 
 <body>
@@ -78,8 +31,16 @@
               </div>
               <button class="filter"><i class="fa fa-sliders"></i> Filtros</button>
               <button id="btn-adicionar" class="abrir-modal"><i class="fa fa-plus"></i> Adicionar</button>
-              <button id="btn-exportar-todos" class="filter">📥 Exportar Todos</button>
-              <button id="btn-limpar-filtros" class="filter" style="display: none;">Limpar Filtros</button>
+              
+              <!-- Botões alinhados à direita -->
+              <div class="botoes-direita">
+                <button id="btn-exportar-todos" class="filter">📥 Exportar Todos</button>
+                <button id="btn-limpar-filtros" class="filter" style="display: none;">Limpar Filtros</button>
+                <div id="acoes-multiplas" style="display: none;">
+                  <button id="btn-excluir-selecionados">Excluir Selecionados</button>
+                  <button id="btn-exportar-selecionados">Exportar Selecionados</button>
+                </div>
+              </div>
             </div>
 
             <div id="filtros-container">
@@ -123,6 +84,7 @@
               <table class="table table-sm table-hover">
                 <thead class="table-light">
                   <tr>
+                    <th><input type="checkbox" id="selecionar-todos"></th>
                     <th>Código</th>
                     <th>CNPJ/CPF</th>
                     <th>Fornecedor</th>
@@ -173,9 +135,7 @@
             <input id="email" class="form-control" type="email" required />
             <div id="email-error" class="error-message">E-mail inválido</div>
 
-            <label for="cep">CEP:</label>
-            <input id="cep" class="form-control" required />
-
+            <!-- CEP REMOVIDO -->
             <label for="endereco">Endereço:</label>
             <input id="endereco" class="form-control" required />
 
@@ -237,9 +197,7 @@
             <input id="edit-email" class="form-control" type="email" />
             <div id="edit-email-error" class="error-message">E-mail inválido</div>
 
-            <label for="edit-cep">CEP:</label>
-            <input id="edit-cep" class="form-control" />
-
+            <!-- CEP REMOVIDO -->
             <label for="edit-endereco">Endereço:</label>
             <input id="edit-endereco" class="form-control" />
 
@@ -301,12 +259,7 @@
             <div class="info-value" id="view-email"></div>
           </div>
         </div>
-        <div class="row mb-2">
-          <div class="col-12">
-            <div class="info-label">CEP:</div>
-            <div class="info-value" id="view-cep"></div>
-          </div>
-        </div>
+        <!-- CEP REMOVIDO -->
         <div class="row mb-2">
           <div class="col-12">
             <div class="info-label">Telefone:</div>
