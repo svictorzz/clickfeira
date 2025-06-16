@@ -24,7 +24,7 @@
         <div class="search-bar">
             <div class="search-input">
                 <i class="fa fa-search"></i>
-                <input type="text" placeholder="Pesquisar">
+                <input type="text" id="input-pesquisa-pedidos" placeholder="Pesquisar">
             </div>
             <button class="filter-button">
                 <i class="fa fa-sliders"></i> Filtros
@@ -45,6 +45,9 @@
                     <option value="total-asc">Total (Menor para Maior)</option>
                     <option value="total-desc">Total (Maior para Menor)</option>
                 </select>
+                <button id="limpar-filtros-pedidos" style="max-width: 200px;">
+                    <i class="fa fa-times-circle"></i> Limpar Filtros
+                </button>
             </div>
         </div>
 
@@ -72,9 +75,8 @@
                     <th class="col-produtos">Produtos</th>
                     <th class="col-total">Total</th>
                     <th class="col-consultar">Consultar</th>
-                    <th class="col-editar">Editar</th>
+                    <th class="col-sar">Editar</th>
                     <th class="col-excluir">Excluir</th>
-                    <th class="acoes-mobile">Ações</th>
                 </tr>
             </thead>
             <tbody id="lista-pedidos-entradas" class="lista-pedidos"></tbody>
@@ -95,7 +97,7 @@
                     <th class="col-excluir">Excluir</th>
                 </tr>
             </thead>
-            <tbody id="lista-pedidos-saidas" class="" lista-pedidos></tbody>
+            <tbody id="lista-pedidos-saidas" class="lista-pedidos"></tbody>
         </table>
 
         <div id="controles-paginacao"
@@ -104,52 +106,59 @@
         </div>
     </main>
 
-    <!-- Modal Adicionar Entrada -->
+    <!-- Modal Adicionar Entradas -->
     <div class="modal-overlay" id="modal-entrada" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="titulo-modal-pedido" class="titulo-verde">Pedido</h3>
-                <span class="modal-order-number" id="numeroEntrada"></span>
+                <h4 id="titulo-modal-pedido" class="titulo-verde">Pedido</h4>
+                <span class="modal-order-number"></span>
             </div>
             <div class="modal-body">
                 <div class="grupo-form">
                     <label for="nomeAdicionar" class="label-tipo">Fornecedor:</label>
-                    <select id="nomeAdicionar" class="campo-form fornecedor-select" required>
-                        <option value="" selected>Selecione...</option>
+                    <select id="nomeAdicionar" class="campo-form" required>
+                        <option value="" selected disabled>Selecione...</option>
                     </select>
                 </div>
-
-                <div class="itens-pedido-container"></div>
-
-                <!-- Modelo oculto -->
-                <div class="item-pedido item-pedido-modelo" style="display:none;">
-                    <div class="grupo-form">
-                        <label>Produto:</label>
-                        <select class="campo-form produto-select" required>
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
-                    </div>
-                    <div class="grupo-form-duplo">
-                        <div>
-                            <label>Quantidade</label>
-                            <div class="quantidade-com-unidade">
-                                <input type="number" class="campo-form quantidade-input" min="1" value="1" required>
-                                <span class="unidade-medida">—</span>
+                <div class="itens-pedido-container">
+                    <div class="item-pedido" data-item-id="1">
+                        <div class="grupo-form">
+                            <label for="produtosAdicionar">Produto:</label>
+                            <select id="produtosAdicionar" name="produto_1" class="campo-form produto-select" required
+                                disabled>
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="grupo-form-duplo">
+                            <div>
+                                <label for="quantidadeAdicionar">Quantidade</label>
+                                <input type="number" id="quantidadeAdicionar" name="quantidade_1"
+                                    class="campo-form quantidade-input" min="1" value="1" required disabled>
+                            </div>
+                            <div>
+                                <label for="subtotalAdicionar">Subtotal</label>
+                                <input type="text" id="subtotalAdicionar" name="subtotal_1"
+                                    class="campo-form subtotal-input" value="0,00" readonly>
+                            </div>
+                            <div class="grupo-form-duplo">
+                                <div>
+                                    <label for="validadeItem">Validade</label>
+                                    <input type="date" class="campo-form validade-item" name="validade_item_1" required>
+                                </div>
+                                <div>
+                                    <label for="loteItem">Lote</label>
+                                    <input type="text" class="campo-form lote-item" name="lote_item_1" maxlength="20">
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label>Subtotal</label>
-                            <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
-                        </div>
+                        <button type="button" class="botao-remover-item" style="display: none;">Remover</button>
                     </div>
-                    <button type="button" class="botao-remover-item" style="display: none;">Remover</button>
                 </div>
-
                 <a href="#" id="adicionar-mais" class="adicionar-mais-item">Adicionar mais</a>
             </div>
             <div class="resumo-total modal-total">
                 <span class="titulo-verde">Total:</span>
-                <span class="valor-total" id="totalAdicionar">0,00</span>
+                <span id="totalAdicionar"></span>
             </div>
             <div class="modal-footer">
                 <button class="botao-secundario" id="cancelarModal">Cancelar</button>
@@ -158,50 +167,46 @@
         </div>
     </div>
 
-    <!-- Modal Adicionar Saida -->
     <div class="modal-overlay" id="modal-saida" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="titulo-modal-saida" class="titulo-verde">Pedido</h3>
-                <span class="modal-order-number" id="numeroSaida"></span>
+                <h4 id="titulo-modal-saida" class="titulo-verde">Pedido</h4>
+                <span class="modal-order-number"></span>
             </div>
             <div class="modal-body">
                 <div class="grupo-form">
                     <label for="nomeAdicionarSaida" class="label-tipo">Cliente:</label>
-                    <input type="text" id="nomeAdicionarSaida" class="campo-form fornecedor-select" required />
+                    <input type="text" id="nomeAdicionarSaida" class="campo-form" required />
                 </div>
-
-                <div class="itens-pedido-container" id="container-itens-saida"></div>
-
-                <!-- Modelo oculto para clonagem -->
-                <div class="item-pedido item-pedido-modelo" style="display: none;">
-                    <div class="grupo-form">
-                        <label>Produto:</label>
-                        <select class="campo-form produto-select" required>
-                            <option value="" selected disabled>Selecione...</option>
-                        </select>
-                    </div>
-                    <div class="grupo-form-duplo">
-                        <div>
-                            <label>Quantidade</label>
-                            <div class="quantidade-com-unidade">
-                                <input type="number" class="campo-form quantidade-input" min="1" value="1" required>
-                                <span class="unidade-medida">—</span>
+                <div class="itens-pedido-container" id="container-itens-saida">
+                    <div class="item-pedido" data-item-id="1">
+                        <div class="grupo-form">
+                            <label for="produtosAdicionarSaida">Produto:</label>
+                            <select id="produtosAdicionarSaida" name="produto_1" class="campo-form produto-select"
+                                required disabled>
+                                <option value="" selected disabled>Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="grupo-form-duplo">
+                            <div>
+                                <label for="quantidadeAdicionarSaida">Quantidade</label>
+                                <input type="number" id="quantidadeAdicionarSaida" name="quantidade_1"
+                                    class="campo-form quantidade-input" min="1" value="1" required disabled>
+                            </div>
+                            <div>
+                                <label for="subtotalAdicionarSaida">Subtotal</label>
+                                <input type="text" id="subtotalAdicionarSaida" name="subtotal_1"
+                                    class="campo-form subtotal-input" value="0,00" readonly>
                             </div>
                         </div>
-                        <div>
-                            <label>Subtotal</label>
-                            <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
-                        </div>
+                        <button type="button" class="botao-remover-item" style="display: none;">Remover</button>
                     </div>
-                    <button type="button" class="botao-remover-item" style="display: none;">Remover</button>
                 </div>
-
                 <a href="#" id="adicionar-mais-saida" class="adicionar-mais-item">Adicionar mais</a>
             </div>
             <div class="resumo-total modal-total">
                 <span class="titulo-verde">Total:</span>
-                <span class="valor-total" id="totalAdicionarSaida">0,00</span>
+                <span id="totalAdicionarSaida"></span>
             </div>
             <div class="modal-footer">
                 <button class="botao-secundario" id="cancelarModalSaida">Cancelar</button>
@@ -214,13 +219,13 @@
     <div class="modal-overlay" id="modal-visualizar" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="titulo-verde">Visualizar Pedido</h3>
+                <h4 class="titulo-verde">Visualizar Pedido</h4>
                 <span class="modal-order-number" id="visualizarID"></span>
             </div>
             <div class="modal-body">
                 <div class="grupo-form">
                     <label id="labelNome" class="label-tipo">Fornecedor:</label>
-                    <div id="nomeVisualizar" class="campo-form"></div>
+                    <div id="nomeVisualizar" class="campo-form leitura"></div>
                 </div>
                 <div class="itens-pedido-container">
                     <!-- Itens serão inseridos dinamicamente via JavaScript -->
@@ -228,7 +233,7 @@
             </div>
             <div class="resumo-total modal-total">
                 <span class="titulo-verde">Total:</span>
-                <span class="valor-total" id="totalVisualizar"></span>
+                <span id="totalVisualizar"></span>
             </div>
             <div class="modal-footer">
                 <button class="botao-secundario" id="fecharVisualizar">Fechar</button>
@@ -236,12 +241,10 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-visualizar-itens" style="display: none;">
+    <div id="modal-visualizar-itens" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="titulo-verde">Itens do Pedido</h3>
-            </div>
-            <div class="itens-pedido-container" id="itens-lista-visualizacao"></div>
+            <h4 class="titulo-verde">Itens do Pedido</h4>
+            <div id="itens-lista-visualizacao"></div>
             <div class="modal-footer">
                 <button class="botao-secundario" id="fecharVisualizarItens">Fechar</button>
             </div>
@@ -249,13 +252,13 @@
     </div>
 
     <!-- Modal de Confirmação de Exclusão -->
-    <div id="modal-confirmar-exclusao" class="modal-overlay" style="display: none;">
+    <div id="modal-confirmar-exclusao" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <h4>Deseja realmente excluir este produto?</h4>
             <p style="color: gray; font-size: 14px;">Essa ação não poderá ser desfeita.</p>
             <div class="modal-buttons" style="justify-content: center;">
-                <button id="btn-confirmar-excluir" class="botao-principal">Sim, excluir</button>
-                <button id="btn-cancelar-excluir" class="botao-secundario">Cancelar</button>
+                <button id="btn-confirmar-excluir" class="salvar">Sim, excluir</button>
+                <button id="btn-cancelar-excluir" class="cancelar">Cancelar</button>
             </div>
         </div>
     </div>
