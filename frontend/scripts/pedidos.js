@@ -1,243 +1,320 @@
-let tipoAtual = 'entrada';
-let editando = false;
+const pedidos = [];
+const idComerciante = localStorage.getItem('idComerciante') || sessionStorage.getItem('idComerciante');
+let paginaAtualEntradas = 1;
+let paginaAtualSaidas = 1;
+const itensPorPagina = 10;
+let itemCounter = 1;
+let quantidadeMaxima = null;
 let indiceParaEditar = null;
 let firebaseKeyParaExcluir = null;
-let itemCounter = 0;
-let paginaAtual = 1;
-let quantidadeMaxima = null;
-const itensPorPagina = 10;
-const pedidos = [];
+let tipoAtual = 'entrada';
+let editando = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarPedidosDoFirebase();
     configurarEventosPedidos();
 
-    document.getElementById('button-entradas').addEventListener('click', () => alternarTipo('entrada'));
-    document.getElementById('button-saidas').addEventListener('click', () => alternarTipo('saida'));
+    document.getElementById('button-entradas').addEventListener('click', mostrarEntradas);
+    document.getElementById('button-saidas').addEventListener('click', mostrarSaidas);
+    document.getElementById('btn-excluir-selecionados').addEventListener('click', excluirSelecionados);
 
-    document.getElementById('btnAbrirModal').addEventListener('click', exibirModal);
-    document.getElementById('cancelarModal').addEventListener('click', fecharModal);
-    document.getElementById('cancelarModalSaida').addEventListener('click', fecharModal);
+    const tipoSalvo = sessionStorage.getItem('tipoPedidoAtual');
+    if (tipoSalvo) tipoAtual = tipoSalvo;
 
-    document.getElementById('fecharVisualizar').addEventListener('click', fecharModalVisualizar);
-    document.getElementById('fecharVisualizarItens').addEventListener('click', fecharModalVisualizarItens);
-
-    document.getElementById('nomeAdicionar').addEventListener('change', (e) => handleFornecedorChange(e, 'entrada'));
-    document.getElementById('nomeAdicionarSaida').addEventListener('change', (e) => handleFornecedorChange(e, 'saida'));
-
-    document.querySelectorAll('.adicionar-mais-item').forEach(botao => {
-        botao.addEventListener('click', adicionarNovoItemPedido);
+    document.getElementById('ordenar-pedidos').addEventListener('change', () => {
+        if (tipoAtual === 'entrada') {
+            paginaAtualEntradas = 1;
+        } else {
+            paginaAtualSaidas = 1;
+        }
+        atualizarTabelaPedidos();
     });
 
-    document.querySelectorAll('.itens-pedido-container').forEach(container => {
-        container.addEventListener('change', (e) => {
-            if (e.target.classList.contains('produto-select')) {
-                const itemDiv = e.target.closest('.item-pedido');
-                const quantidadeInput = itemDiv.querySelector('.quantidade-input');
-                const subtotalInput = itemDiv.querySelector('.subtotal-input');
-                const spanUnidade = itemDiv.querySelector('.unidade-medida');
-                const produtoId = e.target.value;
 
-                buscarProdutoPorId(produtoId)
-                    .then(produto => {
-                        if (produto && produto.preco) {
-                            quantidadeInput.disabled = false;
-                            quantidadeMaxima = (tipoAtual === 'saida') ? parseInt(produto.quantidadeEstoque || 0) : null;
-                            spanUnidade.textContent = produto.unidadeMedida || '—';
-                            calcularSubtotalItem(itemDiv);
-                        } else {
-                            quantidadeMaxima = null;
-                            quantidadeInput.disabled = false;
-                            subtotalInput.value = '0,00';
-                            spanUnidade.textContent = '—';
-                        }
-                        atualizarProdutosDisponiveis(itemDiv.closest('.modal'));
-                    })
-                    .catch(error => {
-                        console.error('Erro ao buscar preço do produto:', error);
-                    });
-            }
+    document.getElementById('limpar-filtros-pedidos').addEventListener('click', () => {
+        document.getElementById('ordenar-pedidos').value = '';
+        if (tipoAtual === 'entrada') {
+            paginaAtualEntradas = 1;
+        } else {
+            paginaAtualSaidas = 1;
+        }
+        atualizarTabelaPedidos();
+    });
 
-        });
 
-        container.addEventListener('input', (e) => {
-            if (e.target.classList.contains('quantidade-input')) {
-                const itemDiv = e.target.closest('.item-pedido');
-                const quantidadeInput = e.target;
-                const quantidade = parseInt(quantidadeInput.value);
+    document.getElementById('btnAbrirModal').addEventListener('click', () => {
+        const titulo = tipoAtual === 'entrada' ? 'titulo-modal-pedido' : 'titulo-modal-saida';
+        document.getElementById(titulo).textContent = 'Pedido';
+        editando = false;
 
-                if (tipoAtual === 'saida' && quantidadeMaxima !== null && quantidade > quantidadeMaxima) {
-                    quantidadeInput.value = quantidadeMaxima;
-                    mostrarMensagem(`Quantidade máxima disponível: ${quantidadeMaxima}`);
-                }
+        if (tipoAtual === 'entrada') {
+            const nome = document.getElementById('nomeAdicionar');
+            const produtoSelect = document.getElementById('produtosAdicionar');
+            const quantidadeInput = document.getElementById('quantidadeAdicionar');
+            const subtotalInput = document.getElementById('subtotalAdicionar');
+            indiceParaEditar = null;
 
-                calcularSubtotalItem(itemDiv);
-            }
-        });
+            const container = document.querySelector('#modal-entrada .itens-pedido-container');
+            container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
+
+            nome.selectedIndex = 0;
+            produtoSelect.selectedIndex = 0;
+            quantidadeInput.value = 1;
+            subtotalInput.value = "0,00";
+
+            document.getElementById('modal-entrada').style.display = 'flex';
+            document.getElementById('totalAdicionar').textContent = "0,00";
+            document.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
+
+            carregarFornecedores();
+        } else if (tipoAtual === 'saida') {
+            const nome = document.getElementById('nomeAdicionarSaida');
+            const produtoSelect = document.getElementById('produtosAdicionarSaida');
+            const quantidadeInput = document.getElementById('quantidadeAdicionarSaida');
+            const subtotalInput = document.getElementById('subtotalAdicionarSaida');
+            indiceParaEditar = null;
+
+            const container = document.getElementById('container-itens-saida');
+            container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
+
+            nome.value = '';
+            produtoSelect.selectedIndex = 0;
+            produtoSelect.disabled = true;
+            quantidadeInput.value = 1;
+            quantidadeInput.disabled = true;
+            subtotalInput.value = "0,00";
+
+            document.getElementById('modal-saida').style.display = 'flex';
+            document.getElementById('totalAdicionarSaida').textContent = "0,00";
+            document.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
+
+            // 👇 garantir que evento e carregamento de produtos seja refeito
+            carregarProdutos(produtoSelect).then(() => {
+                produtoSelect.addEventListener('change', () => calcularSubtotalItem(container.querySelector('.item-pedido')));
+                quantidadeInput.addEventListener('input', () => calcularSubtotalItem(container.querySelector('.item-pedido')));
+            });
+        }
+
+    });
+
+    document.getElementById('input-pesquisa-pedidos').addEventListener('input', () => {
+        paginaAtual = 1;
+        atualizarTabelaPedidos();
+    });
+
+    document.getElementById('cancelarModal').addEventListener('click', () => {
+        document.getElementById('modal-entrada').style.display = 'none';
+    });
+
+    document.getElementById('cancelarModalSaida').addEventListener('click', () => {
+        document.getElementById('modal-saida').style.display = 'none';
+    });
+
+    document.getElementById('fecharVisualizar').addEventListener('click', () => {
+        document.getElementById('modal-visualizar').style.display = 'none';
+    });
+
+    document.getElementById('fecharVisualizarItens').addEventListener('click', () => {
+        document.getElementById('modal-visualizar-itens').style.display = 'none';
     });
 
     document.getElementById('btnFecharPedido').addEventListener('click', handlePedidoSubmit);
     document.getElementById('btnFecharPedidoSaida').addEventListener('click', handlePedidoSubmit);
+
+    document.querySelector('.search-input input').addEventListener('input', () => {
+        paginaAtual = 1;
+        atualizarTabelaPedidos();
+    });
+
+    document.querySelector('.filter-button')?.addEventListener('click', () => {
+        const filtros = document.getElementById('filtros-container-pedidos');
+        filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    document.getElementById('nomeAdicionar').addEventListener('change', (e) => {
+        const container = e.target.closest('.modal-content');
+        const produtoSelect = container.querySelector('.produto-select');
+        const quantidadeInput = container.querySelector('.quantidade-input');
+
+        if (produtoSelect && quantidadeInput) {
+            produtoSelect.disabled = false;
+            quantidadeInput.disabled = false;
+        }
+
+        const fornecedorId = e.target.value;
+        carregarProdutos(produtoSelect, fornecedorId);
+        calcularValorPedido();
+    });
+
+    document.getElementById('nomeAdicionarSaida').addEventListener('change', (e) => {
+        const modal = document.getElementById('modal-saida');
+        const container = modal.querySelector('.itens-pedido-container');
+        const item = container.querySelector('.item-pedido');
+
+        const selectProduto = item.querySelector('select.produto-select');
+        const inputQuantidade = item.querySelector('input.quantidade-input');
+
+        selectProduto.disabled = false;
+        inputQuantidade.disabled = false;
+
+        carregarProdutos(selectProduto).then(() => {
+            selectProduto.addEventListener('change', () => calcularSubtotalItem(item));
+            inputQuantidade.addEventListener('input', () => calcularSubtotalItem(item));
+            calcularSubtotalItem(item);
+        });
+
+    });
+
+    document.getElementById('selecionar-todos-saidas').addEventListener('change', e => {
+        const checkboxes = document.querySelectorAll('.selecionar-pedido');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        atualizarBotaoExcluirSelecionados();
+    });
+
+    document.getElementById('selecionar-todos-entradas').addEventListener('change', e => {
+        const checkboxes = document.querySelectorAll('.selecionar-pedido');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        atualizarBotaoExcluirSelecionados();
+    });
+
+    document.addEventListener('change', e => {
+        if (e.target.classList.contains('selecionar-produto')) {
+            const todos = document.querySelectorAll('.selecionar-produto');
+            const marcados = document.querySelectorAll('.selecionar-produto:checked');
+            document.getElementById('selecionar-todos').checked = todos.length === marcados.length;
+            atualizarBotaoExcluirSelecionados();
+        }
+    });
+
+    document.querySelectorAll('.adicionar-mais-item').forEach(botao => {
+        botao.addEventListener('click', function (e) {
+            e.preventDefault();
+            itemCounter++;
+
+            const modal = e.target.closest('.modal-content');
+            const container = modal.querySelector('.itens-pedido-container');
+            const originalItem = modal.querySelector('.item-pedido');
+            const newItem = originalItem.cloneNode(true);
+
+            // ✅ Zera valores dos campos clonados
+            const selectProduto = newItem.querySelector('select.produto-select');
+            const inputQuantidade = newItem.querySelector('input.quantidade-input');
+            const inputSubtotal = newItem.querySelector('input.subtotal-input');
+
+            selectProduto.name = `produto_${itemCounter}`;
+            selectProduto.id = `produtosAdicionar_${itemCounter}`;
+            selectProduto.disabled = false;
+            selectProduto.selectedIndex = 0;
+
+            inputQuantidade.name = `quantidade_${itemCounter}`;
+            inputQuantidade.id = `quantidadeAdicionar_${itemCounter}`;
+            inputQuantidade.value = 1; // ⬅️ ZERADO
+            inputQuantidade.disabled = false;
+
+            inputSubtotal.name = `subtotal_${itemCounter}`;
+            inputSubtotal.id = `subtotalAdicionar_${itemCounter}`;
+            inputSubtotal.value = '0,00'; // ⬅️ ZERADO
+
+
+            selectProduto.addEventListener('change', () => calcularSubtotalItem(newItem));
+            inputQuantidade.addEventListener('input', () => calcularSubtotalItem(newItem));
+
+            const btnRemover = newItem.querySelector('.botao-remover-item');
+            btnRemover.style.display = 'inline-block';
+            btnRemover.addEventListener('click', () => {
+                newItem.remove();
+                atualizarTotalPedido();
+                itemCounter--;
+            });
+
+            container.appendChild(newItem);
+
+            carregarProdutos(selectProduto).then(() => {
+                calcularSubtotalItem(newItem);
+            });
+        });
+    });
+
+    const saidaProduto = document.querySelector('#produtosAdicionarSaida');
+    const saidaQuantidade = document.querySelector('#quantidadeAdicionarSaida');
+    const saidaItem = document.querySelector('#modal-saida .item-pedido');
+
+    if (saidaProduto && saidaQuantidade && saidaItem) {
+        saidaProduto.addEventListener('change', () => calcularSubtotalItem(saidaItem));
+        saidaQuantidade.addEventListener('input', () => calcularSubtotalItem(saidaItem));
+    }
 });
 
-function alternarTipo(tipo) {
-    tipoAtual = tipo;
+function mostrarEntradas() {
+    tipoAtual = 'entrada';
 
-    const isEntrada = tipo === 'entrada';
-
-    document.getElementById('tabela-entradas').style.display = isEntrada ? 'table' : 'none';
-    document.getElementById('tabela-saidas').style.display = isEntrada ? 'none' : 'table';
+    document.getElementById('tabela-entradas').style.display = 'table';
+    document.getElementById('tabela-saidas').style.display = 'none';
 
     const btnEntradas = document.getElementById('button-entradas');
     const btnSaidas = document.getElementById('button-saidas');
 
-    btnEntradas.classList.toggle('btn-ativo-verde', isEntrada);
-    btnEntradas.classList.toggle('btn-inativo-verde', !isEntrada);
+    btnEntradas.classList.add('btn-ativo-verde');
+    btnEntradas.classList.remove('btn-inativo-verde');
 
-    btnSaidas.classList.toggle('btn-ativo-vermelho', !isEntrada);
-    btnSaidas.classList.toggle('btn-inativo-vermelho', isEntrada);
+    btnSaidas.classList.add('btn-inativo-vermelho');
+    btnSaidas.classList.remove('btn-ativo-vermelho');
 
-    document.getElementById('tipo_titulo').textContent = isEntrada ? '/ Fornecedor' : '/ Cliente';
+    document.getElementById('tipo_titulo').textContent = '/ Fornecedor';
 
+    sessionStorage.setItem('tipoPedidoAtual', tipoAtual);
     carregarPedidosDoFirebase();
 }
 
-function exibirModal() {
-    editando = false;
-    indiceParaEditar = null;
-    itemCounter = 0;
+function mostrarSaidas() {
+    tipoAtual = 'saida';
 
-    const isEntrada = tipoAtual === 'entrada';
-    const prefixo = isEntrada ? '' : 'Saida';
+    document.getElementById('tabela-entradas').style.display = 'none';
+    document.getElementById('tabela-saidas').style.display = 'table';
 
-    document.getElementById(`titulo-modal-${isEntrada ? 'pedido' : 'saida'}`).textContent = 'Pedido';
-    document.getElementById(isEntrada ? 'numeroEntrada' : 'numeroSaida').textContent = gerarCodigoPedido();
-    document.getElementById(`totalAdicionar${prefixo}`).textContent = "0,00";
+    const btnEntradas = document.getElementById('button-entradas');
+    const btnSaidas = document.getElementById('button-saidas');
 
-    const nome = document.getElementById(`nomeAdicionar${prefixo}`);
-    if (nome.tagName === 'SELECT') {
-        nome.selectedIndex = 0;
-        carregarFornecedores();
-    } else {
-        nome.value = '';
-    }
+    btnEntradas.classList.add('btn-inativo-verde');
+    btnEntradas.classList.remove('btn-ativo-verde');
 
-    const container = isEntrada
-        ? document.querySelector('#modal-entrada .itens-pedido-container')
-        : document.getElementById('container-itens-saida');
-    container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
+    btnSaidas.classList.add('btn-ativo-vermelho');
+    btnSaidas.classList.remove('btn-inativo-vermelho');
 
-    adicionarNovoItemPedido({ preventDefault: () => { }, target: document.querySelector(`#modal-${tipoAtual} .modal-content`) });
+    document.getElementById('tipo_titulo').textContent = '/ Cliente';
 
-    document.getElementById(`modal-${tipoAtual}`).style.display = 'flex';
-}
-
-function fecharModal() {
-    document.getElementById(`modal-${tipoAtual}`).style.display = 'none';
-}
-
-function fecharModalVisualizar() {
-    document.getElementById('modal-visualizar').style.display = 'none';
-}
-
-function fecharModalVisualizarItens() {
-    document.getElementById('modal-visualizar-itens').style.display = 'none';
-}
-
-function adicionarNovoItemPedido(e) {
-    e.preventDefault();
-
-    itemCounter++;
-
-    const modal = e.target.closest('.modal-content');
-
-    const container = modal.querySelector('.itens-pedido-container');
-    const originalItem = modal.querySelector('.item-pedido-modelo');
-    const newItem = originalItem.cloneNode(true);
-
-    newItem.classList.remove('item-pedido-modelo');
-    newItem.classList.add('item-pedido-dinamico');
-    newItem.style.display = 'block';
-    newItem.setAttribute('data-item-id', itemCounter);
-
-    const selectProduto = newItem.querySelector('select.produto-select');
-    const inputQuantidade = newItem.querySelector('input.quantidade-input');
-    const inputSubtotal = newItem.querySelector('input.subtotal-input');
-    const selectUnidade = newItem.querySelector('.unidade-medida');
-
-    selectProduto.name = `produto_${itemCounter}`;
-    selectProduto.selectedIndex = 0;
-
-    inputQuantidade.name = `quantidade_${itemCounter}`;
-    inputQuantidade.value = 1;
-
-    selectUnidade.textContent = '—';
-
-    const fornecedorSelect = modal.querySelector('.fornecedor-select');
-    const fornecedorSelecionado = fornecedorSelect && fornecedorSelect.value;
-
-    selectProduto.disabled = !fornecedorSelecionado;
-    inputQuantidade.disabled = !fornecedorSelecionado;
-
-    inputSubtotal.name = `subtotal_${itemCounter}`;
-    inputSubtotal.value = '0,00';
-
-    if (itemCounter > 1) {
-        const btnRemover = newItem.querySelector('.botao-remover-item');
-        btnRemover.style.display = 'inline-block';
-        btnRemover.addEventListener('click', () => {
-            newItem.remove();
-            atualizarTotalPedido();
-            itemCounter--;
-        });
-    }
-    container.appendChild(newItem);
-}
-
-function carregarPedidosDoFirebase() {
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-    if (!idComerciante) {
-        console.warn("ID do comerciante não encontrado. Redirecionando para login.");
-        window.location.href = "login.html";
-        return;
-    }
-
-    firebase.database().ref('pedido').once('value').then(snapshot => {
-        pedidos.length = 0;
-        snapshot.forEach(childSnapshot => {
-            const pedido = childSnapshot.val();
-            pedido.firebaseKey = childSnapshot.key;
-
-            if (pedido.idComerciante === idComerciante) {
-                pedidos.push(pedido);
-            }
-        });
-        atualizarTabelaPedidos();
-    });
+    sessionStorage.setItem('tipoPedidoAtual', tipoAtual);
+    carregarPedidosDoFirebase();
 }
 
 function carregarFornecedores() {
-    const select = document.getElementById('nomeAdicionar');
-    select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
+    const selects = document.querySelectorAll('#nomeAdicionar, #nomeAdicionarSaida'); // todos os selects
 
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
-    if (!idComerciante) {
-        console.warn("ID do comerciante não encontrado. Redirecionando para login.");
-        window.location.href = "login.html";
-        return;
-    }
+    selects.forEach(select => {
+        select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
+    });
 
     const fornecedoresRef = firebase.database().ref('fornecedor');
 
-    fornecedoresRef.orderByChild('idComerciante').equalTo(idComerciante).once('value')
+    fornecedoresRef.once('value')
         .then(snapshot => {
+            const fornecedores = [];
+
             snapshot.forEach(childSnapshot => {
                 const fornecedor = childSnapshot.val();
-                const option = document.createElement('option');
-                option.value = childSnapshot.key; // ID do fornecedor
-                option.textContent = fornecedor.nome; // Nome visível
-                select.appendChild(option);
+                fornecedores.push({
+                    key: childSnapshot.key,
+                    nome: fornecedor.nome
+                });
+            });
+
+            selects.forEach(select => {
+                fornecedores.forEach(f => {
+                    const option = document.createElement('option');
+                    option.value = f.key;
+                    option.textContent = f.nome;
+                    select.appendChild(option);
+                });
             });
         })
         .catch(error => {
@@ -245,85 +322,181 @@ function carregarFornecedores() {
         });
 }
 
-function carregarProdutos(fornecedorId = null, container = document) {
-    const selects = container.querySelectorAll('.produto-select');
+function carregarProdutos(selectEspecifico = null, fornecedorId = null) {
+    const idComercianteLocal = localStorage.getItem('idComerciante') || sessionStorage.getItem('idComerciante');
 
-    selects.forEach(select => {
-        select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
-        select.disabled = true;
-    });
+    const produtosRef = firebase.database().ref('produto');
 
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
-    if (!idComerciante) {
-        console.warn("ID do comerciante não encontrado. Redirecionando para login.");
-        window.location.href = "login.html";
-        return;
-    }
-
-    return firebase.database().ref('produto').once('value')
+    return produtosRef.once('value')
         .then(snapshot => {
             const produtos = snapshot.val();
+            if (!produtos) return;
+
             const opcoes = [];
 
             Object.entries(produtos).forEach(([key, produto]) => {
-                const pertenceAoComerciante = produto.idComerciante === idComerciante;
-                const correspondeAoFornecedor = fornecedorId ? produto.fornecedorId === fornecedorId : true;
+                const pertenceAoComerciante = produto.idComerciante === idComercianteLocal;
+                const pertenceAoFornecedor =
+                    fornecedorId
+                        ? produto.fornecedorId === fornecedorId
+                        : !!produto.fornecedorId; // Se não tiver fornecedorId, ignora
 
-                if (pertenceAoComerciante && correspondeAoFornecedor) {
-                    opcoes.push({ id: key, nome: produto.nome, preco: produto.preco });
+                if (pertenceAoComerciante && pertenceAoFornecedor) {
+                    const preco = parseFloat(produto.preco || '0');
+                    const optionHTML = `<option value="${key}" data-preco="${preco}">${produto.nome}</option>`;
+                    opcoes.push(optionHTML);
                 }
             });
 
-            selects.forEach(select => {
-                opcoes.forEach(produto => {
-                    const option = document.createElement('option');
-                    option.value = produto.id;
-                    option.dataset.preco = produto.preco;
-                    option.textContent = produto.nome;
-                    select.appendChild(option);
+            const htmlCompleto = '<option value="" selected disabled>Selecione...</option>' + opcoes.join('');
+
+            if (selectEspecifico) {
+                selectEspecifico.innerHTML = htmlCompleto;
+                selectEspecifico.disabled = false;
+            } else {
+                document.querySelectorAll('.produto-select').forEach(select => {
+                    select.innerHTML = htmlCompleto;
+                    select.disabled = false;
                 });
-                select.disabled = false;
-            });
+            }
         })
         .catch(error => {
             console.error("Erro ao carregar produtos:", error);
         });
 }
 
-function atualizarProdutosDisponiveis(container = document) {
-    const selects = Array.from(container.querySelectorAll('.produto-select'));
-    const selecionados = selects.map(sel => sel.value).filter(v => v);
+function calcularValorPedido() {
+    const selects = document.querySelectorAll('.produto-select');
+    const quantidades = document.querySelectorAll('.quantidade-input');
+    const subtotais = document.querySelectorAll('.subtotal-input');
 
-    selects.forEach(select => {
-        const atual = select.value;
-        Array.from(select.options).forEach(option => {
-            option.disabled = selecionados.includes(option.value) && option.value !== atual;
+    selects.forEach((produtoSelect, index) => {
+        const quantidadeInput = quantidades[index];
+        const subtotalInput = subtotais[index];
+
+        produtoSelect.addEventListener('change', () => {
+            const produtoId = produtoSelect.value;
+
+            if (!produtoId) {
+                quantidadeInput.value = 1;
+                quantidadeInput.disabled = true;
+                subtotalInput.value = '0,00';
+                return;
+            }
+
+            const produtoRef = firebase.database().ref('produto/' + produtoId);
+
+            produtoRef.once('value')
+                .then(snapshot => {
+                    const produto = snapshot.val();
+                    if (produto && produto.preco) {
+                        quantidadeMaxima = parseInt(produto.quantidadeEstoque || 0);
+                        quantidadeInput.disabled = false;
+                        calcularSubtotalItem(document.querySelector('.item-pedido'));
+                    } else {
+                        quantidadeMaxima = null;
+                        quantidadeInput.disabled = true;
+                        subtotalInput.value = '0,00';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar preço do produto:', error);
+                });
+        });
+
+        quantidadeInput.addEventListener('input', () => {
+            const quantidade = parseInt(quantidadeInput.value);
+            if (quantidadeMaxima !== null && quantidade > quantidadeMaxima) {
+                quantidadeInput.value = quantidadeMaxima;
+                alert(`Quantidade máxima disponível: ${quantidadeMaxima}`);
+            }
+            calcularSubtotalItem(document.querySelector('.item-pedido'));
         });
     });
 }
 
-function handleFornecedorChange(e, tipo = 'entrada') {
-    const container = e.target.closest('.modal-content');
-    const itensContainer = container.querySelector('.itens-pedido-container');
-    const produtoSelect = container.querySelector('.produto-select');
-    const quantidadeInput = container.querySelector('.quantidade-input');
+async function calcularSubtotalItem(itemContainer) {
+    const select = itemContainer.querySelector('select.produto-select');
+    const quantidadeInput = itemContainer.querySelector('input.quantidade-input');
+    const subtotalInput = itemContainer.querySelector('input.subtotal-input');
 
-    const itensDinamicos = itensContainer.querySelectorAll('.item-pedido-dinamico');
-    itensDinamicos.forEach(item => item.remove());
-
-    itemCounter = 0;
-    adicionarNovoItemPedido({ preventDefault: () => { }, target: document.querySelector(`#modal-${tipoAtual} .modal-content`) });
-
-    produtoSelect.disabled = false;
-    quantidadeInput.disabled = false;
-
-    if (tipo === 'entrada') {
-        const fornecedorId = e.target.value;
-        carregarProdutos(fornecedorId, container);
-    } else if (tipo === 'saida') {
-        carregarProdutos(null, container);
+    const produtoId = select?.value;
+    const quantidade = parseFloat(quantidadeInput?.value || '1');
+    if (!produtoId || isNaN(quantidade)) {
+        subtotalInput.value = '0,00';
+        atualizarTotalPedido();
+        return;
     }
+
+    // 🔄 Puxa os dados reais do Firebase
+    const snapshot = await firebase.database().ref('produto/' + produtoId).once('value');
+    const produto = snapshot.val();
+    if (!produto) {
+        subtotalInput.value = '0,00';
+        atualizarTotalPedido();
+        return;
+    }
+
+    const preco = parseFloat(produto.preco || '0');
+    const precoPor = produto.precoPor;
+    const unidade = produto.unidadeMedida;
+
+    let fator = 1;
+
+    // Peso
+    if (precoPor === 'kg') {
+        if (unidade === 'kg') fator = quantidade;
+        else if (unidade === 'g') fator = quantidade / 1000;
+        else if (unidade === '100g') fator = quantidade / 10;
+    } else if (precoPor === '100g') {
+        if (unidade === 'kg') fator = quantidade * 10;
+        else if (unidade === 'g') fator = quantidade / 100;
+        else if (unidade === '100g') fator = quantidade;
+    } else if (precoPor === 'g') {
+        if (unidade === 'kg') fator = quantidade * 1000;
+        else if (unidade === '100g') fator = quantidade * 100;
+        else if (unidade === 'g') fator = quantidade;
+    }
+
+    // Volume
+    else if (precoPor === 'litro') {
+        if (unidade === 'ml') fator = quantidade / 1000;
+        else if (unidade === 'litro') fator = quantidade;
+    } else if (precoPor === 'ml') {
+        if (unidade === 'litro') fator = quantidade * 1000;
+        else if (unidade === 'ml') fator = quantidade;
+    }
+
+    // Unidade simples ou pacote
+    else {
+        fator = quantidade;
+    }
+
+    const subtotal = preco * fator;
+    subtotalInput.value = subtotal.toFixed(2).replace('.', ',');
+    atualizarTotalPedido();
+}
+
+function atualizarTotalPedido() {
+    let total = 0;
+
+    document.querySelectorAll('.item-pedido').forEach(item => {
+        const subtotalInput = item.querySelector('.subtotal-input');
+        const subtotalStr = (subtotalInput?.value || '0').replace(',', '.');
+
+        const subtotal = parseFloat(subtotalStr);
+
+        // Só soma se for um número válido e maior que 0
+        if (!isNaN(subtotal) && subtotal > 0) {
+            total += subtotal;
+        }
+    });
+
+    const totalAdicionar = document.getElementById('totalAdicionar');
+    if (totalAdicionar) totalAdicionar.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+    const totalAdicionarSaida = document.getElementById('totalAdicionarSaida');
+    if (totalAdicionarSaida) totalAdicionarSaida.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
 }
 
 function gerarCodigoPedido() {
@@ -334,132 +507,73 @@ function gerarCodigoPedido() {
     return novoCodigo;
 }
 
-function calcularSubtotalItem(itemDiv) {
-    const selectProduto = itemDiv.querySelector('.produto-select');
-    const quantidadeInput = itemDiv.querySelector('.quantidade-input');
-    const subtotalInput = itemDiv.querySelector('.subtotal-input');
+function formatarData(dataStr) {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+}
 
-    const quantidade = parseFloat(quantidadeInput.value) || 0;
-    const idProduto = selectProduto.value;
+function atualizarBotaoExcluirSelecionados() {
+    const selecionados = document.querySelectorAll('.selecionar-pedido:checked');
+    const botao = document.getElementById('btn-excluir-selecionados');
+    botao.style.display = selecionados.length > 0 ? 'inline-block' : 'none';
+}
 
-    buscarProdutoPorId(idProduto).then(produto => {
-        if (produto && produto.preco) {
-            const subtotal = calcularSubtotalComConversao(quantidade, produto);
-            subtotalInput.value = `R$ ${subtotal.replace('.', ',')}`;
-        } else {
-            subtotalInput.value = "R$ 0,00";
-        }
-        atualizarTotalPedido();
-    }).catch(() => {
-        subtotalInput.value = "R$ 0,00";
+function excluirSelecionados() {
+    const selecionados = Array.from(document.querySelectorAll('.selecionar-pedido:checked'));
+    if (selecionados.length === 0) return;
+
+
+    const modal = document.getElementById('modal-confirmar-exclusao');
+    const titulo = modal.querySelector('h4');
+    const subtitulo = modal.querySelector('p');
+    titulo.textContent = `Deseja realmente excluir ${selecionados.length} produto(s)?`;
+    subtitulo.textContent = 'Essa ação não poderá ser desfeita.';
+
+    modal.setAttribute('data-multiplos', 'true');
+    modal.setAttribute('data-quantidade', selecionados.length);
+    modal.classList.add('ativo');
+    modal.style.display = 'flex';
+}
+
+function carregarPedidosDoFirebase() {
+    firebase.database().ref('pedido').once('value').then(snapshot => {
+        pedidos.length = 0;
+        snapshot.forEach(childSnapshot => {
+            const pedido = childSnapshot.val();
+            if (pedido.idComerciante === idComerciante) {
+                pedido.firebaseKey = childSnapshot.key;
+                pedidos.push(pedido);
+            }
+        });
+
+        console.log('Pedidos carregados:', pedidos); // 👈 Adicione isso
+
+        // 🔁 Enriquecer pedidos com nome do fornecedor
+        const promessas = pedidos.map(async (pedido) => {
+            if (pedido.tipoPedido === 'Compra') {
+                pedido.nomeFornecedor = await buscarNomeFornecedorPorId(pedido.fornecedor);
+            } else {
+                // Já vem com nomeCliente salvo no Firebase
+                pedido.nomeCliente = pedido.nomeCliente || '—';
+            }
+        });
+
+        Promise.all(promessas).then(() => atualizarTabelaPedidos());
+
     });
 }
 
-function calcularSubtotalComConversao(quantidade, produto) {
-    const preco = Number(produto.preco);
-    const precoPor = produto.precoPor;
-
-    const fator = obterFatorConversao(produto.unidadeMedida, precoPor);
-    const subtotal = (quantidade / fator) * preco;
-
-    return subtotal.toFixed(2);
-}
-
-function obterFatorConversao(de, para) {
-    const tabela = {
-        kg: { g: 1000, '100g': 10 },
-        g: { kg: 1 / 1000, '100g': 1 / 100 },
-        '100g': { kg: 1 / 10, g: 100 },
-
-        litro: { ml: 1000 },
-        ml: { litro: 1 / 1000 },
-
-        unidade: { pacote: 1 },
-        pacote: { unidade: 1 },
-    };
-
-    if (de === para) return 1;
-    return tabela[para]?.[de] || 1;
-}
-
-function atualizarTotalPedido() {
-    let total = 0;
-
-    document.querySelectorAll('.item-pedido').forEach(item => {
-        const subtotalInput = item.querySelector('.subtotal-input');
-        let subtotalStr = subtotalInput?.value || "0";
-        subtotalStr = subtotalStr.replace('R$', '').trim().replace(',', '.');
-        const subtotal = parseFloat(subtotalStr);
-        if (!isNaN(subtotal)) {
-            total += subtotal;
-        }
-    });
-
-    const idTotal = tipoAtual === 'entrada' ? 'totalAdicionar' : 'totalAdicionarSaida';
-    document.getElementById(idTotal).textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
-}
-
-function mostrarMensagem(texto, tipo = 'success') {
-    const msg = document.createElement('div');
-    msg.textContent = texto;
-    msg.className = `mensagem-alerta ${tipo}`;
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 4000);
-}
-
-function atualizarTabelaPedidos() {
-    const tbodyEntradas = document.getElementById('lista-pedidos-entradas');
-    const tbodySaidas = document.getElementById('lista-pedidos-saidas');
-
-    if (tipoAtual === 'entrada') {
-        tbodyEntradas.innerHTML = '';
-    } else if (tipoAtual === 'saida') {
-        tbodySaidas.innerHTML = '';
-    }
-
-    const tipoPedido = tipoAtual === 'entrada' ? 'Compra' : 'Venda';
-
-    const pedidosFiltrados = aplicarFiltrosOrdenacao(pedidos)
-        .filter(p => p.tipoPedido === tipoPedido);
-
-    const inicio = (paginaAtual - 1) * itensPorPagina;
-    const fim = inicio + itensPorPagina;
-
-    const pedidosPaginados = pedidosFiltrados.slice(inicio, fim);
-
-    if (pedidosPaginados.length === 0) {
-        const mensagem = `<tr><td colspan="8" style="text-align: center; padding: 20px;">Nenhuma ${tipoAtual === 'entrada' ? 'entrada' : 'saída'} encontrada.</td></tr>`;
-        if (tipoAtual === 'entrada') {
-            tbodyEntradas.innerHTML = mensagem;
-        } else {
-            tbodySaidas.innerHTML = mensagem;
-        }
-        return;
-    }
-
-    pedidosPaginados.forEach(pedido => {
-        if (tipoAtual === 'entrada') {
-            adicionarLinhaTabelaPedido(pedido, tbodyEntradas);
-        } else {
-            adicionarLinhaTabelaPedido(pedido, tbodySaidas);
-        }
-    });
-
-    //atualizarBotaoExcluirSelecionados();
-    //atualizarPaginacao(produtosFiltrados.length);
-}
-
-async function adicionarLinhaTabelaPedido(pedido, tbody) {
+function adicionarLinhaTabelaPedido(pedido, tbody) {
     const row = document.createElement('tr');
     row.setAttribute('data-key', pedido.firebaseKey);
 
     const codigo = pedido.numero || pedido.firebaseKey.slice(-5).toUpperCase();
     const dataFormatada = pedido.data ? formatarData(pedido.data) : '—';
 
-    const itens = await obterItensDoPedido(pedido.firebaseKey); // ← busca correta
-    const qtdItens = itens.length;
+    const itens = pedido.itensPedido || {};
+    const qtdItens = Object.keys(itens).length;
 
-    const total = Number(pedido.total) || 0;
+    const total = Number(pedido.valor) || 0;
     const totalFormatado = `R$ ${total.toFixed(2).replace('.', ',')}`;
 
     row.innerHTML = `
@@ -479,394 +593,834 @@ async function adicionarLinhaTabelaPedido(pedido, tbody) {
     const tipo = pedido.tipoPedido;
     const fornecedorCelula = row.querySelector('td[data-label="Fornecedor: "]');
     if (tipo === 'Compra') {
-        buscarFornecedorPorId(pedido.fornecedor)
-            .then(fornecedor => {
-                fornecedorCelula.textContent = fornecedor.nome;
+        buscarNomeFornecedorPorId(pedido.fornecedor)
+            .then(nome => {
+                fornecedorCelula.textContent = nome;
             })
             .catch(() => {
                 fornecedorCelula.textContent = '(erro ao carregar)';
             });
     } else {
-        fornecedorCelula.textContent = pedido.fornecedor || '';
+        fornecedorCelula.textContent = pedido.nomeCliente || '—';
     }
+
 }
 
-function handlePedidoSubmit(e) {
-    e.preventDefault();
-
-    const isEntrada = tipoAtual === 'entrada';
-    const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
-    const modal = document.getElementById(modalId);
-
-    const nomeAdicionar = isEntrada
-        ? modal.querySelector('#nomeAdicionar')
-        : modal.querySelector('#nomeAdicionarSaida');
-
-    const nomeValue = nomeAdicionar?.value.trim();
-    const numeroPedido = modal.querySelector('.modal-order-number').textContent;
-
-    const totalEl = isEntrada
-        ? document.getElementById('totalAdicionar')
-        : document.getElementById('totalAdicionarSaida');
-
-    const totalStr = totalEl.textContent.replace('R$', '').trim().replace(',', '.');
-    const totalPedido = parseFloat(totalStr);
-
-    const itensContainer = modal.querySelectorAll('.item-pedido:not(.item-pedido-modelo)');
-
-    if (!nomeValue) {
-        const msg = isEntrada
-            ? '⚠️ Selecione um fornecedor antes de finalizar o pedido.'
-            : '⚠️ Informe o nome do cliente antes de finalizar o pedido.';
-        mostrarMensagem(msg, 'error');
-        return;
-    }
-
-    if (itensContainer.length === 0) {
-        mostrarMensagem('⚠️ Adicione pelo menos um item ao pedido.', 'error');
-        return;
-    }
-
-    const tipoPedido = isEntrada ? 'Compra' : 'Venda';
-
-    const idPedido = indiceParaEditar !== null
-        ? pedidos[indiceParaEditar].firebaseKey
-        : firebase.database().ref().push().key;
-
-    const itensASalvar = [];
-
-    for (const item of itensContainer) {
-        const produtoSelect = item.querySelector('select.produto-select');
-        const quantidadeInput = item.querySelector('input.quantidade-input');
-        const subtotalInput = item.querySelector('input.subtotal-input');
-
-        const idProduto = produtoSelect?.value || null;
-        const quantidade = quantidadeInput ? parseFloat(quantidadeInput.value) : 0;
-        const subtotalStr = subtotalInput?.value || "0";
-        const subtotal = parseFloat(subtotalStr.replace('R$', '').trim().replace(',', '.'));
-
-        if (!idProduto || isNaN(quantidade) || quantidade <= 0 || isNaN(subtotal)) {
-            mostrarMensagem('⚠️ Todos os itens devem ter um produto selecionado e uma quantidade válida.', 'error');
+function buscarNomeFornecedorPorId(idFornecedor) {
+    return new Promise((resolve, reject) => {
+        if (!idFornecedor) {
+            resolve('—');
             return;
         }
-
-        const idItemPedido = firebase.database().ref().push().key;
-
-        itensASalvar.push({
-            ref: firebase.database().ref('itemPedido/' + idItemPedido),
-            data: {
-                idPedido: idPedido,
-                produto: idProduto,
-                quantidade: quantidade,
-                subtotal: subtotal
-            }
-        });
-    }
-
-    const dadosPedido = {
-        numero: numeroPedido,
-        idComerciante: localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante"),
-        fornecedor: nomeValue,
-        tipoPedido: tipoPedido,
-        data: new Date().toISOString().slice(0, 10),
-        total: totalPedido
-    };
-
-    const pedidoRef = firebase.database().ref('pedido').child(idPedido);
-    const apagarItensAntigos = indiceParaEditar !== null
-        ? apagarItensDoPedido(idPedido)
-        : Promise.resolve();
-
-    apagarItensAntigos
-        .then(() => pedidoRef.set(dadosPedido))
-        .then(() => {
-            const promessas = itensASalvar.map(item => item.ref.set(item.data));
-            return Promise.all(promessas);
-        })
-        .then(() => {
-            mostrarMensagem('✅ Pedido e itens salvos com sucesso!', 'success');
-            document.getElementById(modalId).style.display = 'none';
-            carregarPedidosDoFirebase();
-            indiceParaEditar = null; // Resetar para novos cadastros
-        })
-        .catch(error => {
-            console.error('Erro ao salvar pedido:', error);
-            mostrarMensagem('🚫 Erro ao salvar o pedido. Tente novamente.', 'error');
-        });
-}
-
-function apagarItensDoPedido(idPedido) {
-    return firebase.database().ref('itemPedido')
-        .orderByChild('idPedido')
-        .equalTo(idPedido)
-        .once('value')
-        .then(snapshot => {
-            const updates = {};
-            snapshot.forEach(child => {
-                updates[child.key] = null;
+        firebase.database().ref(`fornecedor/${idFornecedor}`).once('value')
+            .then(snapshot => {
+                const dados = snapshot.val();
+                if (dados && dados.nome) {
+                    resolve(dados.nome);
+                } else {
+                    resolve('(sem nome)');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar fornecedor:', error);
+                reject('(erro ao carregar)');
             });
-            return firebase.database().ref('itemPedido').update(updates);
-        });
-}
-
-function formatarData(dataStr) {
-    const [ano, mes, dia] = dataStr.split('-');
-    return `${dia}/${mes}/${ano}`;
-}
-
-function buscarFornecedorPorId(id) {
-    return firebase.database().ref(`fornecedor/${id}`).once('value').then(snap => snap.val());
+    });
 }
 
 function buscarProdutoPorId(idProduto) {
-    return firebase.database().ref(`produto/${idProduto}`).once('value').then(snap => snap.val());
+    return new Promise((resolve, reject) => {
+        if (!idProduto) {
+            resolve(null); // ou '—' se preferir
+            return;
+        }
+
+        firebase.database().ref(`produto/${idProduto}`).once('value')
+            .then(snapshot => {
+                const dados = snapshot.val();
+                if (dados) {
+                    resolve(dados);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar produto:', error);
+                reject(null);
+            });
+    });
 }
 
 function buscarItemPedidoPorId(idItemPedido) {
-    return firebase.database().ref(`itemPedido/${idItemPedido}`).once('value').then(snap => snap.val());
+    return new Promise((resolve, reject) => {
+        if (!idItemPedido) {
+            resolve(null);
+            return;
+        }
+
+        firebase.database().ref(`itemPedido/${idItemPedido}`).once('value')
+            .then(snapshot => {
+                const dados = snapshot.val();
+                if (dados) {
+                    resolve(dados);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar itemPedido:', error);
+                reject(null);
+            });
+    });
+}
+
+function atualizarTabelaPedidos() {
+    const tbodyEntradas = document.getElementById('lista-pedidos-entradas');
+    const tbodySaidas = document.getElementById('lista-pedidos-saidas');
+
+    // Limpa a tabela da aba atual
+    if (tipoAtual === 'entrada') {
+        tbodyEntradas.innerHTML = '';
+    } else {
+        tbodySaidas.innerHTML = '';
+    }
+
+    // Página atual correta
+    const paginaAtual = tipoAtual === 'entrada' ? paginaAtualEntradas : paginaAtualSaidas;
+
+    // Filtro por tipo de pedido (Compra/Venda)
+    let pedidosFiltrados = pedidos.filter(p => {
+        const tipoCorreto = p.tipoPedido === (tipoAtual === 'entrada' ? 'Compra' : 'Venda');
+
+        const termo = document.getElementById('input-pesquisa-pedidos')?.value?.toLowerCase() || '';
+        if (!termo) return tipoCorreto;
+
+        const fornecedorOuCliente = p.tipoPedido === 'Compra'
+            ? p.nomeFornecedor?.toLowerCase?.() || ''
+            : p.nomeCliente?.toLowerCase?.() || '';
+
+        const numero = p.numero?.toLowerCase?.() || '';
+        const data = p.data?.toLowerCase?.() || '';
+
+        const contemProduto = Object.values(p.itensPedido || {}).some(item =>
+            (item.nome || '').toLowerCase().includes(termo)
+        );
+
+        return tipoCorreto && (
+            fornecedorOuCliente.includes(termo) ||
+            numero.includes(termo) ||
+            data.includes(termo) ||
+            contemProduto
+        );
+    });
+
+    // Ordenação (se aplicável)
+    pedidosFiltrados = aplicarFiltrosOrdenacao(pedidosFiltrados);
+
+    // Paginação
+    const totalItens = pedidosFiltrados.length;
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+    const pedidosPaginados = pedidosFiltrados.slice(inicio, fim);
+
+    atualizarPaginacao(totalItens);
+
+    // Tabela vazia
+    if (pedidosPaginados.length === 0) {
+        const mensagem = `<tr><td colspan="9" style="text-align: center; padding: 20px;">Nenhuma ${tipoAtual === 'entrada' ? 'entrada' : 'saída'} encontrada.</td></tr>`;
+        if (tipoAtual === 'entrada') {
+            tbodyEntradas.innerHTML = mensagem;
+        } else {
+            tbodySaidas.innerHTML = mensagem;
+        }
+        return;
+    }
+
+    // Preenche a tabela atual com os dados paginados
+    pedidosPaginados.forEach(pedido => {
+        if (tipoAtual === 'entrada') {
+            adicionarLinhaTabelaPedido(pedido, tbodyEntradas);
+        } else {
+            adicionarLinhaTabelaPedido(pedido, tbodySaidas);
+        }
+    });
+
+    configurarEventosPedidos(); // icones de ação
+    atualizarBotaoExcluirSelecionados(); // botão excluir em massa
+}
+
+function atualizarPaginacao(totalItens) {
+    const totalPaginas = Math.ceil(totalItens / itensPorPagina);
+    const controles = document.getElementById('controles-paginacao');
+
+    let paginaAtual = tipoAtual === 'entrada' ? paginaAtualEntradas : paginaAtualSaidas;
+
+    controles.innerHTML = `
+      <button class="btn-paginacao" id="btn-anterior" ${paginaAtual === 1 ? 'disabled' : ''}>
+          <i class="fas fa-chevron-left"></i>
+      </button>
+      <span>Página ${paginaAtual} de ${totalPaginas}</span>
+      <button class="btn-paginacao" id="btn-proximo" ${paginaAtual === totalPaginas ? 'disabled' : ''}>
+          <i class="fas fa-chevron-right"></i>
+      </button>
+  `;
+
+    // ✅ Eventos dos botões
+    document.getElementById('btn-anterior')?.addEventListener('click', () => {
+        if (paginaAtual > 1) {
+            if (tipoAtual === 'entrada') {
+                paginaAtualEntradas--;
+            } else {
+                paginaAtualSaidas--;
+            }
+            atualizarTabelaPedidos();
+        }
+    });
+
+    document.getElementById('btn-proximo')?.addEventListener('click', () => {
+        if (paginaAtual < totalPaginas) {
+            if (tipoAtual === 'entrada') {
+                paginaAtualEntradas++;
+            } else {
+                paginaAtualSaidas++;
+            }
+            atualizarTabelaPedidos();
+        }
+    });
+}
+
+async function handlePedidoSubmit(e) {
+    e.preventDefault();
+
+    const idComercianteLocal = localStorage.getItem('idComerciante') || sessionStorage.getItem('idComerciante');
+    const isEntrada = tipoAtual === 'entrada';
+    const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
+    const modal = document.getElementById(modalId);
+    const nomeAdicionar = isEntrada ? modal.querySelector('#nomeAdicionar') : modal.querySelector('#nomeAdicionarSaida');
+    const nomeValue = nomeAdicionar.value.trim();
+
+    const numeroPedido = gerarCodigoPedido(); // já existente no sistema
+    const dataAtual = new Date().toISOString().split('T')[0];
+
+    const itensPedido = [];
+
+    const itens = modal.querySelectorAll('.item-pedido');
+    itens.forEach(item => {
+        const produtoSelect = item.querySelector('.produto-select');
+        const quantidadeInput = item.querySelector('.quantidade-input');
+        const subtotalInput = item.querySelector('.subtotal-input');
+        const validadeInput = item.querySelector('.validade-item');
+        const loteInput = item.querySelector('.lote-item');
+
+        const produtoId = produtoSelect?.value;
+        const produtoNome = produtoSelect?.selectedOptions[0]?.textContent || '';
+        const quantidade = parseFloat(quantidadeInput?.value || '0');
+        const subtotal = parseFloat((subtotalInput?.value || '0').replace(',', '.'));
+
+        const validade = validadeInput?.value || '';
+        const lote = loteInput?.value || '';
+
+        if (produtoId && !isNaN(quantidade) && !isNaN(subtotal)) {
+            itensPedido.push({
+                produtoId,
+                nome: produtoNome,
+                quantidade,
+                subtotal,
+                validade,
+                lote
+            });
+        }
+    });
+
+    const totalPedido = itensPedido.reduce((acc, item) => acc + item.subtotal, 0);
+
+    // ❌ Se faltar algum campo obrigatório no item
+    if (itensPedido.length === 0) {
+        alert("Adicione pelo menos um item ao pedido.");
+        return;
+    }
+
+    for (const item of itensPedido) {
+        if (!item.produtoId || !item.nome || !item.quantidade) {
+            alert("Todos os campos do item são obrigatórios (Produto, Quantidade).");
+            return;
+        }
+
+        // Valida apenas se for entrada
+        if (isEntrada) {
+            if (!item.validade) {
+                alert(`Informe a validade do produto "${item.nome}".`);
+                return;
+            }
+
+            if (!item.lote || item.lote.trim() === '') {
+                alert(`Informe o lote do produto "${item.nome}".`);
+                return;
+            }
+        }
+    }
+
+    // ✅ Validação de estoque e validade (somente para saída)
+    if (!isEntrada) {
+        for (const item of itensPedido) {
+            const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+            const snapshot = await produtoRef.once('value');
+            const produto = snapshot.val();
+            if (!produto) continue;
+
+            const estoqueAtual = parseFloat(produto.quantidadeEstoque || 0);
+            const validadeProduto = new Date(produto.validade);
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            validadeProduto.setHours(0, 0, 0, 0);
+
+            if (item.quantidade > estoqueAtual) {
+                alert(`❌ Estoque insuficiente para o produto "${produto.nome}". Estoque atual: ${estoqueAtual}.`);
+                return;
+            }
+
+            if (validadeProduto < hoje) {
+                const continuar = confirm(`⚠️ O produto "${produto.nome}" está vencido desde ${produto.validade}. Deseja continuar mesmo assim?`);
+                if (!continuar) return;
+            }
+        }
+    }
+
+    const novoPedido = {
+        numero: numeroPedido,
+        tipoPedido: isEntrada ? 'Compra' : 'Venda',
+        fornecedor: isEntrada ? nomeValue : '', // ou cliente para saída
+        nomeCliente: !isEntrada ? nomeValue : '',
+        data: dataAtual,
+        itensPedido,
+        valor: totalPedido,
+        idComerciante: idComercianteLocal
+    };
+
+    try {
+        const pedidoRef = await firebase.database().ref('pedido').push(novoPedido);
+
+        // 🔁 Atualizar o estoque dos produtos após salvar o pedido
+        for (const item of itensPedido) {
+            const novoItemRef = firebase.database().ref('itemPedido').push();
+            const idItem = novoItemRef.key;
+
+            await novoItemRef.set({
+                idItemPedido: idItem,
+                produto: {
+                    produtoId: item.produtoId,
+                    nome: item.nome,
+                    quantidade: item.quantidade,
+                    subtotal: item.subtotal,
+                    validade: item.validade,
+                    lote: item.lote
+                }
+            });
+        }
+
+        // ✅ Agora atualiza o estoque de fato após salvar o pedido
+        for (const item of itensPedido) {
+            const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+            const snapshot = await produtoRef.once('value');
+            const produto = snapshot.val();
+
+            // Proteção contra erro: produto não encontrado
+            if (!produto) {
+                console.warn(`Produto com ID ${item.produtoId} não encontrado. Estoque não atualizado.`);
+                continue;
+            }
+
+            let novaQuantidade = parseFloat(produto.quantidadeEstoque || 0);
+            const quantidadePedido = parseFloat(item.quantidade);
+
+            if (isEntrada) {
+                novaQuantidade += quantidadePedido;
+            } else {
+                novaQuantidade -= quantidadePedido;
+                if (novaQuantidade < 0) novaQuantidade = 0;
+            }
+
+            await produtoRef.update({ quantidadeEstoque: novaQuantidade });
+        }
+
+        // 🧹 Fechar o modal e limpar
+        if (isEntrada) {
+            document.getElementById('modal-entrada').style.display = 'none';
+        } else {
+            document.getElementById('modal-saida').style.display = 'none';
+        }
+
+        await carregarPedidosDoFirebase();
+
+        // 📝 Registrar ação no histórico
+        registrarHistorico(
+            isEntrada ? 'Entrada de pedido' : 'Saída de pedido',
+            isEntrada
+                ? `Pedido de entrada com ${itensPedido.length} produto(s). Total: R$ ${totalPedido.toFixed(2).replace('.', ',')}`
+                : `Pedido de saída para cliente "${nomeValue}" com ${itensPedido.length} produto(s). Total: R$ ${totalPedido.toFixed(2).replace('.', ',')}`
+        );
+
+        alert('✅ Pedido salvo com sucesso!');
+    } catch (erro) {
+        console.error('Erro ao salvar pedido:', erro); // Mostra no console o erro real
+        alert('❌ Erro ao salvar pedido: ' + erro.message); // Mostra mensagem mais útil
+    }
+
+}
+
+function mostrarMensagem(texto, tipo = 'success') {
+    const msg = document.createElement('div');
+    msg.textContent = texto;
+    msg.className = `mensagem-alerta ${tipo}`;
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 4000);
 }
 
 function configurarEventosPedidos() {
-    const tabelas = ['lista-pedidos-entradas', 'lista-pedidos-saidas'];
-    tabelas.forEach(id => {
-        document.getElementById(id).addEventListener('click', e => {
-            const row = e.target.closest('tr');
-            const firebaseKey = row.getAttribute('data-key');
-            const index = pedidos.findIndex(p => p.firebaseKey === firebaseKey);
-            const pedido = pedidos[index];
+    // Evento principal para clicks nos ícones
+    document.querySelector('main').addEventListener('click', async (e) => {
+        const linha = e.target.closest('tr');
+        if (!linha) return;
 
-            if (e.target.classList.contains('search-icon') && !e.target.classList.contains('ver-itens-icon')) {
-                preencherModalVisualizacao(pedido, firebaseKey);
-                document.getElementById('modal-visualizar').style.display = 'flex';
-            }
+        const firebaseKey = linha.getAttribute('data-key');
+        const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
 
-            if (e.target.classList.contains('edit-icon')) {
-                editando = true;
-                indiceParaEditar = index;
-                preencherModalEdicao(pedido, firebaseKey);
-            }
+        if (!pedido) return;
 
-            if (e.target.classList.contains('ver-itens-icon')) {
-                preencherItensPedido(firebaseKey);
-                document.getElementById('modal-visualizar-itens').style.display = 'flex';
-            }
+        // 🔍 MODAL DE CONSULTAR (ícone "consultar")
+        if (e.target.classList.contains('search-icon') && !e.target.classList.contains('ver-itens-icon')) {
+            const firebaseKey = linha.getAttribute('data-key');
+            const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
+            if (!pedido) return;
 
-            if (e.target.classList.contains('delete-icon')) {
-                firebaseKeyParaExcluir = firebaseKey;
-                document.getElementById('modal-confirmar-exclusao').style.display = 'flex';
-            }
-        });
-    });
-}
+            // Cabeçalho
+            document.getElementById('visualizarID').textContent = pedido.numero || '(sem número)';
+            const labelNome = document.getElementById('labelNome');
+            const nomeVisualizar = document.getElementById('nomeVisualizar');
 
-function preencherModalVisualizacao(pedido, firebaseKey) {
-    document.getElementById('labelNome').textContent = pedido.tipoPedido === 'Venda' ? 'Cliente:' : 'Fornecedor:';
-    document.getElementById('visualizarID').textContent = pedido.numero;
+            labelNome.textContent = pedido.tipoPedido === 'Compra' ? 'Fornecedor:' : 'Cliente:';
+            nomeVisualizar.textContent = pedido.tipoPedido === 'Compra' ? pedido.nomeFornecedor : pedido.nomeCliente;
 
-    const nomeVisualizarElement = document.getElementById('nomeVisualizar');
-    if (pedido.tipoPedido === 'Compra') {
-        buscarFornecedorPorId(pedido.fornecedor)
-            .then(fornecedor => nomeVisualizarElement.textContent = fornecedor.nome || 'Fornecedor não encontrado')
-            .catch(() => nomeVisualizarElement.textContent = 'Fornecedor não encontrado');
-    } else {
-        nomeVisualizarElement.textContent = pedido.fornecedor || 'Cliente não encontrado';
-    }
+            // Limpar container de itens
+            const container = document.querySelector('#modal-visualizar .itens-pedido-container');
+            container.innerHTML = '';
 
-    const total = parseFloat(pedido.total || 0).toFixed(2).replace('.', ',');
-    document.getElementById('totalVisualizar').textContent = `R$ ${total}`;
+            // Adicionar cada item
+            Object.values(pedido.itensPedido).forEach(item => {
+                const div = document.createElement('div');
+                div.classList.add('item-visualizar');
 
-    const container = document.querySelector('#modal-visualizar .itens-pedido-container');
-    container.innerHTML = '';
+                div.innerHTML = `
+      <p><strong>Produto:</strong> ${item.nome}</p>
+      <p><strong>Quantidade:</strong> ${item.quantidade}</p>
+      <p><strong>Subtotal:</strong> R$ ${item.subtotal.toFixed(2).replace('.', ',')}</p>
+      <p><strong>Validade:</strong> ${item.validade ? formatarData(item.validade) : '—'}</p>
+      <p><strong>Lote:</strong> ${item.lote || '—'}</p>
+      <hr>
+    `;
 
-    obterItensDoPedido(firebaseKey).then(itens => {
-        itens.forEach((item, index) => {
-            buscarProdutoPorId(item.produto).then(produto => {
-                const nomeProduto = produto?.nome || '(produto não encontrado)';
-                const unidadeMedida = produto?.unidadeMedida || '';
-                const div = criarItemVisualizacao(item, index, nomeProduto, unidadeMedida);
                 container.appendChild(div);
             });
-        });
-    }).catch(error => {
-        console.error("Erro ao buscar itens do pedido:", error);
-    });
-}
 
-function preencherModalEdicao(pedido, firebaseKey) {
-    const isEntrada = pedido.tipoPedido === 'Compra';
-    const modal = document.getElementById(isEntrada ? 'modal-entrada' : 'modal-saida');
-    document.getElementById(isEntrada ? 'titulo-modal-pedido' : 'titulo-modal-saida').textContent = 'Editar Pedido';
+            // Abrir modal
+            document.getElementById('modal-visualizar').style.display = 'flex';
+        }
 
-    document.getElementById(isEntrada ? 'numeroEntrada' : 'numeroSaida').textContent = pedido.numero ? pedido.numero : '';
+        // 🔍 MODAL DE ITENS DO PEDIDO (ícone de lupa na coluna Produtos)
+        else if (e.target.classList.contains('ver-itens-icon')) {
+            const container = document.getElementById('itens-lista-visualizacao');
+            container.innerHTML = '';
 
-    const container = isEntrada
-        ? document.querySelector('#modal-entrada .itens-pedido-container')
-        : document.getElementById('container-itens-saida');
-    container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
+            Object.values(pedido.itensPedido).forEach((item, index) => {
+                const nomeProduto = item.nome || '(desconhecido)';
+                const validade = item.validade || '-';
+                const lote = item.lote || '-';
+                const subtotal = parseFloat(item.subtotal || 0).toFixed(2).replace('.', ',');
+                const quantidade = item.quantidade || 0;
 
-    itemCounter = 0;
-
-    const total = parseFloat(pedido.total || 0).toFixed(2).replace('.', ',');
-    document.getElementById(isEntrada ? 'totalAdicionar' : 'totalAdicionarSaida').textContent = `R$ ${total}`;
-
-    carregarFornecedores();
-
-    if (isEntrada) {
-        document.getElementById('nomeAdicionar').value = pedido.fornecedor || 'Fornecedor não encontrado';
-        carregarProdutos(pedido.fornecedor);
-    } else {
-        document.getElementById('nomeAdicionarSaida').value = pedido.fornecedor || 'Cliente não encontrado';
-        carregarProdutos();
-    }
-
-    obterItensDoPedido(firebaseKey).then(itens => {
-        itens.forEach((item) => {
-            adicionarNovoItemPedido({ preventDefault: () => { }, target: modal.querySelector('.modal-content') });
-
-            const itensDinamicos = container.querySelectorAll('.item-pedido-dinamico');
-            const novoItem = itensDinamicos[itensDinamicos.length - 1];
-
-            novoItem.querySelector('.produto-select').value = item.produto;
-            novoItem.querySelector('.quantidade-input').value = item.quantidade;
-            novoItem.querySelector('.subtotal-input').value = `R$ ${parseFloat(item.subtotal).toFixed(2).replace('.', ',')}`;
-
-            const spanUnidade = novoItem.querySelector('.unidade-medida');
-            buscarProdutoPorId(item.produto).then(produto => {
-                if (produto && produto.unidadeMedida && spanUnidade) {
-                    spanUnidade.textContent = produto.unidadeMedida;
-                } else if (spanUnidade) {
-                    spanUnidade.textContent = '—';
-                }
-            }).catch(() => {
-                if (spanUnidade) {
-                    spanUnidade.textContent = '—';
-                }
-            });
-        });
-        atualizarTotalPedido();
-    });
-    modal.style.display = 'flex';
-}
-
-function preencherItensPedido(idPedido) {
-    const container = document.getElementById('itens-lista-visualizacao');
-    container.innerHTML = '';
-
-    obterItensDoPedido(idPedido).then(itens => {
-        itens.forEach((item, index) => {
-            buscarProdutoPorId(item.produto).then(produto => {
-                const nomeProduto = produto.nome || '(produto não encontrado)';
-                const unidadeMedida = produto.unidadeMedida || '';
-                const div = criarItemVisualizacao(item, index, nomeProduto, unidadeMedida);
+                const div = document.createElement('div');
+                div.innerHTML = `
+    <p><strong>Produto:</strong> ${nomeProduto}</p>
+    <p><strong>Quantidade:</strong> ${quantidade}</p>
+    <p><strong>Subtotal:</strong> R$ ${subtotal}</p>
+    <p><strong>Validade:</strong> ${validade}</p>
+    <p><strong>Lote:</strong> ${lote}</p>
+    <hr>
+`;
                 container.appendChild(div);
             });
-        });
-    }).catch(error => {
-        console.error("Erro ao carregar itens:", error);
-    });
-}
 
-function obterItensDoPedido(idPedido) {
-    return firebase.database().ref('itemPedido')
-        .once('value')
-        .then(snapshot => {
-            const dados = snapshot.val() || {};
-            const itensDoPedido = Object.entries(dados)
-                .filter(([id, item]) => item.idPedido === idPedido)
-                .map(([id, item]) => ({ idItemPedido: id, ...item }));
-            return itensDoPedido;
-        });
-}
+            document.getElementById('modal-visualizar-itens').style.display = 'flex';
+        }
 
-function criarItemVisualizacao(item, index, nomeProduto, unidadeMedida) {
-    const div = document.createElement('div');
-    div.classList.add('item-pedido');
-    div.setAttribute('data-item-id', index + 1);
-    div.innerHTML = `
+        // ✏️ EDITAR PEDIDO (ícone de lápis)
+        else if (e.target.classList.contains('edit-icon')) {
+            editando = true;
+            indiceParaEditar = firebaseKey;
+            const isEntrada = pedido.tipoPedido === 'Compra';
+
+            const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
+            const modal = document.getElementById(modalId);
+            const orderNumberElement = modal.querySelector('.modal-order-number');
+            const totalSpan = modal.querySelector(isEntrada ? '#totalAdicionar' : '#totalAdicionarSaida');
+            const nomeField = isEntrada ? modal.querySelector('#nomeAdicionar') : modal.querySelector('#nomeAdicionarSaida');
+
+            // Configura cabeçalho e número do pedido
+            orderNumberElement.textContent = pedido.numero || '(sem número)';
+            totalSpan.textContent = `R$ ${parseFloat(pedido.valor || 0).toFixed(2).replace('.', ',')}`;
+
+            // Limpa os itens anteriores
+            const container = modal.querySelector('.itens-pedido-container');
+            container.innerHTML = '';
+
+            // Preenche os itens do pedido
+            let count = 0;
+            for (const [itemId, item] of Object.entries(pedido.itensPedido)) {
+                count++;
+                const div = document.createElement('div');
+                div.classList.add('item-pedido');
+                div.setAttribute('data-item-id', count);
+
+                div.innerHTML = `
         <div class="grupo-form">
             <label>Produto:</label>
-            <span class="campo-form leitura">${nomeProduto}</span>
+            <select class="campo-form produto-select" required>
+                <option value="" disabled>Carregando...</option>
+            </select>
         </div>
         <div class="grupo-form-duplo">
             <div>
-                <label>Quantidade:</label>
-                <span class="campo-form leitura">${item.quantidade} ${unidadeMedida || ''}</span>
+                <label>Quantidade</label>
+                <input type="number" class="campo-form quantidade-input" min="1" value="${item.quantidade}" required>
             </div>
             <div>
-                <label>Subtotal:</label>
-                <span class="campo-form leitura">R$ ${parseFloat(item.subtotal).toFixed(2).replace('.', ',')}</span>
+                <label>Subtotal</label>
+                <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
             </div>
         </div>
+        <div class="grupo-form-duplo">
+            <div>
+                <label>Validade</label>
+                <input type="date" class="campo-form validade-item" value="${item.validade || ''}" required>
+            </div>
+            <div>
+                <label>Lote</label>
+                <input type="text" class="campo-form lote-item" value="${item.lote || ''}" maxlength="20">
+            </div>
+        </div>
+        <button type="button" class="botao-remover-item">Remover</button>
     `;
-    return div;
-}
 
-document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
-    const modal = document.getElementById('modal-confirmar-exclusao');
-    const multiplos = modal.getAttribute('data-multiplos') === 'true';
+                // ⬇️ Adiciona na tela
+                container.appendChild(div);
 
-    if (multiplos) {
-        const selecionados = Array.from(document.querySelectorAll('.selecionar-pedido:checked'));
+                // ⬇️ Referências dos campos
+                const select = div.querySelector('select.produto-select');
+                const inputQuantidade = div.querySelector('input.quantidade-input');
+                const inputSubtotal = div.querySelector('input.subtotal-input');
 
-        const promises = selecionados.map(cb => {
-            const row = cb.closest('tr');
-            const key = row.getAttribute('data-key');
+                // ⬇️ Carrega produtos no <select> e seleciona o produto correto
+                await carregarProdutos(select);
+                select.value = item.produtoId;
 
-            return apagarItensDoPedido(key).then(() =>
-                firebase.database().ref('pedido/' + key).remove()
-            );
-        });
+                // ⬇️ Eventos para recalcular subtotal
+                select.addEventListener('change', () => calcularSubtotalItem(div));
+                inputQuantidade.addEventListener('input', () => calcularSubtotalItem(div));
 
-        Promise.all(promises).then(() => {
-            mostrarMensagem('Pedidos excluídos com sucesso!', 'success');
-            modal.removeAttribute('data-multiplos');
-            modal.removeAttribute('data-quantidade');
-            modal.style.display = 'none';
-            carregarPedidosDoFirebase();
-        });
+                // ⬇️ Recalcula o subtotal correto do item
+                calcularSubtotalItem(div);
+            }
 
-    } else {
-        if (!firebaseKeyParaExcluir) return;
+            // Preenche fornecedor/cliente
+            if (isEntrada) {
+                await carregarFornecedores();
+                nomeField.value = pedido.fornecedor || '';
+            } else {
+                nomeField.value = pedido.fornecedor || '';
+            }
 
-        apagarItensDoPedido(firebaseKeyParaExcluir).then(() => {
-            return firebase.database().ref('pedido/' + firebaseKeyParaExcluir).remove();
-        }).then(() => {
-            mostrarMensagem('Pedido excluído com sucesso!', 'success');
-            modal.style.display = 'none';
-            firebaseKeyParaExcluir = null;
-            carregarPedidosDoFirebase();
-        });
-    }
-});
+            modal.style.display = 'flex';
+        }
 
-document.getElementById('btn-cancelar-excluir').addEventListener('click', () => {
-    firebaseKeyParaExcluir = null;
-    document.getElementById('modal-confirmar-exclusao').style.display = 'none';
-});
-
-function aplicarFiltrosOrdenacao(lista) {
-    const termo = document.querySelector('.search-input input')?.value.toLowerCase() || '';
-    const ordem = document.getElementById('ordenar-pedidos')?.value || '';
-
-    let filtrados = lista.filter(pedido => {
-        const nome = pedido.nome?.toLowerCase() || '';
-        return nome.includes(termo);
+        // 🗑️ EXCLUIR PEDIDO (ícone de lixeira)
+        else if (e.target.classList.contains('delete-icon')) {
+            firebaseKeyParaExcluir = firebaseKey;
+            const modal = document.getElementById('modal-confirmar-exclusao');
+            const titulo = modal.querySelector('h4');
+            const subtitulo = modal.querySelector('p');
+            titulo.textContent = 'Deseja realmente excluir este pedido?';
+            subtitulo.textContent = 'Essa ação não poderá ser desfeita.';
+            modal.setAttribute('data-multiplos', 'false');
+            modal.style.display = 'flex';
+        }
     });
 
-    if (filtrados.length === 0) {
-        mostrarMensagem('🚫 Nenhum pedido encontrado com esse critério.', 'warning');
+    // Evento para checkboxes de seleção
+    document.querySelector('main').addEventListener('change', e => {
+        if (e.target.classList.contains('selecionar-pedido')) {
+            atualizarBotaoExcluirSelecionados();
+        }
+    });
+
+    // Fecha modais
+    document.getElementById('fecharVisualizar').addEventListener('click', () => {
+        document.getElementById('modal-visualizar').style.display = 'none';
+    });
+
+    document.getElementById('fecharVisualizarItens').addEventListener('click', () => {
+        document.getElementById('modal-visualizar-itens').style.display = 'none';
+    });
+
+    // Fecha modais
+    document.getElementById('fecharVisualizar').addEventListener('click', () => {
+        document.getElementById('modal-visualizar').style.display = 'none';
+    });
+
+    document.getElementById('fecharVisualizarItens').addEventListener('click', () => {
+        document.getElementById('modal-visualizar-itens').style.display = 'none';
+    });
+
+    document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        const multiplos = modal.getAttribute('data-multiplos') === 'true';
+
+        if (multiplos) {
+            const selecionados = Array.from(document.querySelectorAll('.selecionar-pedido:checked'));
+
+            const promises = selecionados.map(cb => {
+                const row = cb.closest('tr');
+                const key = row.getAttribute('data-key');
+                const pedido = pedidos.find(p => p.firebaseKey === key);
+
+                const itens = pedido.itensPedido || {};
+                const promisesItens = Object.values(itens).map(item =>
+                    firebase.database().ref('itemPedido/' + item.idItemPedido).remove()
+                );
+
+                // Excluir o pedido após os itens
+                return Promise.all(promisesItens).then(() =>
+                    firebase.database().ref('pedido/' + key).remove()
+                );
+            });
+
+            Promise.all(promises).then(() => {
+                mostrarMensagem('Pedidos excluídos com sucesso!', 'success');
+                modal.removeAttribute('data-multiplos');
+                modal.removeAttribute('data-quantidade');
+                modal.style.display = 'none';
+                carregarPedidosDoFirebase();
+            });
+
+        } else {
+            if (!firebaseKeyParaExcluir) return;
+
+            const pedido = pedidos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
+            const itens = pedido.itensPedido || {};
+
+            const promisesItens = Object.values(itens).map(item =>
+                firebase.database().ref('itemPedido/' + item.idItemPedido).remove()
+            );
+
+            Promise.all(promisesItens).then(() => {
+                return firebase.database().ref('pedido/' + firebaseKeyParaExcluir).remove();
+            }).then(() => {
+                mostrarMensagem('Pedido excluído com sucesso!', 'success');
+                modal.style.display = 'none';
+                firebaseKeyParaExcluir = null;
+                carregarPedidosDoFirebase();
+            });
+        }
+    });
+
+    document.getElementById('btn-cancelar-excluir').addEventListener('click', () => {
+        firebaseKeyParaExcluir = null;
+        document.getElementById('modal-confirmar-exclusao').style.display = 'none';
+    });
+}
+
+document.getElementById('input-pesquisa-pedidos').addEventListener('input', () => {
+    if (tipoAtual === 'entrada') {
+        paginaAtualEntradas = 1;
+    } else {
+        paginaAtualSaidas = 1;
+    }
+    atualizarTabelaPedidos();
+});
+
+
+function aplicarFiltrosOrdenacao(lista) {
+    const criterio = document.getElementById('ordenar-pedidos')?.value;
+
+    return lista.slice().sort((a, b) => {
+        // Converter datas para timestamp (milissegundos)
+        const timestampA = new Date(a.data).getTime();
+        const timestampB = new Date(b.data).getTime();
+
+        // Tratar casos onde a data pode ser inválida
+        const dataAValida = !isNaN(timestampA);
+        const dataBValida = !isNaN(timestampB);
+
+        if (criterio === 'data-asc') {
+            if (!dataAValida) return 1;
+            if (!dataBValida) return -1;
+            return timestampA - timestampB;
+        }
+        else if (criterio === 'data-desc') {
+            if (!dataAValida) return 1;
+            if (!dataBValida) return -1;
+            return timestampB - timestampA;
+        }
+        else if (criterio === 'total-asc') {
+            return (a.valor || 0) - (b.valor || 0);
+        }
+        else if (criterio === 'total-desc') {
+            return (b.valor || 0) - (a.valor || 0);
+        }
+        else {
+            return 0; // sem ordenação
+        }
+    });
+}
+
+async function adicionarOuAtualizarLote(produtoId, lote, validade, quantidade) {
+    const ref = firebase.database().ref('produto/' + produtoId);
+    const snapshot = await ref.once('value');
+    const produto = snapshot.val();
+
+    if (!produto) return;
+
+    if (!produto.lotes) produto.lotes = {};
+
+    if (!produto.lotes[lote]) {
+        produto.lotes[lote] = {
+            validade,
+            quantidade
+        };
+    } else {
+        produto.lotes[lote].quantidade += quantidade;
     }
 
-    // Ordenações
-    if (ordem === 'data-asc') {
-        filtrados.sort((a, b) => new Date(a.dataPedido) - new Date(b.dataPedido));
-    } else if (ordem === 'data-desc') {
-        filtrados.sort((a, b) => new Date(b.dataPedido) - new Date(a.dataPedido));
-    } else if (ordem === 'total-asc') {
-        filtrados.sort((a, b) => parseFloat(a.total || 0) - parseFloat(b.total || 0));
-    } else if (ordem === 'total-desc') {
-        filtrados.sort((a, b) => parseFloat(b.total || 0) - parseFloat(a.total || 0));
+    // Atualiza a quantidade total
+    let total = 0;
+    for (const l in produto.lotes) {
+        total += produto.lotes[l].quantidade;
     }
 
-    return filtrados;
-}   
+    await ref.update({
+        lotes: produto.lotes,
+        quantidadeTotal: total
+    });
+}
+
+async function removerDoEstoquePorLote(produtoId, quantidade) {
+    const ref = firebase.database().ref('produto/' + produtoId);
+    const snapshot = await ref.once('value');
+    const produto = snapshot.val();
+
+    if (!produto?.lotes) return;
+
+    const lotesOrdenados = Object.entries(produto.lotes).sort((a, b) => {
+        return new Date(a[1].validade) - new Date(b[1].validade);
+    });
+
+    let restante = quantidade;
+
+    for (const [loteId, lote] of lotesOrdenados) {
+        if (restante <= 0) break;
+
+        const disponivel = lote.quantidade;
+        const usado = Math.min(disponivel, restante);
+        produto.lotes[loteId].quantidade -= usado;
+        restante -= usado;
+
+        if (produto.lotes[loteId].quantidade <= 0) {
+            delete produto.lotes[loteId];
+        }
+    }
+
+    let total = 0;
+    for (const l in produto.lotes) {
+        total += produto.lotes[l].quantidade;
+    }
+
+    await ref.update({
+        lotes: produto.lotes,
+        quantidadeTotal: total
+    });
+}
+
+async function atualizarEstoquePorPedido(itemPedido, tipoPedido) {
+    const produtoId = itemPedido.produto.id;
+    const lote = itemPedido.produto.lote || 'sem-lote';
+    const validade = itemPedido.produto.validade || '';
+    const quantidade = itemPedido.quantidade;
+
+    const produtoRef = firebase.database().ref('produto/' + produtoId);
+    const snapshot = await produtoRef.once('value');
+    const produto = snapshot.val();
+
+    if (!produto) return;
+
+    if (!produto.lotes) produto.lotes = {};
+
+    if (tipoPedido === 'Compra') {
+        if (!produto.lotes[lote]) {
+            produto.lotes[lote] = {
+                validade,
+                quantidade
+            };
+        } else {
+            produto.lotes[lote].quantidade += quantidade;
+        }
+    } else if (tipoPedido === 'Venda') {
+        const disponivel = produto.lotes[lote]?.quantidade || 0;
+        const novoValor = disponivel - quantidade;
+
+        if (novoValor <= 0) {
+            delete produto.lotes[lote];
+        } else {
+            produto.lotes[lote].quantidade = novoValor;
+        }
+    }
+
+    // Atualiza o total
+    let total = 0;
+    for (const l in produto.lotes) {
+        total += produto.lotes[l].quantidade;
+    }
+
+    await produtoRef.update({
+        lotes: produto.lotes,
+        quantidadeTotal: total
+    })
+
+    async function registrarHistoricoMovimentacao(itemPedido, tipoPedido, idPedido) {
+        const historicoRef = firebase.database().ref('historicoAcoes').push(); // ✅ CORRETO
+
+        const hoje = new Date();
+        hoje.setHours(hoje.getHours() - 3); // Fuso GMT-3
+        const data = hoje.toISOString().slice(0, 10);
+
+        await historicoRef.set({
+            tipoMovimentacao: tipoPedido === 'Compra' ? 'Entrada' : 'Saída',
+            produtoId: itemPedido.produto.id,
+            produtoNome: itemPedido.produto.nome,
+            lote: itemPedido.produto.lote || 'sem-lote',
+            validade: itemPedido.produto.validade || '',
+            quantidade: itemPedido.quantidade,
+            dataMovimentacao: data,
+            idPedido: idPedido
+        });
+    }
+}
+
+function registrarHistorico(tipo, descricao) {
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
+    firebase.database().ref('historicoAcoes').push({
+        tipo,
+        descricao,
+        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+        idComerciante
+    });
+}
