@@ -73,6 +73,11 @@ function configurarEventListeners() {
     verificarFiltrosAtivos();
   });
 
+  document.getElementById('categoria').addEventListener('change', e => {
+    // recarrega fornecedores, filtrando pela categoria atual
+    carregarFornecedores(e.target.value);
+  });
+
   // Botão de filtros
   document.querySelector('.filter')?.addEventListener('click', toggleFiltros);
 
@@ -122,22 +127,46 @@ function carregarProdutosDoFirebase() {
   });
 }
 
-function carregarFornecedores() {
+//traz fornecedores
+function carregarFornecedores(categoriaFiltro = '') {
   const select = document.getElementById('fornecedor');
   if (!select) return;
 
   const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
+    // limpa e cria a opção padrão
     select.innerHTML = '<option value="">Selecione...</option>';
+    let count = 0;
+
     snapshot.forEach(child => {
       const fornecedor = child.val();
-      if (fornecedor.idComerciante === idComerciante) {
-        const option = document.createElement('option');
-        option.value = child.key;
-        option.textContent = fornecedor.nome;
-        select.appendChild(option);
+      const atende = Array.isArray(fornecedor.produtos) && fornecedor.produtos.includes(categoriaFiltro);
+      if (fornecedor.idComerciante === idComerciante
+          && (!categoriaFiltro || atende)) {
+
+        const opt = document.createElement('option');
+        opt.value = child.key;
+        opt.textContent = fornecedor.nome;
+        opt.dataset.produtos = JSON.stringify(fornecedor.produtos || []);
+        select.appendChild(opt);
+        count++;
       }
     });
+
+    // Se não encontrou nenhum, insere mensagem no próprio select
+    if (count === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '❌ Nenhum fornecedor para essa categoria';
+      opt.disabled = true;
+      select.appendChild(opt);
+
+      // opcional: exibe um aviso flutuante
+      mostrarMensagem(
+        '🚨 Nenhum fornecedor cadastrado para a categoria selecionada!',
+        'warning'
+      );
+    }
   });
 }
 
@@ -445,6 +474,23 @@ function handleFormSubmit(e) {
     mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
     return;
   }
+  
+const fornecedorSelect = document.getElementById('fornecedor');
+const selectedOption = fornecedorSelect.options[fornecedorSelect.selectedIndex];
+
+if (!selectedOption || !selectedOption.value) {
+  mostrarMensagem('🚫 Selecione um fornecedor.', 'error');
+  return;
+}
+
+const produtosFornecidos = JSON.parse(selectedOption.dataset.produtos || '[]');
+if (!produtosFornecidos.includes(categoria)) {
+  mostrarMensagem(
+    `🚫 O fornecedor "${selectedOption.textContent}" não fornece a categoria "${categoria}".`,
+    'error'
+  );
+  return;
+}
 
   // Montar objeto produto
   const fornecedorId = document.getElementById('fornecedor').value;
