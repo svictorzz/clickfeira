@@ -46,55 +46,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const titulo = tipoAtual === 'entrada' ? 'titulo-modal-pedido' : 'titulo-modal-saida';
         document.getElementById(titulo).textContent = 'Pedido';
         editando = false;
+        indiceParaEditar = null;
+        itemCounter = 1;
 
         if (tipoAtual === 'entrada') {
-            const nome = document.getElementById('nomeAdicionar');
-            const produtoSelect = document.getElementById('produtosAdicionar');
-            const quantidadeInput = document.getElementById('quantidadeAdicionar');
-            const subtotalInput = document.getElementById('subtotalAdicionar');
-            indiceParaEditar = null;
-
-            const container = document.querySelector('#modal-entrada .itens-pedido-container');
-            container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
-
-            nome.selectedIndex = 0;
-            produtoSelect.selectedIndex = 0;
-            quantidadeInput.value = 1;
-            subtotalInput.value = "0,00";
+            const modal = document.getElementById('modal-entrada');
+            const container = modal.querySelector('.itens-pedido-container');
+            container.innerHTML = ''; // Limpa tudo
+            document.getElementById('nomeAdicionar').selectedIndex = 0;
 
             document.getElementById('modal-entrada').style.display = 'flex';
             document.getElementById('totalAdicionar').textContent = "0,00";
-            document.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
+            modal.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
 
             carregarFornecedores();
-        } else if (tipoAtual === 'saida') {
-            const nome = document.getElementById('nomeAdicionarSaida');
-            const produtoSelect = document.getElementById('produtosAdicionarSaida');
-            const quantidadeInput = document.getElementById('quantidadeAdicionarSaida');
-            const subtotalInput = document.getElementById('subtotalAdicionarSaida');
-            indiceParaEditar = null;
 
-            const container = document.getElementById('container-itens-saida');
-            container.querySelectorAll('.item-pedido-dinamico').forEach(el => el.remove());
-
-            nome.value = '';
-            produtoSelect.selectedIndex = 0;
-            produtoSelect.disabled = true;
-            quantidadeInput.value = 1;
-            quantidadeInput.disabled = true;
-            subtotalInput.value = "0,00";
+            // Adiciona primeiro item automaticamente
+            document.getElementById('adicionar-mais').click();
+        } else {
+            const modal = document.getElementById('modal-saida');
+            const container = modal.querySelector('.itens-pedido-container');
+            container.innerHTML = '';
+            document.getElementById('nomeAdicionarSaida').value = '';
 
             document.getElementById('modal-saida').style.display = 'flex';
             document.getElementById('totalAdicionarSaida').textContent = "0,00";
-            document.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
+            modal.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
 
-            // 👇 garantir que evento e carregamento de produtos seja refeito
-            carregarProdutos(produtoSelect).then(() => {
-                produtoSelect.addEventListener('change', () => calcularSubtotalItem(container.querySelector('.item-pedido')));
-                quantidadeInput.addEventListener('input', () => calcularSubtotalItem(container.querySelector('.item-pedido')));
-            });
+            carregarFornecedores();
+
+            // Adiciona primeiro item automaticamente
+            document.getElementById('adicionar-mais-saida').click();
         }
-
     });
 
     document.getElementById('input-pesquisa-pedidos').addEventListener('input', () => {
@@ -131,18 +114,24 @@ document.addEventListener('DOMContentLoaded', () => {
         filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
     });
 
-    document.getElementById('nomeAdicionar').addEventListener('change', (e) => {
-        const container = e.target.closest('.modal-content');
-        const produtoSelect = container.querySelector('.produto-select');
-        const quantidadeInput = container.querySelector('.quantidade-input');
+    let fornecedorSelecionado = null;
 
-        if (produtoSelect && quantidadeInput) {
-            produtoSelect.disabled = false;
-            quantidadeInput.disabled = false;
+    // Modifique o evento change do fornecedor
+    document.getElementById('nomeAdicionar').addEventListener('change', async (e) => {
+        fornecedorSelecionado = e.target.value;
+        const modal = e.target.closest('.modal-content');
+        const produtoSelects = modal.querySelectorAll('.produto-select');
+        const quantidadeInputs = modal.querySelectorAll('.quantidade-input');
+
+        // Habilitar/desabilitar campos
+        produtoSelects.forEach(select => select.disabled = !fornecedorSelecionado);
+        quantidadeInputs.forEach(input => input.disabled = !fornecedorSelecionado);
+
+        // Recarregar produtos apenas do fornecedor selecionado
+        for (const select of produtoSelects) {
+            await carregarProdutos(select, fornecedorSelecionado);
         }
 
-        const fornecedorId = e.target.value;
-        carregarProdutos(produtoSelect, fornecedorId);
         calcularValorPedido();
     });
 
@@ -186,52 +175,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    //Adicionar mais item
     document.querySelectorAll('.adicionar-mais-item').forEach(botao => {
-        botao.addEventListener('click', function (e) {
+        botao.addEventListener('click', async function (e) {
             e.preventDefault();
             itemCounter++;
 
             const modal = e.target.closest('.modal-content');
             const container = modal.querySelector('.itens-pedido-container');
-            const originalItem = modal.querySelector('.item-pedido');
-            const newItem = originalItem.cloneNode(true);
+            const isEntrada = modal.id === 'modal-entrada';
 
-            // ✅ Zera valores dos campos clonados
-            const selectProduto = newItem.querySelector('select.produto-select');
-            const inputQuantidade = newItem.querySelector('input.quantidade-input');
-            const inputSubtotal = newItem.querySelector('input.subtotal-input');
+            // Quantos itens já existem? (para decidir se mostraremos botão Remover)
+            const quantidadeItens = container.querySelectorAll('.item-pedido').length;
+            const mostrarRemoverBtn = quantidadeItens > 0;
 
-            selectProduto.name = `produto_${itemCounter}`;
-            selectProduto.id = `produtosAdicionar_${itemCounter}`;
-            selectProduto.disabled = false;
-            selectProduto.selectedIndex = 0;
+            const div = document.createElement('div');
+            div.classList.add('item-pedido');
+            div.setAttribute('data-item-id', itemCounter);
+            div.innerHTML = `
+  <div class="grupo-form">
+    <label>Produto:</label>
+    <select class="campo-form produto-select" required disabled>
+      <option value="" disabled selected>Selecione um fornecedor primeiro</option>
+    </select>
+  </div>
+  <div>
+    <label>Quantidade</label>
+    <div style="display: flex; gap: 5px;">
+      <input type="number" class="campo-form quantidade-input" min="1" value="1" required disabled style="flex: 1;">
+      <span class="unidade-produto" style="min-width: 40px; padding-top: 8px;">—</span>
+    </div>
+  </div>
+  <div>
+    <label>Subtotal</label>
+    <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
+  </div>
+  ${isEntrada ? `
+    <div class="grupo-form-duplo">
+      <div>
+        <label>Validade</label>
+        <input type="date" class="campo-form validade-item" required>
+      </div>
+      <div>
+        <label>Lote</label>
+        <input type="text" class="campo-form lote-item" maxlength="20">
+      </div>
+    </div>
+  ` : ''}
+  <button type="button" class="botao-remover-item" style="display: ${quantidadeItens > 0 ? 'none' : 'none'};">Remover</button>
+`;
 
-            inputQuantidade.name = `quantidade_${itemCounter}`;
-            inputQuantidade.id = `quantidadeAdicionar_${itemCounter}`;
-            inputQuantidade.value = 1; // ⬅️ ZERADO
-            inputQuantidade.disabled = false;
+            container.appendChild(div);
 
-            inputSubtotal.name = `subtotal_${itemCounter}`;
-            inputSubtotal.id = `subtotalAdicionar_${itemCounter}`;
-            inputSubtotal.value = '0,00'; // ⬅️ ZERADO
+            const select = div.querySelector('select.produto-select');
+            const inputQtd = div.querySelector('input.quantidade-input');
+            const btnRemov = div.querySelector('.botao-remover-item');
 
+            // ─── NOVO ───
+            // Se já houver fornecedor selecionado, já pré-carrega e habilita os campos
+            const fornecedorSelect = modal.querySelector('#nomeAdicionar');
+            const fornecedorValor = fornecedorSelect?.value;
+            if (fornecedorValor) {
+                await carregarProdutos(select, fornecedorValor);
+                select.disabled = false;
+                inputQtd.disabled = false;
+            }
 
-            selectProduto.addEventListener('change', () => calcularSubtotalItem(newItem));
-            inputQuantidade.addEventListener('input', () => calcularSubtotalItem(newItem));
+            // ao mudar o produto, exibe o Remover (se não for o primeiro) e calcula subtotal
+            select.addEventListener('change', () => {
+                if (mostrarRemoverBtn) btnRemov.style.display = 'inline-block';
+                calcularSubtotalItem(div);
+            });
 
-            const btnRemover = newItem.querySelector('.botao-remover-item');
-            btnRemover.style.display = 'inline-block';
-            btnRemover.addEventListener('click', () => {
-                newItem.remove();
+            inputQtd.addEventListener('input', () => calcularSubtotalItem(div));
+
+            btnRemov.addEventListener('click', () => {
+                const totalItens = container.querySelectorAll('.item-pedido').length;
+                if (totalItens <= 1) return;  // nunca remove o único
+                div.remove();
                 atualizarTotalPedido();
-                itemCounter--;
             });
 
-            container.appendChild(newItem);
-
-            carregarProdutos(selectProduto).then(() => {
-                calcularSubtotalItem(newItem);
-            });
+            calcularSubtotalItem(div);
         });
     });
 
@@ -436,6 +461,10 @@ async function calcularSubtotalItem(itemContainer) {
         atualizarTotalPedido();
         return;
     }
+    const unidadeSpan = itemContainer.querySelector('.unidade-produto');
+    if (unidadeSpan && produto.unidadeMedida) {
+        unidadeSpan.textContent = produto.unidadeMedida;
+    }
 
     const preco = parseFloat(produto.preco || '0');
     const precoPor = produto.precoPor;
@@ -536,13 +565,13 @@ function excluirSelecionados() {
 }
 
 function carregarPedidosDoFirebase() {
-     firebase.database().ref('pedido').once('value').then(snapshot => {
+    firebase.database().ref('pedido').once('value').then(snapshot => {
         pedidos.length = 0;
         snapshot.forEach(childSnapshot => {
             const pedido = childSnapshot.val();
             if (pedido.idComerciante === idComerciante) {
                 pedido.firebaseKey = childSnapshot.key;
-                
+
                 // CORREÇÃO: Garantir que itensPedido seja um objeto
                 if (pedido.itensPedido && typeof pedido.itensPedido === 'object') {
                     // Converter para objeto se for array
@@ -556,7 +585,7 @@ function carregarPedidosDoFirebase() {
                 } else {
                     pedido.itensPedido = {};
                 }
-                
+
                 pedidos.push(pedido);
             }
         });
@@ -758,7 +787,7 @@ function atualizarTabelaPedidos() {
         }
     });
 
-    configurarEventosPedidos(); // icones de ação
+
     atualizarBotaoExcluirSelecionados(); // botão excluir em massa
 }
 
@@ -804,25 +833,28 @@ function atualizarPaginacao(totalItens) {
 
 async function handlePedidoSubmit(e) {
     e.preventDefault();
+    console.log('Modo edição:', editando, 'ID do pedido:', indiceParaEditar); // Debug
 
     const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
     const isEntrada = tipoAtual === 'entrada';
     const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
     const modal = document.getElementById(modalId);
 
-    const nomeField = isEntrada
-        ? modal.querySelector('#nomeAdicionar')
-        : modal.querySelector('#nomeAdicionarSaida');
-
+    // Validação do nome (fornecedor/cliente)
+    const nomeField = isEntrada ? modal.querySelector('#nomeAdicionar') : modal.querySelector('#nomeAdicionarSaida');
     const nomeValue = nomeField.value.trim();
     if (!nomeValue) {
         alert("Preencha o nome do " + (isEntrada ? "fornecedor" : "cliente") + ".");
         return;
     }
 
+    // Coletar itens do pedido
     const container = modal.querySelector('.itens-pedido-container');
+    const todosItens = modal.querySelectorAll('.item-pedido');
+    for (const item of todosItens) {
+        await calcularSubtotalItem(item); // Recalcula com os dados atuais
+    }
     const itensPedidoDOM = container.querySelectorAll('.item-pedido');
-
     const itensPedido = [];
 
     for (const itemEl of itensPedidoDOM) {
@@ -858,6 +890,7 @@ async function handlePedidoSubmit(e) {
         return;
     }
 
+    // Validação de estoque para saídas
     if (!isEntrada) {
         for (const item of itensPedido) {
             const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
@@ -868,20 +901,55 @@ async function handlePedidoSubmit(e) {
 
             const chaveLote = `${item.validade || 'sem-validade'}|${item.lote || 'sem-lote'}`;
             const lotes = produto.lotes || {};
-
             const quantidadeDisponivel = lotes[chaveLote]?.quantidade || 0;
 
             if (quantidadeDisponivel < item.quantidade) {
                 alert(`❌ Estoque insuficiente no lote ${item.lote} com validade ${item.validade} para o produto "${item.nome}".\n\nDisponível: ${quantidadeDisponivel}\nSolicitado: ${item.quantidade}`);
-                return; // Impede o envio do pedido
+                return;
             }
         }
     }
 
-    // Montar objeto do pedido principal
-    const numero = gerarCodigoPedido();
-    const dataHoje = new Date().toISOString().split('T')[0];
+    // 1. Cálculo de diferenças de estoque (para edição)
+    let diferencasEstoque = [];
+    if (editando && indiceParaEditar) {
+        const pedidoOriginal = pedidos.find(p => p.firebaseKey === indiceParaEditar);
+        const itensOriginais = Object.values(pedidoOriginal.itensPedido || {});
 
+        // Comparar itens novos com originais
+        for (const novoItem of itensPedido) {
+            const itemOriginal = itensOriginais.find(i => i.produtoId === novoItem.produtoId);
+            const diferenca = itemOriginal ? novoItem.quantidade - itemOriginal.quantidade : novoItem.quantidade;
+
+            diferencasEstoque.push({
+                produtoId: novoItem.produtoId,
+                diferenca,
+                novoItem
+            });
+        }
+
+        // Verificar itens removidos
+        for (const itemOriginal of itensOriginais) {
+            if (!itensPedido.some(i => i.produtoId === itemOriginal.produtoId)) {
+                diferencasEstoque.push({
+                    produtoId: itemOriginal.produtoId,
+                    diferenca: -itemOriginal.quantidade,
+                    novoItem: null
+                });
+            }
+        }
+    }
+
+    // 2. Montar objeto do pedido
+    let numero;
+    if (editando && indiceParaEditar) {
+        const pedidoOriginal = pedidos.find(p => p.firebaseKey === indiceParaEditar);
+        numero = pedidoOriginal.numero; // Mantém o número original
+    } else {
+        numero = gerarCodigoPedido(); // Novo número para pedidos novos
+    }
+
+    const dataHoje = new Date().toISOString().split('T')[0];
     const novoPedido = {
         tipoPedido: isEntrada ? "Compra" : "Venda",
         numero,
@@ -892,34 +960,31 @@ async function handlePedidoSubmit(e) {
         nomeCliente: isEntrada ? "" : nomeValue,
     };
 
-    // Criar o pedido principal
-    let idPedido;
-
+    // 3. Remover itens antigos (se for edição)
     if (editando && indiceParaEditar) {
-        // Se estiver editando, usa o ID antigo e atualiza os dados
-        idPedido = indiceParaEditar;
-        await firebase.database().ref(`pedido/${idPedido}`).update(novoPedido);
+        const pedidoRef = firebase.database().ref(`pedido/${indiceParaEditar}`);
+        const snapshot = await pedidoRef.child('itensPedido').once('value');
+        const itensAntigos = snapshot.val();
 
-        // Remove todos os itens antigos do nó itemPedido
-        const snapshot = await firebase.database().ref(`pedido/${idPedido}/itensPedido`).once('value');
-        const antigos = snapshot.val();
-        if (antigos) {
-            for (const idItem in antigos) {
+        if (itensAntigos) {
+            for (const idItem in itensAntigos) {
                 await firebase.database().ref(`itemPedido/${idItem}`).remove();
             }
+            await pedidoRef.child('itensPedido').remove();
         }
+    }
 
-        // Remove os vínculos antigos do pedido com os itens
-        await firebase.database().ref(`pedido/${idPedido}/itensPedido`).remove();
+    // 4. Criar/Atualizar pedido principal
+    let idPedido = indiceParaEditar;
+    if (editando && idPedido) {
+        await firebase.database().ref(`pedido/${idPedido}`).update(novoPedido);
     } else {
-        // Caso seja um novo pedido
         const pedidoRef = await firebase.database().ref('pedido').push(novoPedido);
         idPedido = pedidoRef.key;
     }
 
-    // Criar os itens do pedido no nó separado
+    // 5. Adicionar novos itens
     const itensDoPedido = {};
-
     for (const item of itensPedido) {
         const itemRef = firebase.database().ref('itemPedido').push();
         const idItem = itemRef.key;
@@ -934,59 +999,108 @@ async function handlePedidoSubmit(e) {
         };
 
         await itemRef.set(itemData);
-
-        // CORREÇÃO: Salvar como objeto completo
         itensDoPedido[idItem] = itemData;
     }
 
-    // Atualiza o pedido com os itens vinculados
+    // 6. Vincular itens ao pedido
     await firebase.database().ref(`pedido/${idPedido}/itensPedido`).set(itensDoPedido);
-    // ✅ Atualiza o estoque do produto conforme o tipo de pedido
-    for (const item of itensPedido) {
-        const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
-        const snapshot = await produtoRef.once('value');
-        const produto = snapshot.val();
 
-        if (!produto) continue;
+    // 7. Atualizar estoque (método correto para edição)
+    if (editando && indiceParaEditar) {
+        for (const { produtoId, diferenca } of diferencasEstoque) {
+            const produtoRef = firebase.database().ref(`produto/${produtoId}`);
+            const snapshot = await produtoRef.once('value');
+            const produto = snapshot.val();
 
-        const estoqueAtual = parseFloat(produto.quantidadeEstoque || 0);
-        const quantidade = parseFloat(item.quantidade || 0);
+            if (!produto) continue;
 
-        const novoEstoque = isEntrada
-            ? estoqueAtual + quantidade
-            : estoqueAtual - quantidade;
+            // Atualizar estoque total
+            const novoEstoque = parseFloat(produto.quantidadeEstoque || 0) + diferenca;
+            await produtoRef.update({
+                quantidadeEstoque: novoEstoque < 0 ? 0 : novoEstoque,
+                dataUltimaAtualizacao: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+            });
 
-        await produtoRef.update({
-            quantidadeEstoque: novoEstoque < 0 ? 0 : novoEstoque,
-            dataUltimaAtualizacao: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-        });
+            // 🔎 Histórico
+            const tipoMovimentacao = isEntrada ? 'Entrada' : 'Saída';
+            const descricaoMovimentacao = `${tipoMovimentacao} de ${Math.abs(diferenca)} ${produto.unidadeMedida || ''} no produto "${produto.nome}"`;
+            registrarHistorico(`Movimentação de estoque (${tipoMovimentacao})`, descricaoMovimentacao);
 
-        // ⬇️ ETAPA 3: Atualizar controle por lote + validade
-        const chaveLote = `${item.validade || 'sem-validade'}|${item.lote || 'sem-lote'}`;
-        const lotes = produto.lotes || {};
+            // 🔁 Ajuste de lotes somente para entradas
+            if (isEntrada) {
+                const snapshotOriginais = await firebase.database()
+                    .ref(`pedido/${indiceParaEditar}/itensPedido`)
+                    .once('value');
+                const itensOriginais = snapshotOriginais.val() || {};
+                let lotesAtualizados = { ...(produto.lotes || {}) };
 
-        if (isEntrada) {
-            if (lotes[chaveLote]) {
-                lotes[chaveLote].quantidade += quantidade;
-            } else {
-                lotes[chaveLote] = { quantidade };
-            }
-        } else {
-            if (lotes[chaveLote]) {
-                lotes[chaveLote].quantidade -= quantidade;
-                if (lotes[chaveLote].quantidade <= 0) {
-                    delete lotes[chaveLote];
+                for (const dadosOrig of Object.values(itensOriginais)) {
+                    if (dadosOrig.produtoId !== produtoId) continue;
+                    const chaveOrig = `${dadosOrig.validade || 'sem-validade'}|${dadosOrig.lote || 'sem-lote'}`;
+                    if (lotesAtualizados[chaveOrig]) {
+                        lotesAtualizados[chaveOrig].quantidade =
+                            Math.max(0, lotesAtualizados[chaveOrig].quantidade - dadosOrig.quantidade);
+                        if (lotesAtualizados[chaveOrig].quantidade === 0) {
+                            delete lotesAtualizados[chaveOrig];
+                        }
+                    }
                 }
+
+                for (const novo of itensPedido) {
+                    if (novo.produtoId !== produtoId) continue;
+                    const chaveNovo = `${novo.validade || 'sem-validade'}|${novo.lote || 'sem-lote'}`;
+                    lotesAtualizados[chaveNovo] = {
+                        quantidade: (lotesAtualizados[chaveNovo]?.quantidade || 0) + novo.quantidade
+                    };
+                }
+
+                await produtoRef.update({ lotes: lotesAtualizados });
             }
         }
+    } else {
+        // Atualização normal para novos pedidos
+        for (const item of itensPedido) {
+            const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+            const snapshot = await produtoRef.once('value');
+            const produto = snapshot.val();
 
-        await produtoRef.update({ lotes });
+            if (!produto) continue;
 
+            const estoqueAtual = parseFloat(produto.quantidadeEstoque || 0);
+            const quantidade = parseFloat(item.quantidade || 0);
+            const novoEstoque = isEntrada ? estoqueAtual + quantidade : estoqueAtual - quantidade;
+
+            await produtoRef.update({
+                quantidadeEstoque: novoEstoque < 0 ? 0 : novoEstoque,
+                dataUltimaAtualizacao: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+            });
+
+            // 🔎 Histórico
+            const tipoMovimentacao = isEntrada ? 'Entrada' : 'Saída';
+            const descricaoMovimentacao = `${tipoMovimentacao} de ${quantidade} ${produto.unidadeMedida || ''} no produto "${produto.nome}"`;
+            registrarHistorico(`Movimentação de estoque (${tipoMovimentacao})`, descricaoMovimentacao);
+
+            // Atualizar lotes
+            if (isEntrada) {
+                const chaveLote = `${item.validade || 'sem-validade'}|${item.lote || 'sem-lote'}`;
+                const lotes = produto.lotes || {};
+
+                if (lotes[chaveLote]) {
+                    lotes[chaveLote].quantidade += quantidade;
+                } else {
+                    lotes[chaveLote] = { quantidade };
+                }
+
+                await produtoRef.update({ lotes });
+            }
+        }
     }
 
-    // Feedback final
+    // Feedback e reset
     mostrarMensagem("✅ Pedido salvo com sucesso!", "success");
     modal.style.display = 'none';
+    editando = false;
+    indiceParaEditar = null;
     carregarPedidosDoFirebase();
 }
 
@@ -998,65 +1112,87 @@ function mostrarMensagem(texto, tipo = 'success') {
     setTimeout(() => msg.remove(), 4000);
 }
 
+let eventosPedidosConfigurados = false;
+
 function configurarEventosPedidos() {
-    // Evento principal para clicks nos ícones
-    document.querySelector('main').addEventListener('click', async (e) => {
-        const linha = e.target.closest('tr');
-        if (!linha) return;
+    if (eventosPedidosConfigurados) return;
+    eventosPedidosConfigurados = true;
 
-        const firebaseKey = linha.getAttribute('data-key');
-        const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
+    // Delegação de eventos para toda a área principal
+    document.querySelector('main').addEventListener('click', async function (e) {
+        const target = e.target;
 
-        if (!pedido) return;
-
-        // 🔍 MODAL DE CONSULTAR (ícone "consultar")
+        // Consultar pedido (ícone de lupa principal)
         if (e.target.classList.contains('search-icon') && !e.target.classList.contains('ver-itens-icon')) {
+            const linha = e.target.closest('tr');
+            if (!linha) return;
+
+            // Obter a chave do Firebase
+            const firebaseKey = linha.getAttribute('data-key');
+
+            // Encontrar o pedido correspondente
+            const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
+            if (!pedido) return;
+
+            document.getElementById('visualizarID').textContent = pedido.numero || '(sem número)';
+
+            const labelNome = document.getElementById('labelNome');
+            const nomeVisualizar = document.getElementById('nomeVisualizar');
+
+            if (pedido.tipoPedido === 'Compra') {
+                buscarNomeFornecedorPorId(pedido.fornecedor).then(nome => {
+                    labelNome.textContent = 'Fornecedor:';
+                    nomeVisualizar.textContent = nome || '(sem nome)';
+                });
+            } else {
+                labelNome.textContent = 'Cliente:';
+                nomeVisualizar.textContent = pedido.nomeCliente || '(sem nome)';
+            }
+
+            const container = document.querySelector('.itens-visualizacao-container');
+            container.innerHTML = ''; // limpa os itens
+
+            Object.values(pedido.itensPedido || {}).forEach(item => {
+                const div = document.createElement('div');
+                div.classList.add('item-visualizado');
+
+                const quantidade = item.quantidade || 0;
+                const subtotal = item.subtotal || 0;
+                const nomeProduto = item.nome || '';
+                const validade = item.validade ? formatarData(item.validade) : '—';
+                const lote = item.lote || '—';
+
+                div.innerHTML = `
+            <div><strong>Produto:</strong> ${nomeProduto}</div>
+            <div><strong>Quantidade:</strong> ${quantidade}</div>
+            <div><strong>Subtotal:</strong> R$ ${parseFloat(subtotal).toFixed(2).replace('.', ',')}</div>
+            ${pedido.tipoPedido === 'Compra' ? `
+                <div><strong>Validade:</strong> ${validade}</div>
+                <div><strong>Lote:</strong> ${lote}</div>
+            ` : ''}
+            <hr>
+        `;
+                container.appendChild(div);
+            });
+
+            const total = parseFloat(pedido.valor || 0).toFixed(2).replace('.', ',');
+            document.getElementById('totalVisualizar').textContent = `R$ ${total}`;
+
+            document.getElementById('modal-visualizar').style.display = 'flex';
+        }
+
+        // Ver itens (ícone de lupa na coluna Produtos)
+        else if (target.classList.contains('ver-itens-icon')) {
+            const linha = target.closest('tr');
+            if (!linha) return;
+
             const firebaseKey = linha.getAttribute('data-key');
             const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
             if (!pedido) return;
 
-            // Cabeçalho
-            document.getElementById('visualizarID').textContent = pedido.numero || '(sem número)';
-            const labelNome = document.getElementById('labelNome');
-            const nomeVisualizar = document.getElementById('nomeVisualizar');
-
-            labelNome.textContent = pedido.tipoPedido === 'Compra' ? 'Fornecedor:' : 'Cliente:';
-            nomeVisualizar.textContent = pedido.tipoPedido === 'Compra' ? pedido.nomeFornecedor : pedido.nomeCliente;
-
-            // Limpar container de itens
-            const container = document.querySelector('#modal-visualizar .itens-pedido-container');
-            container.innerHTML = '';
-
-            // Dentro do evento 'search-icon'
-            for (const idItem in pedido.itensPedido) {
-                const item = pedido.itensPedido[idItem];
-                if (!item) continue;
-
-                const div = document.createElement('div');
-                div.classList.add('item-visualizar');
-
-                div.innerHTML = `
-        <p><strong>Produto:</strong> ${item.nome}</p>
-        <p><strong>Quantidade:</strong> ${item.quantidade}</p>
-        <p><strong>Subtotal:</strong> R$ ${parseFloat(item.subtotal || 0).toFixed(2).replace('.', ',')}</p>
-        <p><strong>Validade:</strong> ${item.validade ? formatarData(item.validade) : '—'}</p>
-        <p><strong>Lote:</strong> ${item.lote || '—'}</p>
-        <hr>
-    `;
-
-                container.appendChild(div);
-            }
-
-            // Abrir modal
-            document.getElementById('modal-visualizar').style.display = 'flex';
-        }
-
-        // 🔍 MODAL DE ITENS DO PEDIDO (ícone de lupa na coluna Produtos)
-        else if (e.target.classList.contains('ver-itens-icon')) {
             const container = document.getElementById('itens-lista-visualizacao');
             container.innerHTML = '';
 
-            // CORREÇÃO: Acessar diretamente os itens do pedido
             const itens = pedido.itensPedido || {};
 
             for (const idItem in itens) {
@@ -1068,8 +1204,10 @@ function configurarEventosPedidos() {
                     <p><strong>Produto:</strong> ${item.nome || '(desconhecido)'}</p>
                     <p><strong>Quantidade:</strong> ${item.quantidade || 0}</p>
                     <p><strong>Subtotal:</strong> R$ ${parseFloat(item.subtotal || 0).toFixed(2).replace('.', ',')}</p>
+                    ${pedido.tipoPedido === 'Compra' ? `
                     <p><strong>Validade:</strong> ${item.validade || '-'}</p>
                     <p><strong>Lote:</strong> ${item.lote || '-'}</p>
+                    ` : ''}
                     <hr>
                 `;
                 container.appendChild(div);
@@ -1078,98 +1216,105 @@ function configurarEventosPedidos() {
             document.getElementById('modal-visualizar-itens').style.display = 'flex';
         }
 
-        // ✏️ EDITAR PEDIDO (ícone de lápis)
-        else if (e.target.classList.contains('edit-icon')) {
+        // Editar pedido (ícone de lápis)
+        else if (target.classList.contains('edit-icon')) {
+            const linha = target.closest('tr');
+            if (!linha) return;
+
+            const firebaseKey = linha.getAttribute('data-key');
+            const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
+            if (!pedido) return;
+
             editando = true;
             indiceParaEditar = firebaseKey;
-            const isEntrada = pedido.tipoPedido === 'Compra';
 
+            const isEntrada = pedido.tipoPedido === 'Compra';
             const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
             const modal = document.getElementById(modalId);
-            const orderNumberElement = modal.querySelector('.modal-order-number');
-            const totalSpan = modal.querySelector(isEntrada ? '#totalAdicionar' : '#totalAdicionarSaida');
-            const nomeField = isEntrada ? modal.querySelector('#nomeAdicionar') : modal.querySelector('#nomeAdicionarSaida');
-
-            // Configura cabeçalho e número do pedido
-            orderNumberElement.textContent = pedido.numero || '(sem número)';
-            totalSpan.textContent = `R$ ${parseFloat(pedido.valor || 0).toFixed(2).replace('.', ',')}`;
-
-            // Limpa os itens anteriores
             const container = modal.querySelector('.itens-pedido-container');
             container.innerHTML = '';
 
-            // Preenche os itens do pedido
-            let count = 0;
             for (const itemId of Object.keys(pedido.itensPedido)) {
                 const itemSnapshot = await firebase.database().ref(`itemPedido/${itemId}`).once('value');
                 const itemData = itemSnapshot.val();
-                const item = itemData?.produto;
-                if (!item) continue;
+                if (!itemData) continue;
 
-                count++;
                 const div = document.createElement('div');
                 div.classList.add('item-pedido');
-                div.setAttribute('data-item-id', count);
 
                 div.innerHTML = `
-<div class="grupo-form">
-    <label>Produto:</label>
-    <select class="campo-form produto-select" required>
-        <option value="" disabled>Carregando...</option>
-    </select>
-</div>
-<div class="grupo-form-duplo">
-    <div>
-        <label>Quantidade</label>
-        <input type="number" class="campo-form quantidade-input" min="1" value="${item.quantidade}" required>
-    </div>
-    <div>
-        <label>Subtotal</label>
-        <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
-    </div>
-</div>
-<div class="grupo-form-duplo">
-    <div>
-        <label>Validade</label>
-        <input type="date" class="campo-form validade-item" value="${item.validade || ''}" required>
-    </div>
-    <div>
-        <label>Lote</label>
-        <input type="text" class="campo-form lote-item" value="${item.lote || ''}" maxlength="20">
-    </div>
-</div>
-<button type="button" class="botao-remover-item">Remover</button>
-`;
+                    <div class="grupo-form">
+                        <label>Produto:</label>
+                        <select class="campo-form produto-select" required>
+                            <option value="" disabled>Carregando...</option>
+                        </select>
+                    </div>
+                    <div class="grupo-form-duplo">
+                        <div>
+                            <label>Quantidade</label>
+                            <input type="number" class="campo-form quantidade-input" min="1" value="${itemData.quantidade || 1}" required>
+                        </div>
+                        <div>
+                            <label>Subtotal</label>
+                            <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
+                        </div>
+                    </div>
+                    ${isEntrada ? `
+                    <div class="grupo-form-duplo">
+                        <div>
+                            <label>Validade</label>
+                            <input type="date" class="campo-form validade-item" value="${itemData.validade || ''}" required>
+                        </div>
+                        <div>
+                            <label>Lote</label>
+                            <input type="text" class="campo-form lote-item" value="${itemData.lote || ''}" maxlength="20">
+                        </div>
+                    </div>
+                    ` : ''}
+                    <button type="button" class="botao-remover-item">Remover</button>
+                `;
 
                 container.appendChild(div);
 
                 const select = div.querySelector('select.produto-select');
                 const inputQuantidade = div.querySelector('input.quantidade-input');
-                const inputSubtotal = div.querySelector('input.subtotal-input');
+                const btnRemover = div.querySelector('.botao-remover-item');
 
                 await carregarProdutos(select);
-                select.value = item.produtoId;
+                select.value = itemData.produtoId;
 
                 select.addEventListener('change', () => calcularSubtotalItem(div));
                 inputQuantidade.addEventListener('input', () => calcularSubtotalItem(div));
+                btnRemover.addEventListener('click', () => {
+                    div.remove();
+                    atualizarTotalPedido();
+                });
 
                 calcularSubtotalItem(div);
             }
 
+            await carregarFornecedores();
 
-            // Preenche fornecedor/cliente
             if (isEntrada) {
-                await carregarFornecedores();
-                nomeField.value = pedido.fornecedor || '';
+                const selectFornecedor = modal.querySelector('#nomeAdicionar');
+                selectFornecedor.value = pedido.fornecedor || '';
             } else {
-                nomeField.value = pedido.fornecedor || '';
+                const inputCliente = modal.querySelector('#nomeAdicionarSaida');
+                inputCliente.value = pedido.nomeCliente || '';
             }
 
             modal.style.display = 'flex';
         }
 
-        // 🗑️ EXCLUIR PEDIDO (ícone de lixeira)
-        else if (e.target.classList.contains('delete-icon')) {
+        // Excluir pedido (ícone de lixeira)
+        else if (target.classList.contains('delete-icon')) {
+            const linha = target.closest('tr');
+            if (!linha) return;
+
+            const firebaseKey = linha.getAttribute('data-key');
+            const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
+            if (!pedido) return;
+
             firebaseKeyParaExcluir = firebaseKey;
             const modal = document.getElementById('modal-confirmar-exclusao');
             const titulo = modal.querySelector('h4');
@@ -1197,15 +1342,7 @@ function configurarEventosPedidos() {
         document.getElementById('modal-visualizar-itens').style.display = 'none';
     });
 
-    // Fecha modais
-    document.getElementById('fecharVisualizar').addEventListener('click', () => {
-        document.getElementById('modal-visualizar').style.display = 'none';
-    });
-
-    document.getElementById('fecharVisualizarItens').addEventListener('click', () => {
-        document.getElementById('modal-visualizar-itens').style.display = 'none';
-    });
-
+    // Confirma exclusão
     document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
         const modal = document.getElementById('modal-confirmar-exclusao');
         const multiplos = modal.getAttribute('data-multiplos') === 'true';
@@ -1219,11 +1356,10 @@ function configurarEventosPedidos() {
                 const pedido = pedidos.find(p => p.firebaseKey === key);
 
                 const itens = pedido.itensPedido || {};
-                const promisesItens = Object.values(itens).map(item =>
-                    firebase.database().ref('itemPedido/' + item.idItemPedido).remove()
+                const promisesItens = Object.keys(itens).map(itemId =>
+                    firebase.database().ref('itemPedido/' + itemId).remove()
                 );
 
-                // Excluir o pedido após os itens
                 return Promise.all(promisesItens).then(() =>
                     firebase.database().ref('pedido/' + key).remove()
                 );
@@ -1231,8 +1367,6 @@ function configurarEventosPedidos() {
 
             Promise.all(promises).then(() => {
                 mostrarMensagem('Pedidos excluídos com sucesso!', 'success');
-                modal.removeAttribute('data-multiplos');
-                modal.removeAttribute('data-quantidade');
                 modal.style.display = 'none';
                 carregarPedidosDoFirebase();
             });
@@ -1243,8 +1377,8 @@ function configurarEventosPedidos() {
             const pedido = pedidos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
             const itens = pedido.itensPedido || {};
 
-            const promisesItens = Object.values(itens).map(item =>
-                firebase.database().ref('itemPedido/' + item.idItemPedido).remove()
+            const promisesItens = Object.keys(itens).map(itemId =>
+                firebase.database().ref('itemPedido/' + itemId).remove()
             );
 
             Promise.all(promisesItens).then(() => {
@@ -1272,7 +1406,6 @@ document.getElementById('input-pesquisa-pedidos').addEventListener('input', () =
     }
     atualizarTabelaPedidos();
 });
-
 
 function aplicarFiltrosOrdenacao(lista) {
     const criterio = document.getElementById('ordenar-pedidos')?.value;
