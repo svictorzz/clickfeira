@@ -21,17 +21,28 @@ function configurarEventListeners() {
   // Modal de cadastro
   document.querySelector('.abrir-modal').addEventListener('click', abrirModalCadastro);
 
+  //Modal de Visualização
+  document.getElementById('lista-produtos').addEventListener('click', function (e) {
+    if (e.target.classList.contains('search-icon')) {
+      const linha = e.target.closest('tr') || e.target.closest('.acoes-icones');
+      const firebaseKey = linha?.getAttribute('data-key');
+      const produto = produtos.find(p => p.firebaseKey === firebaseKey);
+
+      if (produto) {
+        preencherModalVisualizacao(produto);
+        document.getElementById('modal-visualizar').style.display = 'flex';
+      } else {
+        console.warn('Produto não encontrado para a chave:', firebaseKey);
+      }
+    }
+  });
+
   // Cancelamentos
   document.querySelector('.cancelar').addEventListener('click', () => {
     document.getElementById('modal-produto').style.display = 'none';
   });
   document.querySelector('.cancelar-visualizar').addEventListener('click', () => {
     document.getElementById('modal-visualizar').style.display = 'none';
-  });
-
-  // Controles de unidade
-  document.getElementById('unidade-minima').addEventListener('change', e => {
-    document.getElementById('unidade-atual').value = e.target.value;
   });
 
   // Validação de compatibilidade unidade/preço
@@ -142,7 +153,7 @@ function carregarFornecedores(categoriaFiltro = '') {
       const fornecedor = child.val();
       const atende = Array.isArray(fornecedor.produtos) && fornecedor.produtos.includes(categoriaFiltro);
       if (fornecedor.idComerciante === idComerciante
-          && (!categoriaFiltro || atende)) {
+        && (!categoriaFiltro || atende)) {
 
         const opt = document.createElement('option');
         opt.value = child.key;
@@ -331,13 +342,14 @@ function adicionarLinhaTabela(produto) {
     <td class="col-consultar" data-label="Consultar"><i class="fa fa-search search-icon"></i></td>
     <td class="col-editar" data-label="Editar"><i class="fa fa-edit edit-icon"></i></td>
     <td class="col-excluir" data-label="Excluir"><i class="fa fa-trash delete-icon"></i></td>
-    <td class="acoes-mobile" data-label="Ações">
-      <div class="acoes-icones">
-        <i class="fa fa-search search-icon"></i>
-        <i class="fa fa-edit edit-icon"></i>
-        <i class="fa fa-trash delete-icon"></i>
-      </div>
-    </td>
+<td class="acoes-mobile" data-label="Ações">
+  <div class="acoes-icones" data-key="${produto.firebaseKey}">
+    <i class="fa fa-search search-icon"></i>
+    <i class="fa fa-edit edit-icon"></i>
+    <i class="fa fa-trash delete-icon"></i>
+  </div>
+</td>
+
   `;
 
   tbody.appendChild(row);
@@ -423,20 +435,6 @@ function validarCompatibilidadeUnidadePreco(e) {
 function handleFormSubmit(e) {
   e.preventDefault();
 
-  const validadeInput = document.getElementById('validade').value;
-  const [ano, mes, dia] = validadeInput.split('-').map(Number);
-  const validadeSelecionada = new Date(ano, mes - 1, dia);
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  validadeSelecionada.setHours(0, 0, 0, 0);
-
-  // Validação de validade vencida
-  if (validadeSelecionada < hoje && !window.continuarMesmoComValidadeVencida) {
-    window.submissaoPendente = e;
-    document.getElementById('modal-validade-vencida').style.display = 'flex';
-    return;
-  }
-
   // Resetar flag de continuidade
   window.continuarMesmoComValidadeVencida = false;
 
@@ -446,7 +444,6 @@ function handleFormSubmit(e) {
   const categoria = document.getElementById('categoria').value.trim();
   const preco = parseFloat(document.getElementById('preco').value);
   const descricao = document.getElementById('descricao').value;
-  const quantidadeEstoque = document.getElementById('qtd-atual').value;
   const quantidadeMinima = document.getElementById('qtd-minima').value;
   const unidadeMedida = document.getElementById('unidade-minima').value;
   const precoPor = document.getElementById('preco-por').value;
@@ -454,7 +451,7 @@ function handleFormSubmit(e) {
   const file = imagemInput.files[0];
 
   // Validação de campos obrigatórios
-  if (!codigo || !nome || !categoria || isNaN(preco) || !validadeInput || !quantidadeEstoque || !quantidadeMinima || !precoPor) {
+  if (!codigo || !nome || !categoria || isNaN(preco) || !quantidadeMinima || !precoPor) {
     mostrarMensagem('⚠️ Preencha todos os campos obrigatórios!', 'error');
     return;
   }
@@ -474,23 +471,23 @@ function handleFormSubmit(e) {
     mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
     return;
   }
-  
-const fornecedorSelect = document.getElementById('fornecedor');
-const selectedOption = fornecedorSelect.options[fornecedorSelect.selectedIndex];
 
-if (!selectedOption || !selectedOption.value) {
-  mostrarMensagem('🚫 Selecione um fornecedor.', 'error');
-  return;
-}
+  const fornecedorSelect = document.getElementById('fornecedor');
+  const selectedOption = fornecedorSelect.options[fornecedorSelect.selectedIndex];
 
-const produtosFornecidos = JSON.parse(selectedOption.dataset.produtos || '[]');
-if (!produtosFornecidos.includes(categoria)) {
-  mostrarMensagem(
-    `🚫 O fornecedor "${selectedOption.textContent}" não fornece a categoria "${categoria}".`,
-    'error'
-  );
-  return;
-}
+  if (!selectedOption || !selectedOption.value) {
+    mostrarMensagem('🚫 Selecione um fornecedor.', 'error');
+    return;
+  }
+
+  const produtosFornecidos = JSON.parse(selectedOption.dataset.produtos || '[]');
+  if (!produtosFornecidos.includes(categoria)) {
+    mostrarMensagem(
+      `🚫 O fornecedor "${selectedOption.textContent}" não fornece a categoria "${categoria}".`,
+      'error'
+    );
+    return;
+  }
 
   // Montar objeto produto
   const fornecedorId = document.getElementById('fornecedor').value;
@@ -500,10 +497,8 @@ if (!produtosFornecidos.includes(categoria)) {
     nome,
     descricao,
     categoria,
-    validade: validadeInput,
     preco: preco.toFixed(2),
     precoPor,
-    quantidadeEstoque: parseFloat(quantidadeEstoque),
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
@@ -581,15 +576,40 @@ function preencherModalVisualizacao(produto) {
   document.getElementById('ver-codigo').textContent = produto.codigo || '(sem código)';
   document.getElementById('ver-nome').textContent = produto.nome;
   document.getElementById('ver-categoria').textContent = produto.categoria;
-  document.getElementById('ver-validade').textContent = formatarData(produto.validade);
   document.getElementById('ver-preco').textContent = `R$ ${produto.preco} por ${produto.precoPor}`;
-  document.getElementById('ver-total-estimado').textContent = calcularValorTotalEstoque(produto);
+  document.getElementById('ver-total-estimado').textContent = `R$ ${parseFloat(produto.valorEstoque || 0).toFixed(2).replace('.', ',')}`;
   document.getElementById('ver-descricao').textContent = produto.descricao;
   document.getElementById('ver-qtd-minima').textContent = `${produto.quantidadeMinima} ${produto.unidadeMedida}`;
-  document.getElementById('ver-qtd-atual').textContent = `${produto.quantidadeEstoque} ${produto.unidadeMedida}`;
   document.getElementById('ver-imagem').src = produto.imagemUrl;
   const nomeFornecedor = mapaFornecedores[produto.fornecedorId];
   document.getElementById('ver-fornecedor').textContent = nomeFornecedor ? nomeFornecedor : 'Fornecedor não disponível';
+
+  // 🔄 Exibir lotes no modal de visualização
+  const corpoTabelaLotes = document.getElementById('ver-lotes');
+  corpoTabelaLotes.innerHTML = '';
+
+  if (produto.lotes && typeof produto.lotes === 'object') {
+    const chavesOrdenadas = Object.keys(produto.lotes).sort((a, b) => {
+      const validadeA = produto.lotes[a].validade || '';
+      const validadeB = produto.lotes[b].validade || '';
+      return validadeA.localeCompare(validadeB);
+    });
+
+    chavesOrdenadas.forEach(loteKey => {
+      const lote = produto.lotes[loteKey];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+      <td style="padding: 4px;">${loteKey}</td>
+      <td style="padding: 4px;">${lote.validade ? formatarData(lote.validade) : '—'}</td>
+      <td style="padding: 4px;">${lote.quantidade || 0}</td>
+    `;
+      corpoTabelaLotes.appendChild(tr);
+    });
+  } else {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="3" style="padding: 4px;">Nenhum lote cadastrado ainda.</td>`;
+    corpoTabelaLotes.appendChild(tr);
+  }
 
 }
 
@@ -598,12 +618,9 @@ function preencherFormEdicao(produto, index) {
   document.getElementById('codigo').value = produto.codigo || '';
   document.getElementById('nome').value = produto.nome;
   document.getElementById('categoria').value = produto.categoria;
-  document.getElementById('validade').value = produto.validade;
   document.getElementById('descricao').value = produto.descricao;
   document.getElementById('qtd-minima').value = produto.quantidadeMinima;
   document.getElementById('unidade-minima').value = produto.unidadeMedida;
-  document.getElementById('qtd-atual').value = produto.quantidadeEstoque;
-  document.getElementById('unidade-atual').value = produto.unidadeMedida;
   document.getElementById('preco').value = produto.preco;
   document.getElementById('preco-por').value = produto.precoPor;
   document.getElementById('fornecedor').value = produto.fornecedorId || '';
