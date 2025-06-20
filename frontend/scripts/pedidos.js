@@ -1071,14 +1071,21 @@ async function handlePedidoSubmit(e) {
 
         if (quantidade <= 0 || isNaN(quantidade)) continue;
 
+        const produtoRef = firebase.database().ref(`produto/${produtoId}`);
+        const snapshot = await produtoRef.once('value');
+        const produto = snapshot.val();
+        const unidadeMedida = produto?.unidadeMedida || 'un';
+
         itensPedido.push({
             produtoId,
             nome,
             quantidade,
             subtotal,
             validade,
-            lote
+            lote,
+            unidadeMedida
         });
+
     }
 
     if (itensPedido.length === 0) {
@@ -1156,6 +1163,11 @@ async function handlePedidoSubmit(e) {
     // Adicionar itens ao pedido
     const itensDoPedido = {};
     for (const item of itensPedido) {
+        const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+        const snapshot = await produtoRef.once('value');
+        const produto = snapshot.val();
+        const unidadeMedida = produto?.unidadeMedida || 'un';
+
         const idItem = firebase.database().ref().push().key;
         itensDoPedido[idItem] = {
             produtoId: item.produtoId,
@@ -1163,9 +1175,11 @@ async function handlePedidoSubmit(e) {
             quantidade: item.quantidade,
             subtotal: item.subtotal,
             validade: item.validade,
-            lote: item.lote
+            lote: item.lote,
+            unidadeMedida
         };
     }
+
     await firebase.database().ref(`pedido/${idPedido}/itensPedido`).set(itensDoPedido);
 
     // ATUALIZAR ESTOQUE E LOTES NOS PRODUTOS
