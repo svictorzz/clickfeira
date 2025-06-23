@@ -79,7 +79,7 @@ def delete_comerciante(comerciante_id: str) -> bool:
         ]
 
         for key in pedidos_to_delete_keys:
-            firebase_realtime_db.reference(f"pedido/{key}").delete()
+            firebase_realtime_db.reference(f"pedido/{key}").delete() 
             print(f"  Pedido {key} excluído para o comerciante {comerciante_id}")
 
         # Excluir histórico de ações vinculado
