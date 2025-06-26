@@ -4,7 +4,6 @@ let paginaAtualEntradas = 1;
 let paginaAtualSaidas = 1;
 const itensPorPagina = 10;
 let itemCounter = 1;
-let quantidadeMaxima = null;
 let indiceParaEditar = null;
 let firebaseKeyParaExcluir = null;
 let tipoAtual = 'entrada';
@@ -14,54 +13,39 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarPedidosDoFirebase();
     configurarEventosPedidos();
 
-    document.getElementById('button-entradas').addEventListener('click', () => {
-        tipoAtual = 'entrada';
-        mostrarEntradas();
-    });
-    document.getElementById('button-saidas').addEventListener('click', () => {
-        tipoAtual = 'saida';
-        mostrarSaidas();
-    });
+    document.getElementById('button-entradas').addEventListener('click', mostrarEntradas);
+    document.getElementById('button-saidas').addEventListener('click', mostrarSaidas);
     document.getElementById('btn-excluir-selecionados').addEventListener('click', excluirSelecionados);
 
     const tipoSalvo = sessionStorage.getItem('tipoPedidoAtual');
     if (tipoSalvo) tipoAtual = tipoSalvo;
 
     document.getElementById('ordenar-pedidos').addEventListener('change', () => {
-        if (tipoAtual === 'entrada') {
-            paginaAtualEntradas = 1;
-        } else {
-            paginaAtualSaidas = 1;
-        }
+        if (tipoAtual === 'entrada') paginaAtualEntradas = 1;
+        else paginaAtualSaidas = 1;
         atualizarTabelaPedidos();
     });
 
-
     document.getElementById('limpar-filtros-pedidos').addEventListener('click', () => {
         document.getElementById('ordenar-pedidos').value = '';
-        if (tipoAtual === 'entrada') {
-            paginaAtualEntradas = 1;
-        } else {
-            paginaAtualSaidas = 1;
-        }
+        if (tipoAtual === 'entrada') paginaAtualEntradas = 1;
+        else paginaAtualSaidas = 1;
         atualizarTabelaPedidos();
     });
 
     document.getElementById('btnAbrirModal').addEventListener('click', () => {
         const titulo = tipoAtual === 'entrada' ? 'titulo-modal-pedido' : 'titulo-modal-saida';
         document.getElementById(titulo).textContent = 'Pedido';
-        quantidadeMaxima = null;
         editando = false;
         indiceParaEditar = null;
         itemCounter = 1;
 
-        // Variável para rastrear lotes por produto (apenas entrada)
         const contadorLotes = {};
 
         if (tipoAtual === 'entrada') {
             const modal = document.getElementById('modal-entrada');
             const container = modal.querySelector('.itens-pedido-container');
-            container.innerHTML = ''; // Limpa tudo
+            container.innerHTML = '';
             document.getElementById('nomeAdicionar').selectedIndex = 0;
 
             modal.style.display = 'flex';
@@ -70,12 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             carregarFornecedores();
 
-            // Configurar evento de fornecedor para ENTRADA
             document.getElementById('nomeAdicionar').addEventListener('change', async (e) => {
                 const fornecedorId = e.target.value;
                 if (!fornecedorId) return;
 
-                // Habilita e carrega produtos para todos os itens
                 container.querySelectorAll('.item-pedido').forEach(item => {
                     const selectProduto = item.querySelector('select.produto-select');
                     selectProduto.disabled = false;
@@ -83,20 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            // Função para configurar um item de entrada
             const configurarItemEntrada = (div) => {
                 const selectProduto = div.querySelector('select.produto-select');
                 const inputLote = div.querySelector('.lote-item');
                 const inputQuantidade = div.querySelector('input.quantidade-input');
                 const btnRemover = div.querySelector('.botao-remover-item');
 
-                // Evento de remoção
                 btnRemover.addEventListener('click', () => {
                     div.remove();
                     atualizarTotalPedido();
                 });
 
-                // Evento de produto: gera lote sequencial
                 selectProduto.addEventListener('change', async function () {
                     const produtoId = this.value;
                     if (!produtoId) {
@@ -107,17 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const loteBase = await obterProximoNumeroLote(produtoId);
                         const ocorrenciasNaTela = contarOcorrenciasProdutoNaTela(produtoId, div);
-
-                        // Garante que o mínimo do lote seja 1
                         const numeroLote = Math.max(loteBase + ocorrenciasNaTela - 1, 1);
-
                         inputLote.value = numeroLote;
                     } catch (err) {
-                        console.error('Erro ao calcular número do lote:', err);
                         inputLote.value = 1;
                     }
 
-                    // Atualizar unidade de medida
                     const unidadeSpan = div.querySelector('.unidade-produto');
                     const produtoRef = firebase.database().ref(`produto/${produtoId}`);
                     const snapshot = await produtoRef.once('value');
@@ -131,14 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     calcularSubtotalItem(div);
                 });
 
-
-                // Evento de quantidade
                 inputQuantidade.addEventListener('input', () => {
                     calcularSubtotalItem(div);
                 });
             };
 
-            // Adiciona o primeiro item
             const div = document.createElement('div');
             div.classList.add('item-pedido');
             div.setAttribute('data-item-id', itemCounter);
@@ -177,7 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
             configurarItemEntrada(div);
 
         } else {
-            // Código para SAÍDA (mantido original)
             const modal = document.getElementById('modal-saida');
             const container = modal.querySelector('.itens-pedido-container');
             container.innerHTML = '';
@@ -227,34 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
         filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
     });
 
-    let fornecedorSelecionado = null;
-
-    // Modifique o evento change do fornecedor
-    document.getElementById('fornecedorSaida').addEventListener('change', async (e) => {
-        const fornecedorId = e.target.value;
-        const modal = document.getElementById('modal-saida');
-        const container = modal.querySelector('.itens-pedido-container');
-
-        // Habilita/desabilita campos com base na seleção
-        container.querySelectorAll('.item-pedido').forEach(item => {
-            const selectProduto = item.querySelector('select.produto-select');
-            const inputQuantidade = item.querySelector('input.quantidade-input');
-            const selectLote = item.querySelector('select.lote-select');
-
-            selectProduto.disabled = !fornecedorId;
-            inputQuantidade.disabled = !fornecedorId;
-            if (selectLote) selectLote.disabled = !fornecedorId;
-
-            // Carrega produtos apenas se houver fornecedor
-            if (fornecedorId) {
-                carregarProdutos(selectProduto, fornecedorId);
-            }
-        });
-
-        calcularValorPedido(); // Atualiza totais
-    });
-
-    // Evento para fornecedor no modal de SAÍDA (Cliente)
     document.getElementById('fornecedorSaida').addEventListener('change', async (e) => {
         const fornecedorId = e.target.value;
         const modal = document.getElementById('modal-saida');
@@ -274,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        calcularValorPedido(); // Atualiza totais
+        atualizarTotalPedido();
     });
 
     document.getElementById('selecionar-todos-saidas').addEventListener('change', e => {
@@ -298,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    //Adicionar mais item
     document.querySelectorAll('.adicionar-mais-item').forEach(botao => {
         botao.addEventListener('click', async function (e) {
             e.preventDefault();
@@ -334,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>`;
 
-            // Campos específicos para entrada/saída
             if (isEntrada) {
                 html += `
     <div class="grupo-form">
@@ -366,14 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <button type="button" class="botao-remover-item" style="display: ${mostrarRemoverBtn ? 'block' : 'none'};">Remover</button>
 `;
-
             div.innerHTML = html;
             container.appendChild(div);
-
-            // Configura os eventos do novo item
             configurarProdutoDinamico(div, isEntrada);
 
-            //ADICIONAR MAIS - FORNECEDOR E PRODUTO (modal de entradas)
             if (isEntrada) {
                 const fornecedorSelect = document.getElementById('nomeAdicionar');
                 if (fornecedorSelect && fornecedorSelect.value) {
@@ -383,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // ADICIONAR MAIS - FORNECEDOR E PRODUTO (modal de saídas)
             if (!isEntrada) {
                 const fornecedorSelect = document.getElementById('fornecedorSaida');
                 const selectProduto = div.querySelector('select.produto-select');
@@ -394,18 +329,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectProduto.disabled = true;
                 }
             }
-
         });
     })
-
-    const saidaProduto = document.querySelector('#produtosAdicionarSaida');
-    const saidaQuantidade = document.querySelector('#quantidadeAdicionarSaida');
-    const saidaItem = document.querySelector('#modal-saida .item-pedido');
-
-    if (saidaProduto && saidaQuantidade && saidaItem) {
-        saidaProduto.addEventListener('change', () => calcularSubtotalItem(saidaItem));
-        saidaQuantidade.addEventListener('input', () => calcularSubtotalItem(saidaItem));
-    }
 });
 
 function mostrarEntradas() {
@@ -451,7 +376,6 @@ function mostrarSaidas() {
 }
 
 function carregarFornecedores() {
-    // ❌ Atualmente carregando em elemento inexistente
     const selects = document.querySelectorAll('#nomeAdicionar, #fornecedorSaida'); selects.forEach(select => {
         select.innerHTML = '<option value="" selected disabled>Selecione...</option>';
     });
@@ -484,6 +408,7 @@ function carregarFornecedores() {
         });
 }
 
+// Atualize a função carregarProdutos
 function carregarProdutos(selectEspecifico = null, fornecedorId = null) {
     const idComercianteLocal = localStorage.getItem('idComerciante') || sessionStorage.getItem('idComerciante');
 
@@ -497,20 +422,24 @@ function carregarProdutos(selectEspecifico = null, fornecedorId = null) {
             const opcoes = [];
 
             Object.entries(produtos).forEach(([key, produto]) => {
-                const pertenceAoComerciante = produto.idComerciante === idComercianteLocal;
-                const pertenceAoFornecedor =
-                    fornecedorId
-                        ? produto.fornecedorId === fornecedorId
-                        : !!produto.fornecedorId; // Se não tiver fornecedorId, ignora
+                const precoBase = parseFloat(produto.preco || '0');    // ex: 2.50
+                const precoporValue = parseInt(produto.precoPor || '1');    // ex: "100g" → 100
+                const precoUnitario = precoBase / precoporValue;              // ex: 2.50/100 = 0.025
 
-                if (pertenceAoComerciante && pertenceAoFornecedor) {
-                    const preco = parseFloat(produto.preco || '0');
-                    const optionHTML = `<option value="${key}" data-preco="${preco}">${produto.nome}</option>`;
-                    opcoes.push(optionHTML);
-                }
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = produto.nome;
+                option.dataset.precoBase = precoBase;      // valor original (raro de usar)
+                option.dataset.precopor = precoporValue;  // quantidade base em g
+                option.dataset.precounitario = precoUnitario;  // preço por g
+                option.dataset.unidademedida = produto.unidadeMedida; // ex: "g"
+
+                opcoes.push(option.outerHTML);
             });
 
-            const htmlCompleto = '<option value="" selected disabled>Selecione...</option>' + opcoes.join('');
+            const htmlCompleto = opcoes.length > 0
+                ? '<option value="" selected disabled>Selecione...</option>' + opcoes.join('')
+                : '<option value="" selected disabled>Nenhum produto encontrado</option>';
 
             if (selectEspecifico) {
                 selectEspecifico.innerHTML = htmlCompleto;
@@ -524,211 +453,146 @@ function carregarProdutos(selectEspecifico = null, fornecedorId = null) {
         })
         .catch(error => {
             console.error("Erro ao carregar produtos:", error);
+
+            // Mensagem de erro no próprio select
+            if (selectEspecifico) {
+                selectEspecifico.innerHTML = '<option value="" selected disabled>Erro ao carregar produtos</option>';
+            }
         });
 }
 
-// Função para carregar lotes de um produto
-async function carregarLotesDoProduto(produtoId, selectLote, inputValidade) {
-    selectLote.innerHTML = '<option value="" selected disabled>Carregando...</option>';
-    selectLote.disabled = true;
+// Atualize o evento de change para o modal de saída
+document.getElementById('fornecedorSaida').addEventListener('change', async (e) => {
+    const fornecedorId = e.target.value;
+    const modal = document.getElementById('modal-saida');
+    const container = modal.querySelector('.itens-pedido-container');
 
-    const produtoRef = firebase.database().ref(`produto/${produtoId}`);
-    const snapshot = await produtoRef.once('value');
-    const produto = snapshot.val();
-
-    if (!produto || !produto.lotes) {
-        selectLote.innerHTML = '<option value="" selected disabled>Nenhum lote disponível</option>';
-        return;
+    // Correção: Carregar produtos apenas se fornecedor for selecionado
+    if (fornecedorId) {
+        container.querySelectorAll('.item-pedido').forEach(item => {
+            const selectProduto = item.querySelector('select.produto-select');
+            selectProduto.disabled = false;
+            carregarProdutos(selectProduto, fornecedorId);
+        });
+    } else {
+        container.querySelectorAll('.item-pedido').forEach(item => {
+            const selectProduto = item.querySelector('select.produto-select');
+            selectProduto.disabled = true;
+            selectProduto.innerHTML = '<option value="" selected disabled>Selecione um fornecedor primeiro</option>';
+        });
     }
 
-    const lotesDisponiveis = Object.entries(produto.lotes)
-        .filter(([_, lote]) => lote.quantidade > 0)
-        .map(([chave, lote]) => {
-            return {
-                chave,
-                lote: lote.lote || chave.split('|')[1] || 'Lote ' + chave,
-                validade: lote.validade
-            };
-        });
+    atualizarTotalPedido();
+});
 
-    selectLote.innerHTML = '';
-    const optionPadrao = document.createElement('option');
-    optionPadrao.value = '';
-    optionPadrao.textContent = 'Selecione um lote';
-    optionPadrao.disabled = true;
-    optionPadrao.selected = true;
-    selectLote.appendChild(optionPadrao);
+async function carregarLotesDoProduto(produtoId, selectLote, inputValidade) {
+    const snap = await firebase.database().ref(`produto/${produtoId}`).once('value');
+    const produto = snap.val() || {};
 
-    lotesDisponiveis.forEach(lote => {
+    selectLote.innerHTML = `
+    <option value="" disabled selected>Selecione um lote</option>
+  `;
+
+    for (const [numero, dados] of Object.entries(produto.lotes || {})) {
         const option = document.createElement('option');
-        option.value = lote.chave;
-        option.textContent = lote.lote;
-        option.dataset.validade = lote.validade;
-        selectLote.appendChild(option);
-    });
+        const qtd = dados.quantidade || 0;
+        const subt = dados.subtotal || 0;
+        // recalcula o preço unitário correto em tempo real:
+        const precoU = qtd > 0 ? (subt / qtd) : 0;
 
-    selectLote.disabled = false;
+        option.value = numero;
+        option.textContent = `${numero} (${qtd} disp.)`;
+        option.dataset.preco = precoU.toFixed(4);     // ex: "0.0250"
+        option.dataset.validade = dados.validade;        // ex: "2025-09-20"
 
-    // Evento para preencher validade ao selecionar lote
-    selectLote.addEventListener('change', () => {
-        const selectedOption = selectLote.options[selectLote.selectedIndex];
-        if (selectedOption && selectedOption.dataset.validade) {
-            inputValidade.value = selectedOption.dataset.validade;
-        } else {
-            inputValidade.value = '';
+        // se zerado, deixa disabled
+        if (qtd === 0) {
+            option.disabled = true;
+            option.textContent += ' (zerado)';
         }
-    });
+
+        selectLote.appendChild(option);
+    }
 }
 
-function calcularValorPedido() {
-    const selects = document.querySelectorAll('.produto-select');
-    const quantidades = document.querySelectorAll('.quantidade-input');
-    const subtotais = document.querySelectorAll('.subtotal-input');
-
-    selects.forEach((produtoSelect, index) => {
-        const quantidadeInput = quantidades[index];
-        const subtotalInput = subtotais[index];
-
-        produtoSelect.addEventListener('change', () => {
-            const produtoId = produtoSelect.value;
-
-            if (!produtoId) {
-                quantidadeInput.value = 1;
-                quantidadeInput.disabled = true;
-                subtotalInput.value = '0,00';
-                return;
-            }
-
-            const produtoRef = firebase.database().ref('produto/' + produtoId);
-
-            produtoRef.once('value')
-                .then(snapshot => {
-                    const produto = snapshot.val();
-                    if (produto && produto.preco) {
-                        // ✅ Define a quantidade máxima SOMENTE se for pedido de saída
-                        if (tipoAtual === 'saida') {
-                            quantidadeMaxima = parseInt(produto.quantidadeEstoque || 0);
-                        } else {
-                            quantidadeMaxima = null; // entrada: não limitar
-                        }
-
-                        quantidadeInput.disabled = false;
-                        calcularSubtotalItem(document.querySelector('.item-pedido'));
-                    } else {
-                        quantidadeMaxima = null;
-                        quantidadeInput.disabled = true;
-                        subtotalInput.value = '0,00';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao buscar preço do produto:', error);
-                });
-        });
-
-        quantidadeInput.addEventListener('input', () => {
-            const quantidade = parseInt(quantidadeInput.value);
-
-            if (
-                tipoAtual === 'saida' &&
-                quantidadeMaxima !== null &&
-                quantidade > quantidadeMaxima
-            ) {
-                quantidadeInput.value = quantidadeMaxima;
-                alert(`Quantidade máxima disponível: ${quantidadeMaxima}`);
-            }
-
-            calcularSubtotalItem(document.querySelector('.item-pedido'));
-        });
-
-    });
-}
-
-async function calcularSubtotalItem(itemContainer) {
-    const select = itemContainer.querySelector('select.produto-select');
-    const quantidadeInput = itemContainer.querySelector('input.quantidade-input');
+function calcularSubtotalItem(itemContainer) {
+    const qtyInput = itemContainer.querySelector('input.quantidade-input');
+    const prodSelect = itemContainer.querySelector('select.produto-select');
+    const loteSelect = itemContainer.querySelector('select.lote-select');
+    const validadeInput = itemContainer.querySelector('input.validade-input');
     const subtotalInput = itemContainer.querySelector('input.subtotal-input');
 
-    const produtoId = select?.value;
-    const quantidade = parseFloat(quantidadeInput?.value || '1');
-    if (!produtoId || isNaN(quantidade)) {
-        subtotalInput.value = '0,00';
+    // 1) Lê quantidade (tratando vírgula)
+    const quantidade = parseFloat(qtyInput.value.replace(',', '.')) || 0;
+    if (quantidade <= 0) {
+        subtotalInput.value = 'R$ 0,00';
         atualizarTotalPedido();
         return;
     }
 
-    // 🔄 Puxa os dados reais do Firebase
-    const snapshot = await firebase.database().ref('produto/' + produtoId).once('value');
-    const produto = snapshot.val();
-    if (!produto) {
-        subtotalInput.value = '0,00';
-        atualizarTotalPedido();
-        return;
-    }
-    const unidadeSpan = itemContainer.querySelector('.unidade-produto');
-    if (unidadeSpan && produto.unidadeMedida) {
-        unidadeSpan.textContent = produto.unidadeMedida;
-    }
+    // 2) Preço unitário (por “base unit”)  
+    // – saída: pega do data-preco do lote  
+    // – entrada: pega do data-preco-base e data-preco-por do produto e normaliza
+    let precoUnit = 0;
 
-    const preco = parseFloat(produto.preco || '0');
-    const precoPor = produto.precoPor;
-    const unidade = produto.unidadeMedida;
+    if (loteSelect) {
+        // Saída
+        const opt = loteSelect.selectedOptions[0];
+        precoUnit = parseFloat(opt.dataset.preco) || 0;
+        // atualiza validade
+        if (opt.dataset.validade) validadeInput.value = opt.dataset.validade;
 
-    let fator = 1;
-
-    // Peso
-    if (precoPor === 'kg') {
-        if (unidade === 'kg') fator = quantidade;
-        else if (unidade === 'g') fator = quantidade / 1000;
-        else if (unidade === '100g') fator = quantidade / 10;
-    } else if (precoPor === '100g') {
-        if (unidade === 'kg') fator = quantidade * 10;
-        else if (unidade === 'g') fator = quantidade / 100;
-        else if (unidade === '100g') fator = quantidade;
-    } else if (precoPor === 'g') {
-        if (unidade === 'kg') fator = quantidade * 1000;
-        else if (unidade === '100g') fator = quantidade * 100;
-        else if (unidade === 'g') fator = quantidade;
+    } else {
+        // Entrada
+        const opt = prodSelect.selectedOptions[0];
+        const precoBase = parseFloat(opt.dataset.precoBase) || 0;  // ex: 2.50
+        const precopor = parseFloat(opt.dataset.precopor) || 1;  // ex: 100 (para “100g”)
+        // preço por **unidade básica** (g, ml ou un)
+        precoUnit = precoBase / precopor;
     }
 
-    // Volume
-    else if (precoPor === 'litro') {
-        if (unidade === 'ml') fator = quantidade / 1000;
-        else if (unidade === 'litro') fator = quantidade;
-    } else if (precoPor === 'ml') {
-        if (unidade === 'litro') fator = quantidade * 1000;
-        else if (unidade === 'ml') fator = quantidade;
-    }
+    // 3) Cálculo
+    const subtotal = precoUnit * quantidade;
 
-    // Unidade simples ou pacote
-    else {
-        fator = quantidade;
-    }
+    // 4) Exibe
+    subtotalInput.value = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
 
-    const subtotal = preco * fator;
-    subtotalInput.value = subtotal.toFixed(2).replace('.', ',');
+    // 5) Atualiza total do pedido
     atualizarTotalPedido();
 }
 
 function atualizarTotalPedido() {
     let total = 0;
+    let itemContainers = [];
 
-    document.querySelectorAll('.item-pedido').forEach(item => {
+    if (tipoAtual === 'entrada') {
+        itemContainers = document.querySelectorAll('#modal-entrada .item-pedido');
+    } else {
+        itemContainers = document.querySelectorAll('#modal-saida .item-pedido');
+    }
+
+    itemContainers.forEach(item => {
         const subtotalInput = item.querySelector('.subtotal-input');
-        const subtotalStr = (subtotalInput?.value || '0').replace(',', '.');
+        if (!subtotalInput) return;
 
-        const subtotal = parseFloat(subtotalStr);
+        // Extrai o valor numérico corretamente (considerando R$ 2,50 ou 2,50)
+        const valorTexto = subtotalInput.value.replace('R$', '').trim();
+        const valorNumerico = parseFloat(valorTexto.replace('.', '').replace(',', '.'));
 
-        // Só soma se for um número válido e maior que 0
-        if (!isNaN(subtotal) && subtotal > 0) {
-            total += subtotal;
+        if (!isNaN(valorNumerico)) {
+            total += valorNumerico;
         }
     });
 
-    const totalAdicionar = document.getElementById('totalAdicionar');
-    if (totalAdicionar) totalAdicionar.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    const totalFormatado = total.toFixed(2).replace('.', ',');
 
-    const totalAdicionarSaida = document.getElementById('totalAdicionarSaida');
-    if (totalAdicionarSaida) totalAdicionarSaida.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    if (tipoAtual === 'entrada') {
+        const totalElement = document.getElementById('totalAdicionar');
+        if (totalElement) totalElement.textContent = `R$ ${totalFormatado}`;
+    } else {
+        const totalElement = document.getElementById('totalAdicionarSaida');
+        if (totalElement) totalElement.textContent = `R$ ${totalFormatado}`;
+    }
 }
 
 function gerarCodigoPedido() {
@@ -754,7 +618,6 @@ function excluirSelecionados() {
     const selecionados = Array.from(document.querySelectorAll('.selecionar-pedido:checked'));
     if (selecionados.length === 0) return;
 
-
     const modal = document.getElementById('modal-confirmar-exclusao');
     const titulo = modal.querySelector('h4');
     const subtitulo = modal.querySelector('p');
@@ -775,9 +638,7 @@ function carregarPedidosDoFirebase() {
             if (pedido.idComerciante === idComerciante) {
                 pedido.firebaseKey = childSnapshot.key;
 
-                // CORREÇÃO: Garantir que itensPedido seja um objeto
                 if (pedido.itensPedido && typeof pedido.itensPedido === 'object') {
-                    // Converter para objeto se for array
                     if (Array.isArray(pedido.itensPedido)) {
                         const itensObj = {};
                         pedido.itensPedido.forEach((item, index) => {
@@ -793,22 +654,19 @@ function carregarPedidosDoFirebase() {
             }
         });
 
-        // 🔁 Enriquecer pedidos com nome do fornecedor
         const promessas = pedidos.map(async (pedido) => {
             if (pedido.tipoPedido === 'Compra') {
                 pedido.nomeFornecedor = await buscarNomeFornecedorPorId(pedido.fornecedor);
             } else {
-                // Já vem com nomeCliente salvo no Firebase
                 pedido.nomeCliente = pedido.nomeCliente || '—';
             }
         });
 
         Promise.all(promessas).then(() => atualizarTabelaPedidos());
-
     });
 }
 
-function adicionarLinhaTabelaPedido(pedido, tbody) {
+async function adicionarLinhaTabelaPedido(pedido, tbody) {
     const row = document.createElement('tr');
     row.setAttribute('data-key', pedido.firebaseKey);
 
@@ -835,6 +693,30 @@ function adicionarLinhaTabelaPedido(pedido, tbody) {
 
     tbody.appendChild(row);
 
+    // Verifica se há lote encerrado neste pedido
+    let totalItens = 0, lotesZerados = 0;
+    for (const chave in pedido.itensPedido) {
+        totalItens++;
+        const item = pedido.itensPedido[chave];
+        const produtoSnap = await firebase.database().ref(`produto/${item.produtoId}`).once('value');
+        const lote = produtoSnap.val()?.lotes?.[item.lote];
+        if (!lote || lote.quantidade === 0) {
+            lotesZerados++;
+        }
+    }
+
+    if (lotesZerados === totalItens) {
+        row.classList.add('lote-encerrado');
+        row.title = 'Este pedido contém lote encerrado';
+
+        const btnEditar = row.querySelector('.edit-icon');
+        const btnExcluir = row.querySelector('.delete-icon');
+        if (btnEditar) btnEditar.style.pointerEvents = 'none';
+        if (btnExcluir) btnExcluir.style.pointerEvents = 'none';
+        if (btnEditar) btnEditar.style.opacity = '0.3';
+        if (btnExcluir) btnExcluir.style.opacity = '0.3';
+    }
+
     const tipo = pedido.tipoPedido;
     const fornecedorCelula = row.querySelector('td[data-label="Fornecedor: "]');
     if (tipo === 'Compra') {
@@ -848,7 +730,6 @@ function adicionarLinhaTabelaPedido(pedido, tbody) {
     } else {
         fornecedorCelula.textContent = pedido.nomeCliente || '—';
     }
-
 }
 
 function buscarNomeFornecedorPorId(idFornecedor) {
@@ -873,67 +754,18 @@ function buscarNomeFornecedorPorId(idFornecedor) {
     });
 }
 
-function buscarProdutoPorId(idProduto) {
-    return new Promise((resolve, reject) => {
-        if (!idProduto) {
-            resolve(null); // ou '—' se preferir
-            return;
-        }
-
-        firebase.database().ref(`produto/${idProduto}`).once('value')
-            .then(snapshot => {
-                const dados = snapshot.val();
-                if (dados) {
-                    resolve(dados);
-                } else {
-                    resolve(null);
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao buscar produto:', error);
-                reject(null);
-            });
-    });
-}
-
-function buscarItemPedidoPorId(idItemPedido) {
-    return new Promise((resolve, reject) => {
-        if (!idItemPedido) {
-            resolve(null);
-            return;
-        }
-
-        firebase.database().ref(`itemPedido/${idItemPedido}`).once('value')
-            .then(snapshot => {
-                const dados = snapshot.val();
-                if (dados) {
-                    resolve(dados);
-                } else {
-                    resolve(null);
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao buscar itemPedido:', error);
-                reject(null);
-            });
-    });
-}
-
 function atualizarTabelaPedidos() {
     const tbodyEntradas = document.getElementById('lista-pedidos-entradas');
     const tbodySaidas = document.getElementById('lista-pedidos-saidas');
 
-    // Limpa a tabela da aba atual
     if (tipoAtual === 'entrada') {
         tbodyEntradas.innerHTML = '';
     } else {
         tbodySaidas.innerHTML = '';
     }
 
-    // Página atual correta
     const paginaAtual = tipoAtual === 'entrada' ? paginaAtualEntradas : paginaAtualSaidas;
 
-    // Filtro por tipo de pedido (Compra/Venda)
     let pedidosFiltrados = pedidos.filter(p => {
         const tipoCorreto = p.tipoPedido === (tipoAtual === 'entrada' ? 'Compra' : 'Venda');
 
@@ -959,10 +791,8 @@ function atualizarTabelaPedidos() {
         );
     });
 
-    // Ordenação (se aplicável)
     pedidosFiltrados = aplicarFiltrosOrdenacao(pedidosFiltrados);
 
-    // Paginação
     const totalItens = pedidosFiltrados.length;
     const inicio = (paginaAtual - 1) * itensPorPagina;
     const fim = inicio + itensPorPagina;
@@ -970,7 +800,6 @@ function atualizarTabelaPedidos() {
 
     atualizarPaginacao(totalItens);
 
-    // Tabela vazia
     if (pedidosPaginados.length === 0) {
         const mensagem = `<tr><td colspan="9" style="text-align: center; padding: 20px;">Nenhuma ${tipoAtual === 'entrada' ? 'entrada' : 'saída'} encontrada.</td></tr>`;
         if (tipoAtual === 'entrada') {
@@ -981,7 +810,6 @@ function atualizarTabelaPedidos() {
         return;
     }
 
-    // Preenche a tabela atual com os dados paginados
     pedidosPaginados.forEach(pedido => {
         if (tipoAtual === 'entrada') {
             adicionarLinhaTabelaPedido(pedido, tbodyEntradas);
@@ -990,8 +818,7 @@ function atualizarTabelaPedidos() {
         }
     });
 
-
-    atualizarBotaoExcluirSelecionados(); // botão excluir em massa
+    atualizarBotaoExcluirSelecionados();
 }
 
 function atualizarPaginacao(totalItens) {
@@ -1010,7 +837,6 @@ function atualizarPaginacao(totalItens) {
       </button>
   `;
 
-    // ✅ Eventos dos botões
     document.getElementById('btn-anterior')?.addEventListener('click', () => {
         if (paginaAtual > 1) {
             if (tipoAtual === 'entrada') {
@@ -1036,262 +862,406 @@ function atualizarPaginacao(totalItens) {
 
 async function handlePedidoSubmit(e) {
     e.preventDefault();
-    console.log('Modo edição:', editando, 'ID do pedido:', indiceParaEditar);
 
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+    // 1) Determina se é entrada ou saída
     const isEntrada = tipoAtual === 'entrada';
-    const modalId = isEntrada ? 'modal-entrada' : 'modal-saida';
-    const modal = document.getElementById(modalId);
+    const fornecedorId = isEntrada
+        ? document.getElementById('nomeAdicionar')?.value
+        : document.getElementById('fornecedorSaida')?.value;
 
-    // Validação do nome
-    const nomeField = isEntrada ? modal.querySelector('#nomeAdicionar') : modal.querySelector('#nomeAdicionarSaida');
-    const nomeValue = nomeField.value.trim();
-    if (!nomeValue) {
-        alert(`Preencha o nome do ${isEntrada ? "fornecedor" : "cliente"}.`);
+    // 2) Valida seleção de fornecedor/cliente
+    if (!fornecedorId) {
+        mostrarMensagem('Selecione um fornecedor/cliente primeiro!', 'error');
         return;
     }
 
-    // Coletar itens do pedido
-    const itensPedido = [];
-    for (const itemEl of modal.querySelectorAll('.item-pedido')) {
-        const select = itemEl.querySelector('select.produto-select');
-        const inputQtd = itemEl.querySelector('input.quantidade-input');
-        const inputSubtotal = itemEl.querySelector('input.subtotal-input');
-        const inputValidade = itemEl.querySelector('input.validade-input');
-        const inputLote = itemEl.querySelector('.lote-item') || itemEl.querySelector('select.lote-select');
-
-        if (!select || !select.value) continue;
-
-        const produtoId = select.value;
-        const nome = select.options[select.selectedIndex].textContent;
-        const quantidade = parseFloat(inputQtd?.value || '0');
-        const subtotal = parseFloat(inputSubtotal?.value.replace(',', '.') || '0');
-        const validade = inputValidade?.value || '';
-        const lote = inputLote?.value || '';
-
-        if (quantidade <= 0 || isNaN(quantidade)) continue;
-
-        const produtoRef = firebase.database().ref(`produto/${produtoId}`);
-        const snapshot = await produtoRef.once('value');
-        const produto = snapshot.val();
-        const unidadeMedida = produto?.unidadeMedida || 'un';
-
-        itensPedido.push({
-            produtoId,
-            nome,
-            quantidade,
-            subtotal,
-            validade,
-            lote,
-            unidadeMedida
-        });
-
+    // 3) Obtém itens e valida quantidade mínima
+    const itensNovos = obterItensPedido();
+    if (itensNovos.length === 0) {
+        mostrarMensagem('Adicione pelo menos um item ao pedido!', 'error');
+        return;
     }
-
-    if (itensPedido.length === 0) {
-        alert("Adicione ao menos 1 produto ao pedido.");
+    if (itensNovos.some(item => item.quantidade <= 0)) {
+        mostrarMensagem('A quantidade deve ser maior que zero para todos os itens!', 'error');
         return;
     }
 
-    // Validação de estoque para saídas
+    // 4) Valida validade em entradas
+    if (isEntrada && itensNovos.some(item => !item.validade)) {
+        mostrarMensagem('Informe a validade para todos os itens de entrada!', 'error');
+        return;
+    }
+
+    // 5) Valida estoque em saídas
     if (!isEntrada) {
-        for (const item of itensPedido) {
-            const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
-            const snapshot = await produtoRef.once('value');
-            const produto = snapshot.val();
-
-            if (!produto) continue;
-
-            const loteId = item.lote || 'sem-lote';
-            const lotes = produto.lotes || {};
-            const quantidadeDisponivel = lotes[loteId]?.quantidade || 0;
-
-            if (quantidadeDisponivel < item.quantidade) {
-                alert(`❌ Estoque insuficiente no lote ${item.lote} para "${item.nome}".\nDisponível: ${quantidadeDisponivel}\nSolicitado: ${item.quantidade}`);
-                return;
+        for (const item of itensNovos) {
+            const snap = await firebase.database().ref(`produto/${item.produtoId}`).once('value');
+            const produto = snap.val() || {};
+            if (!produto.lotes) {
+                if ((produto.quantidadeEstoque || 0) < item.quantidade) {
+                    alert(`❌ Estoque insuficiente para "${item.nome}".\nDisponível: ${produto.quantidadeEstoque || 0}\nSolicitado: ${item.quantidade}`);
+                    return;
+                }
+            } else {
+                const disponivel = produto.lotes[item.lote]?.quantidade || 0;
+                if (disponivel < item.quantidade) {
+                    alert(`❌ Estoque insuficiente no lote ${item.lote} para "${item.nome}".\nDisponível: ${disponivel}\nSolicitado: ${item.quantidade}`);
+                    return;
+                }
             }
         }
     }
 
-    // Cálculo de diferenças para edição
-    let diferencasEstoque = [];
+    // 6) Metadados do pedido
+    const numeroPedido = document.querySelector('.modal-order-number').textContent;
+    const dataAtual = new Date().toISOString().split('T')[0];
+
+    // 7) Define referência e ID (criação vs. edição)
+    let pedidoRef, pedidoId;
     if (editando && indiceParaEditar) {
-        const pedidoOriginal = pedidos.find(p => p.firebaseKey === indiceParaEditar);
-        const itensOriginais = Object.values(pedidoOriginal.itensPedido || {});
+        pedidoRef = firebase.database().ref(`pedido/${indiceParaEditar}`);
+        pedidoId = indiceParaEditar;
+    } else {
+        pedidoRef = firebase.database().ref('pedido').push();
+        pedidoId = pedidoRef.key;
+    }
 
-        for (const novoItem of itensPedido) {
-            const itemOriginal = itensOriginais.find(i => i.produtoId === novoItem.produtoId);
-            const diferenca = itemOriginal ? novoItem.quantidade - itemOriginal.quantidade : novoItem.quantidade;
-            diferencasEstoque.push({ produtoId: novoItem.produtoId, diferenca });
-        }
-
-        for (const itemOriginal of itensOriginais) {
-            if (!itensPedido.some(i => i.produtoId === itemOriginal.produtoId)) {
-                diferencasEstoque.push({ produtoId: itemOriginal.produtoId, diferenca: -itemOriginal.quantidade });
-            }
+    // 8) Se editando, primeiro REVERTE as movimentações antigas
+    if (editando) {
+        const oldSnap = await firebase.database()
+            .ref(`pedido/${pedidoId}/itensPedido`)
+            .once('value');
+        const itensAntigos = Object.values(oldSnap.val() || {});
+        for (const antigo of itensAntigos) {
+            // inverte a movimentação: se era entrada, trata como saída e vice-versa
+            await atualizarEstoqueProduto(antigo, !isEntrada, pedidoId);
         }
     }
 
-    // Montar objeto do pedido
-    const numero = editando && indiceParaEditar
-        ? pedidos.find(p => p.firebaseKey === indiceParaEditar).numero
-        : gerarCodigoPedido();
-
-    const dataHoje = new Date().toISOString().split('T')[0];
+    // 9) Monta o objeto do pedido
     const novoPedido = {
-        tipoPedido: isEntrada ? "Compra" : "Venda",
-        numero,
-        data: dataHoje,
-        valor: itensPedido.reduce((acc, item) => acc + (item.subtotal || 0), 0),
-        idComerciante,
-        fornecedor: isEntrada ? nomeValue : document.getElementById('nomeAdicionarSaida').value,
-        nomeCliente: isEntrada ? "" : nomeValue,
+        idComerciante: idComerciante,
+        numero: numeroPedido,
+        data: dataAtual,
+        fornecedor: isEntrada ? fornecedorId : null,
+        nomeCliente: !isEntrada
+            ? document.getElementById('nomeAdicionarSaida')?.value || 'Cliente não identificado'
+            : null,
+        tipoPedido: isEntrada ? 'Compra' : 'Venda',
+        valor: calcularTotalPedido(itensNovos),
+        status: 'Concluído',
+        itensPedido: {}
+    };
+    itensNovos.forEach((item, idx) => {
+        novoPedido.itensPedido[`item${idx}`] = { ...item };
+    });
+
+    try {
+        // 10) Grava ou sobrescreve no Firebase
+        await pedidoRef.set(novoPedido);
+
+        // 11) Aplica as movimentações dos itens atuais
+        for (const item of itensNovos) {
+            await atualizarEstoqueProduto(item, isEntrada, pedidoId);
+        }
+
+        // 12) Feedback e limpeza de flags
+        mostrarMensagem('Pedido salvo com sucesso!', 'success');
+        editando = false;
+        indiceParaEditar = null;
+
+        // 13) Fecha modal e recarrega lista
+        document
+            .getElementById(isEntrada ? 'modal-entrada' : 'modal-saida')
+            .style.display = 'none';
+        carregarPedidosDoFirebase();
+
+    } catch (error) {
+        console.error('Erro ao salvar pedido:', error);
+        mostrarMensagem('Erro ao salvar pedido!', 'error');
+    }
+}
+
+function obterItensPedido() {
+    const modal = tipoAtual === 'entrada' ? document.getElementById('modal-entrada') : document.getElementById('modal-saida');
+    const itensContainers = modal.querySelectorAll('.item-pedido');
+
+    const itens = [];
+
+    itensContainers.forEach(item => {
+        const produtoSelect = item.querySelector('select.produto-select');
+        const quantidadeInput = item.querySelector('input.quantidade-input');
+        const subtotalInput = item.querySelector('input.subtotal-input');
+        const unidadeSpan = item.querySelector('.unidade-produto');
+        const validadeInput = item.querySelector('input.validade-input') || item.querySelector('input.validade-item');
+
+        const produtoId = produtoSelect?.value;
+        const nome = produtoSelect?.options[produtoSelect.selectedIndex]?.textContent || '';
+        const quantidade = parseFloat(quantidadeInput?.value || 0);
+        const subtotalStr = subtotalInput?.value?.replace('R$', '').trim().replace('.', '').replace(',', '.') || '0';
+        const subtotal = parseFloat(subtotalStr);
+        const unidadeMedida = unidadeSpan?.textContent || 'un';
+
+        let lote = null;
+        if (tipoAtual === 'entrada') {
+            const inputLote = item.querySelector('input.lote-item');
+            lote = inputLote?.value?.trim();
+        } else {
+            const selectLote = item.querySelector('select.lote-select');
+            lote = selectLote?.value;
+        }
+
+        const validade = validadeInput?.value || null;
+
+        const preco = subtotal / (quantidade || 1);
+
+        if (produtoId) {
+            itens.push({
+                produtoId,
+                nome,
+                quantidade,
+                preco,
+                subtotal,
+                lote,
+                validade,
+                unidadeMedida
+            });
+        }
+    });
+
+    return itens;
+}
+
+// Função auxiliar para calcular o total do pedido
+function calcularTotalPedido(itensPedido) {
+    return itensPedido.reduce((total, item) => {
+        return total + (item.subtotal || 0);
+    }, 0);
+}
+
+// Função auxiliar para atualizar estoque do produto
+async function atualizarEstoqueProduto(item, isEntrada, pedidoId) {
+    const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+    const snap = await produtoRef.once('value');
+    const produto = snap.val() || { lotes: {}, quantidadeEstoque: 0, valorEstoque: 0 };
+
+    produto.lotes = produto.lotes || {};
+    const loteId = String(item.lote);
+
+    // busca ou inicializa o objeto de lote
+    const existente = produto.lotes[loteId];
+    const agoraISO = new Date().toISOString();
+
+    // monta o objeto mínimo com todos os campos
+    const loteObj = {
+        numero: loteId,
+        idPedido: pedidoId,
+        precoUnitario: parseFloat(item.preco) || 0.0,
+        quantidade: existente ? existente.quantidade : 0,
+        subtotal: existente ? existente.subtotal : 0.0,
+        tipo: isEntrada ? 'entrada' : 'saida',
+        validade: item.validade || null,
+        dataCadastro: existente
+            ? existente.dataCadastro
+            : agoraISO,
+        ultimaAtualizacao: agoraISO
     };
 
-    // Criar/Atualizar pedido principal
-    let pedidoRef;
-    let idPedido = indiceParaEditar;
-
-    if (editando && idPedido) {
-        pedidoRef = firebase.database().ref(`pedido/${idPedido}`);
-        await pedidoRef.update(novoPedido);
+    // ajusta quantidade e subtotal
+    if (isEntrada) {
+        loteObj.quantidade += item.quantidade;
+        loteObj.subtotal += item.subtotal;
     } else {
-        pedidoRef = await firebase.database().ref('pedido').push(novoPedido);
-        idPedido = pedidoRef.key;
-    }
-
-    // Adicionar itens ao pedido
-    const itensDoPedido = {};
-    for (const item of itensPedido) {
-        const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
-        const snapshot = await produtoRef.once('value');
-        const produto = snapshot.val();
-        const unidadeMedida = produto?.unidadeMedida || 'un';
-
-        const idItem = firebase.database().ref().push().key;
-        itensDoPedido[idItem] = {
-            produtoId: item.produtoId,
-            nome: item.nome,
-            quantidade: item.quantidade,
-            subtotal: item.subtotal,
-            validade: item.validade,
-            lote: item.lote,
-            unidadeMedida
-        };
-    }
-
-    await firebase.database().ref(`pedido/${idPedido}/itensPedido`).set(itensDoPedido);
-
-    // ATUALIZAR ESTOQUE E LOTES NOS PRODUTOS
-    for (const item of itensPedido) {
-        const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
-        const snapshot = await produtoRef.once('value');
-        const produto = snapshot.val() || {};
-
-        // Garantir que existe objeto de lotes
-        if (!produto.lotes) produto.lotes = {};
-
-        const dataAtual = new Date().toLocaleString('pt-BR', {
-            dateStyle: 'short',
-            timeStyle: 'short'
-        });
-
-        // Para ENTRADA: criar/atualizar lote
-        if (isEntrada) {
-            // Encontrar o próximo número de lote disponível
-            let proximoNumeroLote = 1;
-            const numerosLotes = Object.values(produto.lotes).map(l => l.numero);
-            if (numerosLotes.length > 0) {
-                proximoNumeroLote = Math.max(...numerosLotes) + 1;
-            }
-
-            // Se não temos número de lote no item, usar o próximo disponível
-            const numeroLote = item.lote || proximoNumeroLote;
-
-            // Criar chave única para o lote (número + validade)
-            const chaveLote = String(numeroLote);
-
-            if (produto.lotes[chaveLote]) {
-                // Atualizar lote existente
-                produto.lotes[chaveLote].quantidade += item.quantidade;
-                produto.lotes[chaveLote].ultimaAtualizacao = dataAtual;
-            } else {
-                // Criar novo lote
-                produto.lotes[chaveLote] = {
-                    numero: numeroLote, // Número sequencial
-                    pedidoId: idPedido,
-                    tipo: 'entrada',
-                    validade: item.validade,
-                    quantidade: item.quantidade,
-                    precoUnitario: parseFloat(produto.preco || '0'),
-                    subtotal: item.subtotal,
-                    dataCadastro: dataAtual,
-                    ultimaAtualizacao: dataAtual
-                };
-            }
+        loteObj.quantidade -= item.quantidade;
+        loteObj.subtotal -= item.subtotal;
+        // se virar negativo, zera mas mantém o registro
+        if (loteObj.quantidade < 0) {
+            loteObj.quantidade = 0;
+            loteObj.subtotal = 0.0;
         }
-        // Para SAÍDA: decrementar lote
-        else {
-            const loteId = item.lote;
-            if (produto.lotes[loteId]) {
-                produto.lotes[loteId].quantidade -= item.quantidade;
-                produto.lotes[loteId].ultimaAtualizacao = dataAtual;
+    }
 
-                // Remover lote se quantidade zerar
-                if (produto.lotes[loteId].quantidade <= 0) {
-                    delete produto.lotes[loteId];
+    // assegura inteiros e floats corretos
+    loteObj.quantidade = Math.floor(loteObj.quantidade);
+    loteObj.subtotal = parseFloat(loteObj.subtotal.toFixed(2));
+    loteObj.precoUnitario = parseFloat(loteObj.precoUnitario.toFixed(2));
+
+    // grava de volta
+    produto.lotes[loteId] = loteObj;
+
+    // recalcula totais do produto
+    const todos = Object.values(produto.lotes);
+    produto.quantidadeEstoque = todos.reduce((sum, l) => sum + l.quantidade, 0);
+    produto.valorEstoque = todos.reduce((sum, l) => sum + l.subtotal, 0);
+
+    await produtoRef.set(produto);
+}
+
+// Função para verificar se um lote já foi usado anteriormente
+async function verificarUsoAnteriorDoLote(produtoId, numeroLote) {
+    const fornecedorId = document.getElementById('nomeAdicionar')?.value;
+    if (!fornecedorId) return false;
+
+    try {
+        // Primeiro, verifique se o lote já existe no próprio produto
+        const produtoRef = firebase.database().ref(`produto/${produtoId}`);
+        const snapshotProduto = await produtoRef.once("value");
+        const produto = snapshotProduto.val();
+
+        if (produto && produto.lotes && produto.lotes[numeroLote]) {
+            return true; // já existe, então não permitir recriar
+        }
+
+        // Agora verifica se já foi usado em pedidos antigos (mas não mais existe no produto)
+        const snapshot = await firebase.database().ref("pedido").once("value");
+        const pedidos = snapshot.val();
+
+        if (!pedidos || Object.keys(pedidos).length === 0) return false;
+
+        for (const pedidoKey in pedidos) {
+            const pedido = pedidos[pedidoKey];
+            if (!pedido || pedido.fornecedor !== fornecedorId) continue;
+            if (pedido.tipoPedido !== 'Compra') continue;
+
+            const itens = pedido.itensPedido || {};
+            for (const itemKey in itens) {
+                const item = itens[itemKey];
+                if (!item) continue;
+
+                if (
+                    item.produtoId === produtoId &&
+                    String(item.lote) === String(numeroLote) &&
+                    produto?.lotes?.[item.lote] // só bloqueia se o lote ainda existir no produto
+                ) {
+                    return true;
                 }
             }
         }
 
-        // Atualizar estoque total
-        const totalEstoque = Object.values(produto.lotes).reduce(
-            (total, lote) => total + (lote.quantidade || 0),
-            0
-        );
-
-        produto.quantidadeEstoque = totalEstoque;
-        produto.dataUltimaAtualizacao = dataAtual;
-
-        // cálculo do valor total estimado em estoque
-        let valorTotal = 0;
-        if (produto.lotes) {
-            Object.values(produto.lotes).forEach(lote => {
-                const qtd = parseFloat(lote.quantidade || 0);
-                const preco = parseFloat(produto.preco || 0);
-                valorTotal += qtd * preco;
-            });
-        }
-        produto.valorEstoque = parseFloat(valorTotal.toFixed(2));
-
-        await produtoRef.set(produto);
+        return false;
+    } catch (error) {
+        console.error('Erro ao verificar uso anterior de lote:', error);
+        return false;
     }
-
-    // Feedback e reset
-    mostrarMensagem("✅ Pedido salvo com sucesso!", "success");
-    modal.style.display = 'none';
-    editando = false;
-    indiceParaEditar = null;
-    carregarPedidosDoFirebase();
 }
 
+// Função para obter o próximo número de lote disponível
 async function obterProximoNumeroLote(produtoId) {
     try {
-        const ref = firebase.database().ref(`produto/${produtoId}/lotes`);
-        const snapshot = await ref.once('value');
-        const lotes = snapshot.val();
+        const fornecedorId = document.getElementById('nomeAdicionar')?.value;
+        if (!fornecedorId) return 1;
 
-        if (!lotes) return 1;
+        const snapshotPedidos = await firebase.database().ref("pedido").once("value");
+        const pedidos = snapshotPedidos.val() || {};
 
-        const numeros = Object.keys(lotes)
-            .map(n => parseInt(n))
-            .filter(n => !isNaN(n));
+        const lotesUsados = new Set();
 
-        return numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
+        // 1. Lotes já usados em pedidos
+        for (const pedidoKey in pedidos) {
+            const pedido = pedidos[pedidoKey];
+            if (pedido.fornecedor !== fornecedorId) continue;
+            if (pedido.tipoPedido !== 'Compra') continue;
+
+            const itens = pedido.itensPedido || {};
+            for (const itemKey in itens) {
+                const item = itens[itemKey];
+                if (item.produtoId === produtoId && item.lote) {
+                    lotesUsados.add(parseInt(item.lote));
+                }
+            }
+        }
+
+        // 2. Lotes ainda presentes no produto, inclusive zerados
+        const produtoSnap = await firebase.database().ref(`produto/${produtoId}`).once("value");
+        const produto = produtoSnap.val();
+        if (produto?.lotes) {
+            Object.values(produto.lotes).forEach(l => {
+                if (l.lote) lotesUsados.add(parseInt(l.lote));
+            });
+        }
+
+        // 3. Descobrir o menor número ainda não usado
+        let proximoNumero = 1;
+        while (lotesUsados.has(proximoNumero)) {
+            proximoNumero++;
+        }
+
+        return proximoNumero;
+
     } catch (err) {
-        console.error("Erro ao buscar lotes:", err);
         return 1;
     }
+}
+
+// Função para obter o próximo lote disponível verificando se já foi usado
+async function obterProximoLoteDisponivel(produtoId, loteInicial) {
+    let loteAtual = loteInicial;
+    let tentativas = 0;
+    const MAX_TENTATIVAS = 100;
+
+    // Verifica se o lote inicial já foi usado
+    let loteJaUsado = await verificarUsoAnteriorDoLote(produtoId, loteAtual);
+
+    // Incrementa até encontrar um lote disponível
+    while (loteJaUsado && tentativas < MAX_TENTATIVAS) {
+        loteAtual++;
+        tentativas++;
+        loteJaUsado = await verificarUsoAnteriorDoLote(produtoId, loteAtual);
+    }
+
+    return loteAtual;
+}
+
+// Atualização na função que configura os itens de entrada
+function configurarItemEntrada(div) {
+    const selectProduto = div.querySelector('select.produto-select');
+    const inputLote = div.querySelector('.lote-item');
+    const inputQuantidade = div.querySelector('input.quantidade-input');
+    const btnRemover = div.querySelector('.botao-remover-item');
+
+    btnRemover.addEventListener('click', () => {
+        div.remove();
+        atualizarTotalPedido();
+    });
+
+    selectProduto.addEventListener('change', async function () {
+        const produtoId = this.value;
+        if (!produtoId) {
+            inputLote.value = '';
+            return;
+        }
+
+        try {
+            // Obtém o próximo número de lote base
+            let loteBase = await obterProximoNumeroLote(produtoId);
+            const ocorrenciasNaTela = contarOcorrenciasProdutoNaTela(produtoId, div);
+            let numeroLote = Math.max(loteBase + ocorrenciasNaTela - 1, 1);
+
+            // Obtém o próximo lote disponível (verificando se já foi usado)
+            numeroLote = await obterProximoLoteDisponivel(produtoId, numeroLote);
+
+            inputLote.value = numeroLote;
+        } catch (err) {
+            console.error('Erro ao definir lote:', err);
+            inputLote.value = 1;
+        }
+
+        const unidadeSpan = div.querySelector('.unidade-produto');
+        const produtoRef = firebase.database().ref(`produto/${produtoId}`);
+        const snapshot = await produtoRef.once('value');
+        const produto = snapshot.val();
+
+        if (produto && produto.unidadeMedida) {
+            unidadeSpan.textContent = produto.unidadeMedida;
+        }
+
+        inputQuantidade.disabled = false;
+        calcularSubtotalItem(div);
+    });
+
+    inputQuantidade.addEventListener('input', () => {
+        calcularSubtotalItem(div);
+    });
 }
 
 function mostrarMensagem(texto, tipo = 'success') {
@@ -1308,19 +1278,14 @@ function configurarEventosPedidos() {
     if (eventosPedidosConfigurados) return;
     eventosPedidosConfigurados = true;
 
-    // Delegação de eventos para toda a área principal
     document.querySelector('main').addEventListener('click', async function (e) {
         const target = e.target;
 
-        // Consultar pedido (ícone de lupa principal)
         if (e.target.classList.contains('search-icon') && !e.target.classList.contains('ver-itens-icon')) {
             const linha = e.target.closest('tr');
             if (!linha) return;
 
-            // Obter a chave do Firebase
             const firebaseKey = linha.getAttribute('data-key');
-
-            // Encontrar o pedido correspondente
             const pedido = pedidos.find(p => p.firebaseKey === firebaseKey);
             if (!pedido) return;
 
@@ -1329,23 +1294,19 @@ function configurarEventosPedidos() {
             const labelNome = document.getElementById('labelNome');
             const nomeVisualizar = document.getElementById('nomeVisualizar');
 
-            // Modificado: Exibir informações diferentes para entrada/saída
             if (pedido.tipoPedido === 'Compra') {
-                // PEDIDO DE ENTRADA (mantém comportamento original)
                 buscarNomeFornecedorPorId(pedido.fornecedor).then(nome => {
                     labelNome.textContent = 'Fornecedor:';
                     nomeVisualizar.textContent = nome || '(sem nome)';
                 });
             } else {
-                // PEDIDO DE SAÍDA (novo comportamento)
                 labelNome.textContent = 'Cliente:';
                 nomeVisualizar.textContent = pedido.nomeCliente || '(sem nome)';
             }
 
             const container = document.querySelector('.itens-visualizacao-container');
-            container.innerHTML = ''; // limpa os itens
+            container.innerHTML = '';
 
-            // MODIFICAÇÃO PRINCIPAL PARA SAÍDAS:
             const promessasItens = Object.values(pedido.itensPedido || {}).map(async (item) => {
                 const div = document.createElement('div');
                 div.classList.add('item-visualizado');
@@ -1354,9 +1315,21 @@ function configurarEventosPedidos() {
                 const subtotal = item.subtotal || 0;
                 const nomeProduto = item.nome || '';
                 const validade = item.validade ? formatarData(item.validade) : '—';
-                const lote = item.lote || '—';
+                let lote = item.lote || '—';
+                let textoLote = lote;
 
-                // Buscar unidade de medida do produto (APENAS PARA SAÍDAS)
+                if (item.tipoPedido === 'Venda') {
+                    try {
+                        const produtoRef = firebase.database().ref(`produto/${item.produtoId}`);
+                        const snapshot = await produtoRef.once('value');
+                        const produto = snapshot.val();
+
+                        if (!produto?.lotes?.[lote]) {
+                            textoLote += ' (zerado)';
+                        }
+                    } catch (e) { }
+                }
+
                 let unidade = 'un';
                 if (pedido.tipoPedido === 'Venda') {
                     try {
@@ -1366,12 +1339,9 @@ function configurarEventosPedidos() {
                         if (produto && produto.unidadeMedida) {
                             unidade = produto.unidadeMedida;
                         }
-                    } catch (error) {
-                        console.error('Erro ao buscar unidade', error);
-                    }
+                    } catch (error) { }
                 }
 
-                // Layout diferente para pedidos de SAÍDA
                 if (pedido.tipoPedido === 'Venda') {
                     div.innerHTML = `
                     <div><strong>Produto:</strong> ${nomeProduto}</div>
@@ -1382,7 +1352,6 @@ function configurarEventosPedidos() {
                     <hr>
                 `;
                 } else {
-                    // Layout original para ENTRADAS
                     div.innerHTML = `
                     <div><strong>Produto:</strong> ${nomeProduto}</div>
                     <div><strong>Quantidade:</strong> ${quantidade}</div>
@@ -1395,11 +1364,9 @@ function configurarEventosPedidos() {
                 return div;
             });
 
-            // Aguardar todas as promessas e adicionar itens
             Promise.all(promessasItens).then(divs => {
                 divs.forEach(div => container.appendChild(div));
 
-                // ADICIONAR INFORMAÇÃO DE FORNECEDOR PARA SAÍDAS
                 if (pedido.tipoPedido === 'Venda' && pedido.fornecedor) {
                     buscarNomeFornecedorPorId(pedido.fornecedor).then(nomeFornecedor => {
                         const fornecedorDiv = document.createElement('div');
@@ -1414,10 +1381,7 @@ function configurarEventosPedidos() {
             document.getElementById('totalVisualizar').textContent = `R$ ${total}`;
 
             document.getElementById('modal-visualizar').style.display = 'flex';
-        }
-
-        // Ver itens (ícone de lupa na coluna Produtos)
-        else if (target.classList.contains('ver-itens-icon')) {
+        } else if (target.classList.contains('ver-itens-icon')) {
             const linha = target.closest('tr');
             if (!linha) return;
 
@@ -1449,10 +1413,8 @@ function configurarEventosPedidos() {
             }
 
             document.getElementById('modal-visualizar-itens').style.display = 'flex';
-        }
-
-        // Editar pedido (ícone de lápis)
-        else if (target.classList.contains('edit-icon')) {
+        } else if (target.classList.contains('edit-icon')) {
+            // 1) identifica pedido e modal
             const linha = target.closest('tr');
             if (!linha) return;
 
@@ -1469,79 +1431,127 @@ function configurarEventosPedidos() {
             const container = modal.querySelector('.itens-pedido-container');
             container.innerHTML = '';
 
+            // 2) monta cada item do pedido
             for (const itemId of Object.keys(pedido.itensPedido)) {
-                const itemSnapshot = await firebase.database().ref(`itemPedido/${itemId}`).once('value');
-                const itemData = itemSnapshot.val();
+                const itemData = pedido.itensPedido[itemId];
                 if (!itemData) continue;
 
+                // 2.1) checa se lote está encerrado (quantidade = 0)
+                let encerrado = false;
+                if (isEntrada) {
+                    const snap = await firebase.database()
+                        .ref(`produto/${itemData.produtoId}`)
+                        .once('value');
+                    const produto = snap.val() || {};
+                    const loteInfo = produto.lotes?.[itemData.lote];
+                    encerrado = !loteInfo || loteInfo.quantidade === 0;
+                }
+
+                // 2.2) cria o HTML do item-pedido
                 const div = document.createElement('div');
                 div.classList.add('item-pedido');
-
                 div.innerHTML = `
-                    <div class="grupo-form">
-                        <label>Produto:</label>
-                        <select class="campo-form produto-select" required>
-                            <option value="" disabled>Carregando...</option>
-                        </select>
+            <div class="grupo-form">
+                <label>Produto:</label>
+                <select class="campo-form produto-select" required ${encerrado ? 'disabled' : ''}>
+                    <option value="" disabled>Carregando...</option>
+                </select>
+            </div>
+            <div class="grupo-form-duplo">
+                <div>
+                    <label>Quantidade</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number"
+                               class="campo-form quantidade-input"
+                               min="0"
+                               value="${itemData.quantidade}"
+                               required
+                               ${encerrado ? 'disabled' : ''}
+                               style="flex: 1;">
+                        <span class="unidade-produto" style="padding-top: 8px;">—</span>
                     </div>
-                    <div class="grupo-form-duplo">
-                        <div>
-                            <label>Quantidade</label>
-                            <input type="number" class="campo-form quantidade-input" min="1" value="${itemData.quantidade || 1}" required>
-                        </div>
-                        <div>
-                            <label>Subtotal</label>
-                            <input type="text" class="campo-form subtotal-input" value="0,00" readonly>
-                        </div>
-                    </div>
-                    ${isEntrada ? `
-                    <div class="grupo-form-duplo">
-                        <div>
-                            <label>Validade</label>
-                            <input type="date" class="campo-form validade-item" value="${itemData.validade || ''}" required>
-                        </div>
-                        <div>
-                            <label>Lote</label>
-                            <input type="text" class="campo-form lote-item" value="${itemData.lote || ''}" maxlength="20">
-                        </div>
-                    </div>
-                    ` : ''}
-                    <button type="button" class="botao-remover-item">Remover</button>
-                `;
-
+                </div>
+                <div>
+                    <label>Subtotal</label>
+                    <input type="text"
+                           class="campo-form subtotal-input"
+                           value="R$ ${parseFloat(itemData.subtotal).toFixed(2).replace('.', ',')}"
+                           readonly>
+                </div>
+            </div>
+            ${isEntrada ? `
+            <div class="grupo-form-duplo">
+                <div>
+                    <label>Validade</label>
+                    <input type="date"
+                           class="campo-form validade-item"
+                           value="${itemData.validade || ''}"
+                           required
+                           ${encerrado ? 'disabled' : ''}>
+                </div>
+                <div>
+                    <label>Lote</label>
+                    <input type="text"
+                           class="campo-form lote-item"
+                           value="${itemData.lote || ''}"
+                           readonly>
+                </div>
+            </div>` : ''}
+            ${encerrado
+                        ? `<small style="color: #c62828; display: block; margin-top: 4px;">
+                     Lote encerrado — edição bloqueada
+                   </small>`
+                        : `<button type="button" class="botao-remover-item">Remover</button>`
+                    }
+        `;
                 container.appendChild(div);
 
+                // 2.3) referência aos campos e populações
                 const select = div.querySelector('select.produto-select');
-                const inputQuantidade = div.querySelector('input.quantidade-input');
+                const qtyInput = div.querySelector('.quantidade-input');
                 const btnRemover = div.querySelector('.botao-remover-item');
 
                 await carregarProdutos(select);
                 select.value = itemData.produtoId;
 
-                select.addEventListener('change', () => calcularSubtotalItem(div));
-                inputQuantidade.addEventListener('input', () => calcularSubtotalItem(div));
-                btnRemover.addEventListener('click', () => {
-                    div.remove();
+                // 2.4) função que recalcula item + total
+                const onItemChange = () => {
+                    calcularSubtotalItem(div);
                     atualizarTotalPedido();
-                });
+                };
 
-                calcularSubtotalItem(div);
+                // 2.5) aplica estado encerrado ou adiciona listeners
+                if (encerrado) {
+                    select.disabled = true;
+                    qtyInput.disabled = true;
+                    select.style.opacity = '0.6';
+                    qtyInput.style.opacity = '0.6';
+                } else {
+                    select.addEventListener('change', onItemChange);
+                    qtyInput.addEventListener('input', onItemChange);
+
+                    if (btnRemover) {
+                        btnRemover.addEventListener('click', () => {
+                            div.remove();
+                            atualizarTotalPedido();
+                        });
+                    }
+                    calcularSubtotalItem(div);
+                }
             }
 
+            // 3) após montar todos os itens, garante total correto (incluindo bloqueados)
+            atualizarTotalPedido();
+
+            // 4) preenche fornecedor/cliente e exibe modal
             await carregarFornecedores();
-
             if (isEntrada) {
-                const selectFornecedor = modal.querySelector('#nomeAdicionar');
-                selectFornecedor.value = pedido.fornecedor || '';
+                document.getElementById('nomeAdicionar').value = pedido.fornecedor || '';
             } else {
-                const inputCliente = modal.querySelector('#nomeAdicionarSaida');
-                inputCliente.value = pedido.nomeCliente || '';
+                document.getElementById('nomeAdicionarSaida').value = pedido.nomeCliente || '';
             }
-
             modal.style.display = 'flex';
         }
-
-        // Excluir pedido (ícone de lixeira)
         else if (target.classList.contains('delete-icon')) {
             const linha = target.closest('tr');
             if (!linha) return;
@@ -1561,69 +1571,111 @@ function configurarEventosPedidos() {
         }
     });
 
-    // Evento para checkboxes de seleção
     document.querySelector('main').addEventListener('change', e => {
         if (e.target.classList.contains('selecionar-pedido')) {
             atualizarBotaoExcluirSelecionados();
         }
     });
 
-    // Fecha modais
-    document.getElementById('fecharVisualizar').addEventListener('click', () => {
-        document.getElementById('modal-visualizar').style.display = 'none';
-    });
+    // Variáveis de estado (já declaradas no seu escopo geral)
+    let multiplos = false;                   // se estou em “bulk delete”
+    let firebaseKeyParaExcluir = null;       // chave única, se for single delete
+    let selectedKeys = [];                   // lista de chaves marcadas, se bulk delete
+    // Array pedidos já carregado em memória, cada objeto tem .firebaseKey e .itensPedido
 
-    document.getElementById('fecharVisualizarItens').addEventListener('click', () => {
-        document.getElementById('modal-visualizar-itens').style.display = 'none';
-    });
+    // Botão de confirmação da modal “Excluir”
+    const btnConfirmarExcluir = document.getElementById('btn-confirmar-excluir');
+    btnConfirmarExcluir.addEventListener('click', async () => {
+        try {
+            // 1) Define quais pedidos vamos apagar
+            const keysToDelete = multiplos
+                ? selectedKeys.slice()             // cópia do array de marcados
+                : [firebaseKeyParaExcluir];       // single-delete
 
-    // Confirma exclusão
-    document.getElementById('btn-confirmar-excluir').addEventListener('click', () => {
-        const modal = document.getElementById('modal-confirmar-exclusao');
-        const multiplos = modal.getAttribute('data-multiplos') === 'true';
+            if (keysToDelete.length === 0) {
+                mostrarMensagem('Nenhum pedido selecionado para exclusão.', 'error');
+                return;
+            }
 
-        if (multiplos) {
-            const selecionados = Array.from(document.querySelectorAll('.selecionar-pedido:checked'));
-
-            const promises = selecionados.map(cb => {
-                const row = cb.closest('tr');
-                const key = row.getAttribute('data-key');
+            // 2) Constrói um mapa para agrupar e reverter estoque por produto+lote
+            const revertMap = {};
+            for (const key of keysToDelete) {
                 const pedido = pedidos.find(p => p.firebaseKey === key);
+                if (!pedido) continue;
 
-                const itens = pedido.itensPedido || {};
-                const promisesItens = Object.keys(itens).map(itemId =>
-                    firebase.database().ref('itemPedido/' + itemId).remove()
+                const wasEntrada = pedido.tipoPedido === 'Compra';
+                const isReversao = !wasEntrada;
+                const itens = Object.values(pedido.itensPedido || {});
+
+                for (const item of itens) {
+                    const mapKey = `${item.produtoId}|${item.lote}|${isReversao}`;
+                    if (!revertMap[mapKey]) {
+                        revertMap[mapKey] = {
+                            produtoId: item.produtoId,
+                            lote: item.lote,
+                            quantidade: 0,
+                            subtotal: 0,
+                            isReversao,
+                            pedidoId: key,
+                            validade: item.validade
+                        };
+                    }
+                    revertMap[mapKey].quantidade += item.quantidade;
+                    revertMap[mapKey].subtotal += item.subtotal;
+                }
+            }
+
+            // 3) Para cada grupo, chama atualizarEstoqueProduto e, se zerar, remove lote
+            for (const entry of Object.values(revertMap)) {
+                // entry: {produtoId, lote, quantidade, subtotal, isReversao, pedidoId, validade}
+                await atualizarEstoqueProduto({
+                    produtoId: entry.produtoId,
+                    lote: entry.lote,
+                    quantidade: entry.quantidade,
+                    preco: entry.subtotal / entry.quantidade, // opcional: unitário
+                    subtotal: entry.subtotal,
+                    validade: entry.validade
+                }, entry.isReversao, entry.pedidoId);
+
+                // após a reversão, verifica se o lote ficou completamente vazio
+                const loteRef = firebase.database().ref(
+                    `produto/${entry.produtoId}/lotes/${entry.lote}`
                 );
+                const lotSnap = await loteRef.once('value');
+                const lotObj = lotSnap.val();
+                if (lotObj
+                    && lotObj.quantidade === 0
+                    && lotObj.subtotal === 0
+                ) {
+                    await loteRef.remove();
+                }
+            }
 
-                return Promise.all(promisesItens).then(() =>
-                    firebase.database().ref('pedido/' + key).remove()
-                );
-            });
+            // 4) Só então remove os pedidos do nó /pedido
+            for (const key of keysToDelete) {
+                await firebase.database().ref(`pedido/${key}`).remove();
+            }
 
-            Promise.all(promises).then(() => {
-                mostrarMensagem('Pedidos excluídos com sucesso!', 'success');
-                modal.style.display = 'none';
-                carregarPedidosDoFirebase();
-            });
-
-        } else {
-            if (!firebaseKeyParaExcluir) return;
-
-            const pedido = pedidos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
-            const itens = pedido.itensPedido || {};
-
-            const promisesItens = Object.keys(itens).map(itemId =>
-                firebase.database().ref('itemPedido/' + itemId).remove()
+            // 5) Cleanup UI & estado
+            mostrarMensagem(
+                multiplos
+                    ? 'Pedidos excluídos com sucesso!'
+                    : 'Pedido excluído com sucesso!',
+                'success'
             );
+            document.getElementById('modal-confirmar-exclusao').style.display = 'none';
+            // reset flags
+            multiplos = false;
+            firebaseKeyParaExcluir = null;
+            selectedKeys = [];
+            // (se você usar checkboxes, desmarque-os aqui)
 
-            Promise.all(promisesItens).then(() => {
-                return firebase.database().ref('pedido/' + firebaseKeyParaExcluir).remove();
-            }).then(() => {
-                mostrarMensagem('Pedido excluído com sucesso!', 'success');
-                modal.style.display = 'none';
-                firebaseKeyParaExcluir = null;
-                carregarPedidosDoFirebase();
-            });
+            // 6) Recarrega a tabela de pedidos
+            carregarPedidosDoFirebase();
+
+        } catch (error) {
+            console.error('Erro ao reverter/excluir pedido(s):', error);
+            mostrarMensagem('Não foi possível excluir o(s) pedido(s)!', 'error');
         }
     });
 
@@ -1646,11 +1698,9 @@ function aplicarFiltrosOrdenacao(lista) {
     const criterio = document.getElementById('ordenar-pedidos')?.value;
 
     return lista.slice().sort((a, b) => {
-        // Converter datas para timestamp (milissegundos)
         const timestampA = new Date(a.data).getTime();
         const timestampB = new Date(b.data).getTime();
 
-        // Tratar casos onde a data pode ser inválida
         const dataAValida = !isNaN(timestampA);
         const dataBValida = !isNaN(timestampB);
 
@@ -1671,38 +1721,8 @@ function aplicarFiltrosOrdenacao(lista) {
             return (b.valor || 0) - (a.valor || 0);
         }
         else {
-            return 0; // sem ordenação
+            return 0;
         }
-    });
-}
-
-async function adicionarOuAtualizarLote(produtoId, lote, validade, quantidade) {
-    const ref = firebase.database().ref('produto/' + produtoId);
-    const snapshot = await ref.once('value');
-    const produto = snapshot.val();
-
-    if (!produto) return;
-
-    if (!produto.lotes) produto.lotes = {};
-
-    if (!produto.lotes[lote]) {
-        produto.lotes[lote] = {
-            validade,
-            quantidade
-        };
-    } else {
-        produto.lotes[lote].quantidade += quantidade;
-    }
-
-    // Atualiza a quantidade total
-    let total = 0;
-    for (const l in produto.lotes) {
-        total += produto.lotes[l].quantidade;
-    }
-
-    await ref.update({
-        lotes: produto.lotes,
-        quantidadeTotal: total
     });
 }
 
@@ -1720,181 +1740,85 @@ function contarOcorrenciasProdutoNaTela(produtoId) {
     return count;
 }
 
-async function removerDoEstoquePorLote(produtoId, quantidade) {
-    const ref = firebase.database().ref('produto/' + produtoId);
-    const snapshot = await ref.once('value');
-    const produto = snapshot.val();
-
-    if (!produto?.lotes) return;
-
-    const lotesOrdenados = Object.entries(produto.lotes).sort((a, b) => {
-        return new Date(a[1].validade) - new Date(b[1].validade);
-    });
-
-    let restante = quantidade;
-
-    for (const [loteId, lote] of lotesOrdenados) {
-        if (restante <= 0) break;
-
-        const disponivel = lote.quantidade;
-        const usado = Math.min(disponivel, restante);
-        produto.lotes[loteId].quantidade -= usado;
-        restante -= usado;
-
-        if (produto.lotes[loteId].quantidade <= 0) {
-            delete produto.lotes[loteId];
-        }
-    }
-
-    let total = 0;
-    for (const l in produto.lotes) {
-        total += produto.lotes[l].quantidade;
-    }
-
-    await ref.update({
-        lotes: produto.lotes,
-        quantidadeTotal: total
-    });
-}
-
-async function atualizarEstoquePorPedido(itemPedido, tipoPedido) {
-    const produtoId = itemPedido.produto.id;
-    const lote = itemPedido.produto.lote || 'sem-lote';
-    const validade = itemPedido.produto.validade || '';
-    const quantidade = itemPedido.quantidade;
-
-    const produtoRef = firebase.database().ref('produto/' + produtoId);
-    const snapshot = await produtoRef.once('value');
-    const produto = snapshot.val();
-
-    if (!produto) return;
-
-    if (!produto.lotes) produto.lotes = {};
-
-    if (tipoPedido === 'Compra') {
-        if (!produto.lotes[lote]) {
-            produto.lotes[lote] = {
-                validade,
-                quantidade
-            };
-        } else {
-            produto.lotes[lote].quantidade += quantidade;
-        }
-    } else if (tipoPedido === 'Venda') {
-        const disponivel = produto.lotes[lote]?.quantidade || 0;
-        const novoValor = disponivel - quantidade;
-
-        if (novoValor <= 0) {
-            delete produto.lotes[lote];
-        } else {
-            produto.lotes[lote].quantidade = novoValor;
-        }
-    }
-
-    // Atualiza o total
-    let total = 0;
-    for (const l in produto.lotes) {
-        total += produto.lotes[l].quantidade;
-    }
-
-    await produtoRef.update({
-        lotes: produto.lotes,
-        quantidadeTotal: total
-    })
-
-    async function registrarHistoricoMovimentacao(itemPedido, tipoPedido, idPedido) {
-        const historicoRef = firebase.database().ref('historicoAcoes').push(); // ✅ CORRETO
-
-        const hoje = new Date();
-        hoje.setHours(hoje.getHours() - 3); // Fuso GMT-3
-        const data = hoje.toISOString().slice(0, 10);
-
-        await historicoRef.set({
-            tipoMovimentacao: tipoPedido === 'Compra' ? 'Entrada' : 'Saída',
-            produtoId: itemPedido.produto.id,
-            produtoNome: itemPedido.produto.nome,
-            lote: itemPedido.produto.lote || 'sem-lote',
-            validade: itemPedido.produto.validade || '',
-            quantidade: itemPedido.quantidade,
-            dataMovimentacao: data,
-            idPedido: idPedido
-        });
-    }
-}
-
 function configurarProdutoDinamico(div, isEntrada) {
     const selectProduto = div.querySelector('select.produto-select');
-    const inputQuantidade = div.querySelector('input.quantidade-input');
-    const inputLote = div.querySelector('.lote-item');
-    const btnRemover = div.querySelector('.botao-remover-item');
-
+    let inputQuantidade = div.querySelector('input.quantidade-input');
+    const inputLoteText = div.querySelector('.lote-item');          // só em entrada
     const selectLote = isEntrada ? null : div.querySelector('select.lote-select');
     const inputValidade = div.querySelector('input.validade-input');
+    const inputSubtotal = div.querySelector('input.subtotal-input');
+    const unidadeSpan = div.querySelector('.unidade-produto');
+    const btnRemover = div.querySelector('.botao-remover-item');
 
+    // 1) Remover o item
     btnRemover.addEventListener('click', () => {
         div.remove();
         atualizarTotalPedido();
     });
 
+    // 2) Quando selecionar um produto
     selectProduto.addEventListener('change', async () => {
         const produtoId = selectProduto.value;
 
-        if (isEntrada && inputLote) {
-            try {
-                const loteBase = await obterProximoNumeroLote(produtoId);
-                const ocorrencias = contarOcorrenciasProdutoNaTela(produtoId);
-                const numeroLote = Math.max(loteBase + ocorrencias - 1, 1);
-                inputLote.value = numeroLote;
-            } catch (err) {
-                console.error('Erro ao definir número do lote:', err);
-                inputLote.value = 1;
-            }
+        // ── reset de campos ──
+        inputQuantidade.value = 1;
+        inputQuantidade.disabled = true;
+        if (selectLote) {
+            selectLote.innerHTML = '<option value="" disabled selected>Selecione o produto primeiro</option>';
+            selectLote.disabled = true;
         }
+        inputValidade.value = '';
+        inputSubtotal.value = 'R$ 0,00';
+        unidadeSpan.textContent = '';
 
-        if (!produtoId) {
-            inputQuantidade.value = 1;
-            inputQuantidade.disabled = true;
-            if (isEntrada && inputLote) inputLote.value = '';
-            return;
-        }
+        // ── remove listeners antigos do inputQuantidade ──
+        const novoQty = inputQuantidade.cloneNode(true);
+        inputQuantidade.parentNode.replaceChild(novoQty, inputQuantidade);
+        inputQuantidade = novoQty;
 
-        const unidadeSpan = div.querySelector('.unidade-produto');
-        const produtoRef = firebase.database().ref(`produto/${produtoId}`);
-        const snapshot = await produtoRef.once('value');
-        const produto = snapshot.val();
+        if (!produtoId) return;
 
-        if (produto && produto.unidadeMedida) {
+        // ── busca dados do produto ──
+        const snap = await firebase.database().ref(`produto/${produtoId}`).once('value');
+        const produto = snap.val() || {};
+        if (produto.unidadeMedida) {
             unidadeSpan.textContent = produto.unidadeMedida;
         }
 
+        // habilita quantidade
         inputQuantidade.disabled = false;
-        calcularSubtotalItem(div);
 
-        if (!isEntrada && selectLote && inputValidade) {
+        if (isEntrada) {
+            // ── fluxo de ENTRADA ──
+            if (inputLoteText) {
+                try {
+                    const base = await obterProximoNumeroLote(produtoId);
+                    const occ = contarOcorrenciasProdutoNaTela(produtoId);
+                    inputLoteText.value = Math.max(base + occ - 1, 1);
+                } catch {
+                    inputLoteText.value = 1;
+                }
+            }
+
+            // recalcula só no input da quantidade
+            inputQuantidade.addEventListener('input', () => calcularSubtotalItem(div));
+            calcularSubtotalItem(div);
+
+        } else {
+            // ── fluxo de SAÍDA ──
+            if (!selectLote || !inputValidade) return;
+
+            // popula o select de lotes
+            selectLote.disabled = false;
             await carregarLotesDoProduto(produtoId, selectLote, inputValidade);
+
+            // recalcula ao trocar lote
+            selectLote.addEventListener('change', () => calcularSubtotalItem(div));
+            // recalcula ao mudar quantidade
+            inputQuantidade.addEventListener('input', () => calcularSubtotalItem(div));
+
+            // cálculo inicial (caso já haja uma opção selecionada)
+            calcularSubtotalItem(div);
         }
-    });
-
-    inputQuantidade.addEventListener('input', () => {
-        calcularSubtotalItem(div);
-    });
-
-    if (!isEntrada) {
-        const fornecedorSelect = document.getElementById('nomeAdicionarSaida');
-        if (fornecedorSelect && fornecedorSelect.value) {
-            selectProduto.disabled = false;
-            carregarProdutos(selectProduto, fornecedorSelect.value);
-        }
-    }
-}
-
-function registrarHistorico(tipo, descricao) {
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
-    firebase.database().ref('historicoAcoes').push({
-        tipo,
-        descricao,
-        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
-        idComerciante
     });
 }
