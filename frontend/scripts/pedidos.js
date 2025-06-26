@@ -208,6 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         filtros.style.display = filtros.style.display === 'none' ? 'flex' : 'none';
     });
 
+    document.getElementById('btn-exportar-entradas').addEventListener('click', () => {
+  exportarPedidosParaCSV('entrada');
+});
+document.getElementById('btn-exportar-saidas').addEventListener('click', () => {
+  exportarPedidosParaCSV('saida');
+});
+
     // Entradas
     document.getElementById('selecionar-todos-entradas').addEventListener('change', e => {
         document
@@ -2103,4 +2110,68 @@ async function atualizarTotaisDoProduto(produtoId) {
             });
         }
     });
+}
+
+async function exportarPedidosParaCSV(tipo) {
+  const snapshot = await firebase.database().ref('pedido').once('value');
+  const pedidos = snapshot.val() || {};
+
+  const fornecedoresSnapshot = await firebase.database().ref('fornecedor').once('value');
+  const fornecedores = fornecedoresSnapshot.val() || {};
+
+  const linhas = [[
+    'Código Pedido',
+    tipo === 'entrada' ? 'Fornecedor' : 'Cliente',
+    'Tipo de Pedido',
+    'Data',
+    'Produto',
+    'Lote',
+    'Quantidade',
+    'Unidade',
+    'Validade',
+    'Subtotal (R$)'
+  ]];
+
+  Object.values(pedidos).forEach(pedido => {
+    if (pedido.tipoPedido === (tipo === 'entrada' ? 'Compra' : 'Venda')) {
+      const codigo = pedido.codigoPedido || '(sem código)';
+      const tipoPedido = pedido.tipoPedido || '-';
+      const data = pedido.data || '-';
+
+      const nomePessoa = tipo === 'entrada'
+        ? (fornecedores[pedido.idFornecedor]?.nome || 'Fornecedor não identificado')
+        : pedido.nomeCliente || 'Cliente não identificado';
+
+      const itens = pedido.itensPedido || {};
+      Object.values(itens).forEach(item => {
+        const linha = [
+          codigo,
+          nomePessoa,
+          tipoPedido,
+          data,
+          item.nome || '(sem nome)',
+          item.lote || '-',
+          item.quantidade || 0,
+          item.unidadeMedida || '-',
+          item.validade || '-',
+          (parseFloat(item.subtotal) || 0).toLocaleString('pt-BR', {
+            minimumFractionDigits: 2
+          })
+        ];
+        linhas.push(linha);
+      });
+    }
+  });
+
+  // ⚠️ Usa UTF-8 com BOM para compatibilidade com acentos no Excel
+  const BOM = '\uFEFF';
+  const csvContent = BOM + linhas.map(linha => linha.map(c => `"${c}"`).join(';')).join('\n');
+
+  const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `relatorio_pedidos_${tipo}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
