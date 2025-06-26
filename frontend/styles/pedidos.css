@@ -818,3 +818,35 @@ td {
     font-weight: bold;
   }
 }
+
+.btn-exportar {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+}
+
+.btn-exportar.entrada {
+  background-color: #007f30;
+  color: white;
+}
+
+.btn-exportar.entrada:hover {
+  background-color: #005f24;
+}
+
+.btn-exportar.saida {
+  background-color: #c62828;
+  color: white;
+}
+
+.btn-exportar.saida:hover {
+  background-color: #a32020;
+}
