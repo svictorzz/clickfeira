@@ -1151,7 +1151,10 @@ async function handlePedidoSubmit(e) {
 
         // 13) Fecha modal e recarrega lista
         document.getElementById(isEntrada ? 'modal-entrada' : 'modal-saida').style.display = 'none';
-        carregarPedidosDoFirebase();
+        setTimeout(() => {
+            carregarPedidosDoFirebase();
+            atualizarTabelaPedidos();
+        }, 500);
 
     } catch (error) {
         console.error('Erro ao salvar pedido:', error);
@@ -1174,10 +1177,12 @@ async function obterSaidasAssociadas(pedidoEntrada) {
     return Array.from(saidasSet);
 }
 
-// Função auxiliar para calcular o total do pedido
+// Função para calcular o total do pedido
 function calcularTotalPedido(itensPedido) {
+    // Garantir que está somando números válidos
     return itensPedido.reduce((total, item) => {
-        return total + (item.subtotal || 0);
+        const subtotal = parseFloat(item.subtotal) || 0;
+        return total + subtotal;
     }, 0);
 }
 
@@ -1776,6 +1781,24 @@ function configurarEventosPedidos() {
                             atualizarEstadoRemoverItens(modal);
                             delete pedido.itensPedido[itemId];
 
+                            // Recalcula total após remoção
+                            const novoTotal = Object.values(pedido.itensPedido).reduce(
+                                (total, item) => total + (item.subtotal || 0),
+                                0
+                            );
+
+                            // Atualiza no Firebase
+                            await firebase.database().ref(`pedido/${indiceParaEditar}`).update({
+                                valor: novoTotal
+                            });
+
+                            // Atualiza visualmente na tabela (total na célula)
+                            const linha = document.querySelector(`tr[data-key="${indiceParaEditar}"]`);
+                            if (linha) {
+                                const totalFormatado = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
+                                linha.querySelector('td[data-label="Total: "]').textContent = totalFormatado;
+                            }
+
                             mostrarMensagem('Item removido com sucesso. Lote e saídas associadas também foram excluídos.', 'sucesso');
 
                         } catch (error) {
@@ -2053,8 +2076,31 @@ async function atualizarTotaisDoProduto(produtoId) {
         valorTotal += lote.subtotal || 0;
     });
 
+    // Atualizar os totais do produto
     await produtoRef.update({
         quantidadeEstoque: quantidadeTotal,
         valorEstoque: valorTotal
+    });
+
+    // Adicionado: Recalcular o valor total do pedido
+    const pedidoRef = firebase.database().ref('pedido');
+    const pedidosSnapshot = await pedidoRef.once('value');
+
+    pedidosSnapshot.forEach(pedidoSnapshot => {
+        const pedido = pedidoSnapshot.val();
+        let totalPedido = 0;
+
+        Object.values(pedido.itensPedido || {}).forEach(item => {
+            if (item.produtoId === produtoId) {
+                totalPedido += item.subtotal || 0;
+            }
+        });
+
+        // Atualizar o total do pedido se for diferente
+        if (totalPedido !== pedido.valor) {
+            pedidoRef.child(pedidoSnapshot.key).update({
+                valor: totalPedido
+            });
+        }
     });
 }
