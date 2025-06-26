@@ -7,14 +7,19 @@
 
 body {
   background-color: #f9f9f9;
-  min-height: 100vh;
 }
 
 .main-content {
+  margin-top: 60px;
   padding: 30px;
   min-height: 100vh;
-  margin-top: 60px;
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .content {
+    margin-top: 56px;
+  }
 }
 
 header h2 {
@@ -32,15 +37,12 @@ header h2 {
   align-items: center;
   margin: 30px 0;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .search-input {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 200px;
 }
 
 .search-input i {
@@ -53,7 +55,7 @@ header h2 {
   padding: 10px 10px 10px 30px;
   border-radius: 20px;
   border: 1px solid #ccc;
-  width: 100%;
+  width: 400px;
 }
 
 .search-input input:focus {
@@ -69,7 +71,6 @@ header h2 {
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s;
-  white-space: nowrap;
 }
 
 .filter-button {
@@ -86,8 +87,7 @@ header h2 {
   color: white;
 }
 
-.add-button:hover,
-.modal-footer .botao-principal:hover {
+.add-button:hover {
   background-color: #005f24;
 }
 
@@ -109,10 +109,9 @@ header h2 {
 .botoes-pedido {
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-  gap: 30px;
+  gap: 24px;
+  margin-top: 48px;
+  margin-bottom: 48px;
 }
 
 .btn-ativo-verde,
@@ -161,17 +160,7 @@ header h2 {
   background-color: #e8f5ec;
 }
 
-#btn-excluir-selecionados {
-  background-color: #d9534f;
-  color: white;
-  font-size: 14px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
+table,
 .custom-table {
   width: 100%;
   border-collapse: collapse;
@@ -179,24 +168,9 @@ header h2 {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  /* ← aqui! */
   font-size: 14px;
   position: relative;
-  min-width: 800px;
-}
-
-.tabela-wrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-  .tabela-wrapper {
-    margin-top: 12px;
-    border-radius: 8px;
-    overflow-x: auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
 }
 
 .custom-table th {
@@ -244,6 +218,34 @@ td {
   cursor: pointer;
 }
 
+.col-checkbox {
+  width: 40px;
+}
+
+.col-id {
+  width: 90px;
+}
+
+.col-fornecedor,
+.col-cliente {
+  width: 30%;
+  min-width: 200px;
+}
+
+.col-data {
+  width: 90px;
+}
+
+.col-produtos {
+  width: 120px;
+}
+
+.col-total,
+.col-editar,
+.col-excluir {
+  width: 60px;
+}
+
 .edit-icon,
 .delete-icon,
 .search-icon {
@@ -277,85 +279,6 @@ td {
   background: rgba(255, 68, 68, 0.1);
 }
 
-.acoes-icones i {
-  font-size: 16px;
-  padding: 4px;
-  border-radius: 50%;
-  transition: background 0.2s ease;
-}
-
-/* Reforça o clique/tap-friendly */
-.acoes-icones i:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Agrupamento compacto da label + ícones */
-.acoes-mobile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 8px;
-}
-
-@media (min-width: 769px) {
-  .acoes-mobile {
-    display: none !important;
-    /* só mostra no mobile */
-  }
-}
-
-@media (max-width: 768px) {
-
-  .col-consultar,
-  .col-editar,
-  .col-excluir {
-    display: none;
-  }
-}
-
-#controles-paginacao {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-#controles-paginacao button {
-  padding: 10px 20px;
-  border-radius: 25px;
-  border: 1px solid #e0e0e0;
-  background: white;
-  color: #444;
-  transition: all 0.3s ease;
-  min-width: 100px;
-}
-
-#controles-paginacao button:hover:not(:disabled) {
-  background: #007f30;
-  color: white;
-  border-color: #007f30;
-  transform: translateY(-2px);
-}
-
-#controles-paginacao button:disabled {
-  background-color: #ccc;
-  color: #666;
-  cursor: default;
-}
-
-#controles-paginacao span {
-  font-weight: bold;
-  font-size: 16px;
-  color: #333;
-}
-
-#selecionar-todos {
-  transform: scale(1.3);
-  cursor: pointer;
-}
-
 .modal-overlay {
   display: none;
   position: fixed;
@@ -375,18 +298,18 @@ td {
   background-color: white;
   padding: 20px;
   border-radius: 12px;
-  width: 95%;
-  max-width: 60%;
+  width: 1000px;
+  max-width: 95%;
   max-height: 90vh;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  animation: aparecer-modal 0.25s ease;
   overflow-y: auto;
-  overflow-x: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: aparecer-modal 0.3s ease;
+  margin: 20px;
 }
 
 @keyframes aparecer-modal {
   from {
-    transform: scale(0.95);
+    transform: scale(0.9);
     opacity: 0;
   }
 
@@ -394,13 +317,6 @@ td {
     transform: scale(1);
     opacity: 1;
   }
-}
-
-.modal-content h3 {
-  margin-bottom: 15px;
-  font-weight: bold;
-  text-align: center;
-  font-size: 1.4rem;
 }
 
 .modal-header {
@@ -455,13 +371,6 @@ td {
   color: #555;
 }
 
-.grupo-form-duplo label {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #555;
-  max-width: 500px;
-}
-
 .campo-form {
   width: 100%;
   padding: 12px;
@@ -480,14 +389,12 @@ td {
 
 .grupo-form-duplo {
   display: flex;
-  gap: 20px;
-  color: #555;
+  gap: 15px;
   margin-bottom: 15px;
 }
 
 .grupo-form-duplo>div {
   flex: 1;
-  text-align: left;
 }
 
 .subtotal-input[readonly] {
@@ -511,11 +418,9 @@ td {
 }
 
 .modal-footer {
-  padding-left: 20px;
-  padding-right: 20px;
   display: flex;
   justify-content: flex-end;
-  gap: 15px;
+  gap: 8px;
   margin-top: 10px;
   padding-bottom: 8px;
 }
@@ -554,9 +459,9 @@ td {
   display: flex;
   justify-content: flex-end;
   font-weight: bold;
-  color: #007f30;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  color: green;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .modal-total .titulo-verde {
@@ -652,8 +557,10 @@ td {
   margin-bottom: 15px;
 }
 
+/* Modal overlay - reutilizando classe modal-overlay */
 #modal-visualizar {
-  display: none; /* já estava */
+  display: none;
+  /* já estava */
   position: fixed;
   top: 0;
   left: 0;
@@ -665,25 +572,11 @@ td {
   align-items: center;
   z-index: 1000;
   overflow-y: auto;
-  display: flex; /* para centralizar o conteúdo */
-}
-
-#modal-visualizar-itens {
   display: flex;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
-  display: none; /* Escondido por padrão */
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  /* para centralizar o conteúdo */
 }
 
-#modal-visualizar .modal-content,
-#modal-visualizar-itens .modal-content{
+#modal-visualizar .modal-content {
   background-color: white;
   padding: 20px;
   border-radius: 12px;
@@ -701,12 +594,13 @@ td {
   max-width: 500px;
 }
 
-#modal-visualizar .campo-form {
+#modal-visualizar .campo-form.leitura {
   display: block;
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  background-color: #f5f5f5; /* leve fundo para leitura */
+  background-color: #f5f5f5;
+  /* leve fundo para leitura */
   color: #555;
   font-size: 16px;
   user-select: text;
@@ -714,8 +608,7 @@ td {
 }
 
 /* Itens container (dinâmico) - deixe com padding e margem */
-#modal-visualizar .itens-pedido-container,
-#modal-visualizar-itens .itens-pedido-container{
+#modal-visualizar .itens-pedido-container {
   margin-top: 15px;
 }
 
@@ -778,41 +671,39 @@ td {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
-  display: none; /* Escondido por padrão */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Fundo semi-transparente */
+  display: none;
+  /* Escondido por padrão */
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
 
-#modal-visualizar .grupo-form,
-#modal-visualizar-itens .grupo-form {
-  max-width: 500px;
-}
-
-#modal-visualizar .campo-form,
-#modal-visualizar-itens .campo-form {
-  display: block;
-  padding: 12px;
-  border: 1px solid #ccc;
+#modal-visualizar-itens .modal-content {
+  background-color: #fff;
+  padding: 20px 30px;
   border-radius: 8px;
-  background-color: #f5f5f5; /* leve fundo para leitura */
-  color: #555;
-  font-size: 16px;
-  user-select: text;
-  cursor: default;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 }
 
 #modal-visualizar-itens h4.titulo-verde {
-  color: #2e7d32; /* verde do título */
+  color: #2e7d32;
+  /* verde do título */
   margin-bottom: 20px;
   font-weight: 700;
   font-size: 1.5rem;
-  text-align: left; /* Título alinhado à esquerda */
+  text-align: left;
+  /* Título alinhado à esquerda */
 }
 
 #itens-lista-visualizacao {
-  max-height: 300px; /* limite de altura para rolagem */
+  max-height: 300px;
+  /* limite de altura para rolagem */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -828,23 +719,54 @@ td {
   border-top: 1px solid #ddd;
   background-color: #fafafa;
   border-radius: 0 0 8px 8px;
-  flex-wrap: wrap;  /* permite quebra de linha se precisar */
-  gap: 10px; /* espaço entre itens, caso tenha mais de um */
+  flex-wrap: wrap;
+  /* permite quebra de linha se precisar */
+  gap: 10px;
+  /* espaço entre itens, caso tenha mais de um */
 }
 
 #modal-visualizar-itens .botao-secundario {
-  min-width: 100px; /* largura mínima para o botão */
-  white-space: nowrap; /* impede quebra de texto no botão */
+  min-width: 100px;
+  /* largura mínima para o botão */
+  white-space: nowrap;
+  /* impede quebra de texto no botão */
   box-sizing: border-box;
   padding: 8px 18px;
 }
 
+#itens-lista-visualizacao>div {
+  text-align: left;
+}
+
 #modal-visualizar .modal-total {
-  font-size: 20px; 
+  font-size: 20px;
   font-weight: 700;
   color: #007f30;
   margin-top: 16px;
   text-align: left;
+}
+
+.lote-encerrado {
+  background-color: #f1f1f1 !important;
+  color: #999 !important;
+  font-style: italic;
+}
+
+.item-bloqueado {
+  background-color: #f4f4f4;
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.item-bloqueado::after {
+  content: "Lote encerrado — item bloqueado para edição";
+  position: absolute;
+  bottom: -18px;
+  left: 10px;
+  font-size: 12px;
+  font-style: italic;
+  color: #b30000;
 }
 
 @keyframes aparecer {
