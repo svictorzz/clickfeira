@@ -504,6 +504,12 @@ td {
   position: relative;
 }
 
+/* desabilita o botão/link “Adicionar mais” */
+.adicionar-mais-item.inativo {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 /* Número do item */
 .item-pedido::before {
   content: attr(data-item-id);
