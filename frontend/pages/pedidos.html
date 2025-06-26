@@ -148,12 +148,6 @@
                     <label for="nomeAdicionarSaida" class="label-tipo">Cliente:</label>
                     <input type="text" id="nomeAdicionarSaida" class="campo-form" required />
                 </div>
-                <div class="grupo-form">
-                    <label for="fornecedorSaida" class="label-tipo">Fornecedor:</label>
-                    <select id="fornecedorSaida" class="campo-form" required>
-                        <option value="" selected disabled>Selecione...</option>
-                    </select>
-                </div>
                 <div class="itens-pedido-container" id="container-itens-saida">
                     <!-- Itens serão inseridos dinamicamente via JS -->
                 </div>
@@ -210,9 +204,9 @@
     <!-- Modal de Confirmação de Exclusão -->
     <div id="modal-confirmar-exclusao" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <h4>Deseja realmente excluir este produto?</h4>
-            <p style="color: gray; font-size: 14px;">Essa ação não poderá ser desfeita.</p>
-            <div class="modal-buttons" style="justify-content: center;">
+            <h4 id="titulo-confirmacao"></h4>
+            <p id="mensagem-confirmacao" style="color: gray; font-size: 14px;"></p>
+            <div class="modal-buttons" style="justify-content: center; gap: 1em;">
                 <button id="btn-confirmar-excluir" class="salvar">Sim, excluir</button>
                 <button id="btn-cancelar-excluir" class="cancelar">Cancelar</button>
             </div>
