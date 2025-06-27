@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.btnExcluirSelecionados.addEventListener('click', excluirSelecionados);
   elements.btnExportarSelecionados.addEventListener('click', exportarSelecionadosParaCSV);
   elements.selecionarTodos.addEventListener('change', toggleSelecaoTodos);
-  
+
   // Toggle para mostrar/ocultar filtros
   document.querySelector('.filter').addEventListener('click', function () {
     if (elements.filtrosContainer.style.display === 'none') {
@@ -365,7 +365,7 @@ function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
   document.querySelectorAll('.selecionar-fornecedor').forEach(checkbox => {
     checkbox.addEventListener('change', atualizarSelecaoIndividual);
   });
-  
+
   atualizarAcoesMultiplas();
 }
 
@@ -398,10 +398,72 @@ function excluirProdutosDoFornecedor(fornecedorId) {
       const produto = child.val();
       const key = child.key;
       if (produto.fornecedorId === fornecedorId) {
+        // 1) Remove o produto
         firebase.database().ref('produto/' + key).remove();
-        registrarHistorico('Exclusão automática', `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`);
+        registrarHistorico(
+          'Exclusão automática',
+          `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`
+        ); // :contentReference[oaicite:0]{index=0}
+
+        // 2) Remove todos os pedidos que contenham esse produto
+        excluirPedidosDoProduto(key);
       }
     });
+  });
+}
+
+function excluirPedidosDoProduto(produtoId) {
+  const pedidosRef = firebase.database().ref('pedido');
+  pedidosRef.once('value').then(snapshot => {
+    snapshot.forEach(child => {
+      const pedidoKey = child.key;
+      const pedido = child.val();
+      const itens = pedido.itensPedido || {};
+      // pega chaves dos itens que referenciam o produto removido
+      const keysParaRemover = Object.keys(itens)
+        .filter(itemKey => itens[itemKey].idProduto === produtoId);
+
+      if (keysParaRemover.length === 0) return;
+
+      const totalItens = Object.keys(itens).length;
+      const ehSaida = pedido.tipoPedido === 'Venda';
+
+      if (ehSaida && keysParaRemover.length < totalItens) {
+        // Remove somente os itens órfãos
+        keysParaRemover.forEach(itemKey => {
+          pedidosRef.child(`${pedidoKey}/itensPedido/${itemKey}`).remove();
+        });
+        // Recalcula e atualiza o total do pedido
+        recalcularTotalPedido(pedidoKey);
+        registrarHistorico(
+          'Exclusão automática',
+          `Item(s) do produto removido excluído(s) do pedido ${pedidoKey}.`
+        );
+      } else {
+        // Pedido de entrada ou todos os itens eram do fornecedor excluído
+        pedidosRef.child(pedidoKey).remove();
+        registrarHistorico(
+          'Exclusão automática',
+          `Pedido ${pedidoKey} excluído pois não contém mais itens válidos.`
+        );
+      }
+    });
+  });
+}
+
+function recalcularTotalPedido(pedidoKey) {
+  const itensRef = firebase.database().ref(`pedido/${pedidoKey}/itensPedido`);
+  itensRef.once('value').then(snap => {
+    let novoTotal = 0;
+    snap.forEach(itemSnap => {
+      const item = itemSnap.val();
+      novoTotal += Number(item.quantidade) * Number(item.precoUnitario);
+    });
+    // ← inserção
+    firebase
+      .database()
+      .ref(`pedido/${pedidoKey}`)
+      .update({ valor: novoTotal });
   });
 }
 
@@ -443,7 +505,7 @@ function salvarFornecedor(e) {
     mostrarMensagem('Nome muito longo (máximo 80 caracteres)', 'error');
     return;
   }
-  
+
   if (novoFornecedor.email.length > 100) {
     mostrarMensagem('E-mail muito longo (máximo 100 caracteres)', 'error');
     return;
@@ -482,12 +544,12 @@ function salvarFornecedor(e) {
     const emailDuplicado = fornecedores.some(f =>
       f.email.toLowerCase().trim() === emailNormalizado
     );
-    
+
     if (emailDuplicado) {
       mostrarMensagem('E-mail já cadastrado para outro fornecedor.', 'error');
       return;
     }
-    
+
     firebase.database().ref('fornecedor').push(novoFornecedor)
       .then(() => {
         mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
@@ -829,11 +891,11 @@ function excluirSelecionados() {
   if (selecionados.length === 0) return;
 
   const firebaseKeys = selecionados.map(cb => cb.closest('tr').getAttribute('data-key'));
-  
+
   firebaseKeys.forEach(key => {
     const fornecedor = fornecedores.find(f => f.firebaseKey === key);
     if (!fornecedor) return;
-    
+
     firebase.database().ref('fornecedor/' + key).remove().then(() => {
       registrarHistorico('Exclusão de fornecedor', `Fornecedor "${fornecedor.nome}" excluído.`);
       excluirProdutosDoFornecedor(key);
