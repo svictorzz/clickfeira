@@ -233,9 +233,10 @@ function abrirModalCadastro() {
   document.getElementById('form-produto').reset();
   document.getElementById('codigo').value = gerarCodigoProduto();
   document.getElementById('modal-produto').style.display = 'flex';
-  document.getElementById('unidade-atual').value = document.getElementById('unidade-minima').value;
   document.getElementById('titulo-modal-produto').textContent = 'Adicionar Novo Produto';
   indiceParaEditar = null;
+  document.getElementById('categoria').disabled = false;
+  document.getElementById('fornecedor').disabled = false;
 }
 
 function toggleFiltros() {
@@ -287,7 +288,7 @@ function criarBotaoLimparFiltros() {
 
     // Resetar destaques de alerta
     document.querySelectorAll('#legenda-alertas span').forEach(btn => {
-      btn.classList.remove('filtro-ativo');
+      btn.classList.remove('filtro-mativo');
     });
 
     atualizarTabela();
@@ -301,18 +302,9 @@ function adicionarLinhaTabela(produto) {
   const row = document.createElement('tr');
   row.setAttribute('data-key', produto.firebaseKey);
 
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-
-  // Cálculo de validade
-  let validade = null;
-  if (produto.validade) {
-    const [ano, mes, dia] = produto.validade.split('-').map(Number);
-    validade = new Date(ano, mes - 1, dia);
-    validade.setHours(0, 0, 0, 0);
-  }
-
-  const diasParaVencer = validade ? Math.floor((validade - hoje) / (1000 * 60 * 60 * 24)) : null;
+  // Cálculo de validade usando as funções auxiliares
+  const validadeProxima = calcularValidadeMaisProxima(produto);
+  const diasParaVencer = validadeProxima ? calcularDiasParaVencer(validadeProxima) : null;
 
   // Estoque
   const qtdAtual = parseFloat(produto.quantidadeEstoque) || 0;
@@ -320,10 +312,12 @@ function adicionarLinhaTabela(produto) {
   const unidade = produto.unidadeMedida || '';
 
   // Classes de alerta
-  if (validade && diasParaVencer < 0) {
-    row.classList.add('alerta-vencido');
-  } else if (validade && diasParaVencer <= 7) {
-    row.classList.add('alerta-validade');
+  if (diasParaVencer !== null) {
+    if (diasParaVencer < 0) {
+      row.classList.add('alerta-vencido');
+    } else if (diasParaVencer <= 7) {
+      row.classList.add('alerta-validade');
+    }
   }
 
   if (qtdAtual < qtdMinima) {
@@ -333,23 +327,25 @@ function adicionarLinhaTabela(produto) {
   // Código fallback
   const codigo = produto.codigo || produto.firebaseKey.slice(-5).toUpperCase();
 
+  // Formata a data para exibição
+  const dataFormatada = validadeProxima ? formatarData(validadeProxima.toISOString().split('T')[0]) : '—';
+
   row.innerHTML = `
     <td><input type="checkbox" class="selecionar-produto"></td>
-    <td data-label="Código: ">${produto.codigo || '(sem código)'}</td>
+    <td data-label="Código: ">${codigo || '(sem código)'}</td>
     <td data-label="Produto: ">${produto.nome || 'Sem nome'}</td>
     <td data-label="Estoque: ">${qtdAtual} ${unidade}</td>
-    <td data-label="Validade: ">${validade ? formatarData(produto.validade) : '—'}</td>
+    <td data-label="Validade: ">${dataFormatada}</td>
     <td class="col-consultar" data-label="Consultar"><i class="fa fa-search search-icon"></i></td>
     <td class="col-editar" data-label="Editar"><i class="fa fa-edit edit-icon"></i></td>
     <td class="col-excluir" data-label="Excluir"><i class="fa fa-trash delete-icon"></i></td>
-<td class="acoes-mobile" data-label="Ações">
-  <div class="acoes-icones" data-key="${produto.firebaseKey}">
-    <i class="fa fa-search search-icon"></i>
-    <i class="fa fa-edit edit-icon"></i>
-    <i class="fa fa-trash delete-icon"></i>
-  </div>
-</td>
-
+    <td class="acoes-mobile" data-label="Ações">
+      <div class="acoes-icones" data-key="${produto.firebaseKey}">
+        <i class="fa fa-search search-icon"></i>
+        <i class="fa fa-edit edit-icon"></i>
+        <i class="fa fa-trash delete-icon"></i>
+      </div>
+    </td>
   `;
 
   tbody.appendChild(row);
@@ -432,126 +428,250 @@ function validarCompatibilidadeUnidadePreco(e) {
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
-  // Resetar flag de continuidade
-  window.continuarMesmoComValidadeVencida = false;
-
-  // Obter valores do formulário
-  const codigo = document.getElementById('codigo').value.trim();
   const nome = document.getElementById('nome').value.trim();
-  const categoria = document.getElementById('categoria').value.trim();
-  const preco = parseFloat(document.getElementById('preco').value);
-  const descricao = document.getElementById('descricao').value;
-  const quantidadeMinima = document.getElementById('qtd-minima').value;
-  const unidadeMedida = document.getElementById('unidade-minima').value;
-  const precoPor = document.getElementById('preco-por').value;
-  const imagemInput = document.getElementById('imagem');
-  const file = imagemInput.files[0];
-
-  // Validação de campos obrigatórios
-  if (!codigo || !nome || !categoria || isNaN(preco) || !quantidadeMinima || !precoPor) {
-    mostrarMensagem('⚠️ Preencha todos os campos obrigatórios!', 'error');
-    return;
-  }
-
-  // Validação de coerência unidade/preço
-  const combinacoesValidas = {
-    unidade: ['unidade', 'pacote'],
-    pacote: ['unidade', 'pacote'],
-    litro: ['litro', 'ml'],
-    ml: ['litro', 'ml'],
-    kg: ['kg', 'g', '100g'],
-    g: ['kg', 'g', '100g'],
-    '100g': ['kg', 'g', '100g']
-  };
-
-  if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
-    mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
-    return;
-  }
-
-  const fornecedorSelect = document.getElementById('fornecedor');
-  const selectedOption = fornecedorSelect.options[fornecedorSelect.selectedIndex];
-
-  if (!selectedOption || !selectedOption.value) {
-    mostrarMensagem('🚫 Selecione um fornecedor.', 'error');
-    return;
-  }
-
-  const produtosFornecidos = JSON.parse(selectedOption.dataset.produtos || '[]');
-  if (!produtosFornecidos.includes(categoria)) {
-    mostrarMensagem(
-      `🚫 O fornecedor "${selectedOption.textContent}" não fornece a categoria "${categoria}".`,
-      'error'
-    );
-    return;
-  }
-
-  // Montar objeto produto
+  const categoria = document.getElementById('categoria').value;
+  const descricao = document.getElementById('descricao').value.trim();
   const fornecedorId = document.getElementById('fornecedor').value;
+  const preco = document.getElementById('preco').value;
+  const precoPor = document.getElementById('preco-por').value;
+  const unidadeMedida = document.getElementById('unidade-minima').value;
+  const quantidadeMinima = parseInt(document.getElementById('qtd-minima').value);
+  const imagem = document.getElementById('imagem').files[0];
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
 
-  const produto = {
-    codigo,
-    nome,
-    descricao,
-    categoria,
-    preco: preco.toFixed(2),
-    precoPor,
-    quantidadeMinima: parseFloat(quantidadeMinima),
-    unidadeMedida,
-    ativo: true,
-    fornecedorId,
-    imagemUrl: '',
-    dataUltimaAtualizacao: obterDataLegivel(),
-    idComerciante: localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante"),
-  };
-
-  // Adicionar data de cadastro para novos produtos
-  if (indiceParaEditar === null) {
-    produto.dataCadastro = obterDataLegivel();
+  if (!nome || !categoria || !fornecedorId || !preco || !precoPor || !unidadeMedida || isNaN(quantidadeMinima)) {
+    alert('Preencha todos os campos obrigatórios.');
+    return;
   }
 
-  // Salvar no Firebase
-  const salvar = imagem => {
-    produto.imagemUrl = imagem;
+  const dataAtual = new Date().toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
 
-    if (indiceParaEditar !== null) {
-      const key = produtos[indiceParaEditar].firebaseKey;
-      firebase.database().ref('produto/' + key).set(produto).then(() => {
-        registrarHistorico('Edição de produto', `Produto "${produto.nome}" atualizado.`);
-        carregarProdutosDoFirebase();
-        mostrarMensagem('✅ Produto atualizado com sucesso!', 'success');
-        document.getElementById('modal-produto').style.display = 'none';
-        indiceParaEditar = null;
+  // EDIÇÃO
+  if (indiceParaEditar) {
+    try {
+      const produtoRef = firebase.database().ref(`produto/${indiceParaEditar}`);
+      const snapshot = await produtoRef.once('value');
+      const produtoExistente = snapshot.val();
+
+      if (!produtoExistente) {
+        alert("Produto não encontrado.");
+        return;
+      }
+
+      // Campos que serão atualizados
+      const dadosAtualizados = {
+        nome,
+        descricao,
+        preco,
+        precoPor,
+        unidadeMedida,
+        quantidadeMinima,
+        dataUltimaAtualizacao: dataAtual
+      };
+
+
+      // Se houver imagem nova, faça o upload e atualize
+      if (imagem) {
+        const storageRef = firebase.storage().ref(`imagens/${imagem.name}`);
+        await storageRef.put(imagem);
+        const url = await storageRef.getDownloadURL();
+        dadosAtualizados.imagemUrl = url;
+      }
+
+      // Preservar campos sensíveis
+      dadosAtualizados.lotes = produtoExistente.lotes || {};
+      dadosAtualizados.valorEstoque = produtoExistente.valorEstoque || 0;
+      dadosAtualizados.quantidadeEstoque = produtoExistente.quantidadeEstoque || 0;
+      dadosAtualizados.idComerciante = produtoExistente.idComerciante || null;
+      dadosAtualizados.codigo = produtoExistente.codigo;
+
+      await produtoRef.set({
+        ...produtoExistente,
+        ...dadosAtualizados
+
       });
+
+      await atualizarPedidosComNovoProduto(indiceParaEditar, dadosAtualizados);
+      await atualizarLotesComNovoProduto(indiceParaEditar, dadosAtualizados);
+
+      registrarHistorico("Edição", `Produto ${nome} atualizado com sucesso.`);
+    } catch (erro) {
+      console.error("Erro ao editar produto:", erro);
+    }
+
+    // CRIAÇÃO
+  } else {
+    const novoProdutoRef = firebase.database().ref('produto').push();
+    const idProduto = novoProdutoRef.key;
+
+    let imagemUrl = "";
+    if (imagem) {
+      const storageRef = firebase.storage().ref(`imagens/${imagem.name}`);
+      await storageRef.put(imagem);
+      imagemUrl = await storageRef.getDownloadURL();
+    }
+
+    const codigo = gerarCodigoProduto();
+
+    const novoProduto = {
+      nome,
+      categoria,
+      descricao,
+      fornecedorId,
+      preco,
+      precoPor,
+      unidadeMedida,
+      quantidadeMinima,
+      imagemUrl,
+      codigo,
+      idComerciante: idComerciante,
+      dataUltimaAtualizacao: dataAtual,
+      quantidadeEstoque: 0,
+      valorEstoque: 0,
+      ativo: true
+    };
+
+    await novoProdutoRef.set(novoProduto);
+    registrarHistorico("Cadastro", `Produto ${nome} adicionado.`);
+  }
+
+  document.getElementById('modal-produto').style.display = 'none';
+  carregarProdutosDoFirebase();
+}
+
+async function atualizarLotesComNovoProduto(firebaseKey, novosDados) {
+  const produtoRef = firebase.database().ref(`produto/${firebaseKey}`);
+  const snapshot = await produtoRef.once('value');
+  const produto = snapshot.val();
+  if (!produto || !produto.lotes) return;
+
+  let valorTotal = 0;
+  let quantidadeTotal = 0;
+
+  for (const loteId in produto.lotes) {
+    const lote = produto.lotes[loteId];
+    const qtd = parseFloat(lote.quantidade) || 0;
+    quantidadeTotal += qtd;
+
+    let precoBase = parseFloat(novosDados.preco);
+    const unidade = novosDados.precoPor;
+
+    if (['g', 'ml', '100g'].includes(unidade)) {
+      // converte para base kg/litro
+      const multiplicador = unidade === 'ml' ? qtd / 1000 : unidade === '100g' ? qtd / 0.1 : qtd / 1000;
+      valorTotal += precoBase * multiplicador;
     } else {
-      firebase.database().ref('produto').push(produto).then(() => {
-        registrarHistorico('Cadastro de produto', `Produto "${produto.nome}" cadastrado.`);
-        carregarProdutosDoFirebase();
-        mostrarMensagem('✅ Produto cadastrado com sucesso!', 'success');
-        document.getElementById('modal-produto').style.display = 'none';
+      valorTotal += precoBase * qtd;
+    }
+  }
+
+  await produtoRef.update({
+    valorEstoque: parseFloat(valorTotal.toFixed(2)),
+    quantidadeEstoque: quantidadeTotal
+  });
+}
+
+async function atualizarPedidosComNovoProduto(idProduto, novosDados) {
+  const pedidosRef = firebase.database().ref('pedido');
+  const snapshot = await pedidosRef.once('value');
+  const pedidos = snapshot.val();
+
+  for (const pedidoId in pedidos) {
+    const pedido = pedidos[pedidoId];
+    let alterado = false;
+    let novoTotal = 0;
+
+    if (!pedido.itensPedido) continue;
+
+    for (const itemId in pedido.itensPedido) {
+      const item = pedido.itensPedido[itemId];
+      if (item.idProduto !== idProduto) continue;
+
+      alterado = true;
+
+      const quantidade = parseFloat(item.quantidade);
+      const unidade = novosDados.precoPor;
+      let subtotal = 0;
+
+      if (['g', 'ml', '100g'].includes(unidade)) {
+        const multiplicador = unidade === 'ml' ? quantidade / 1000 : unidade === '100g' ? quantidade / 0.1 : quantidade / 1000;
+        subtotal = parseFloat(novosDados.preco) * multiplicador;
+      } else {
+        subtotal = parseFloat(novosDados.preco) * quantidade;
+      }
+
+      // Atualiza o item
+      item.preco = novosDados.preco;
+      item.precoPor = novosDados.precoPor;
+      item.unidadeMedida = novosDados.unidadeMedida;
+      item.subtotal = parseFloat(subtotal.toFixed(2));
+    }
+
+    // Recalcula total do pedido
+    if (alterado) {
+      for (const itemId in pedido.itensPedido) {
+        novoTotal += parseFloat(pedido.itensPedido[itemId].subtotal || 0);
+      }
+
+      await firebase.database().ref(`pedido/${pedidoId}`).update({
+        itensPedido: pedido.itensPedido,
+        valorTotal: parseFloat(novoTotal.toFixed(2))
       });
     }
-  };
-
-  // Processar imagem
-  if (file) {
-    converterImagemParaBase64(file, salvar);
-  } else {
-    salvar('');
   }
 }
 
-// --- AÇÕES NA TABELA ---
+async function atualizarLotesComNovoProduto(firebaseKey, novosDados) {
+  const produtoRef = firebase.database().ref(`produto/${firebaseKey}`);
+  const snapshot = await produtoRef.once('value');
+  const produto = snapshot.val();
+  if (!produto || !produto.lotes) return;
+
+  let valorTotal = 0;
+  let quantidadeTotal = 0;
+
+  for (const loteId in produto.lotes) {
+    const lote = produto.lotes[loteId];
+    const qtd = parseFloat(lote.quantidade) || 0;
+    quantidadeTotal += qtd;
+
+    let precoBase = parseFloat(novosDados.preco);
+    const unidade = novosDados.precoPor;
+
+    if (['g', 'ml', '100g'].includes(unidade)) {
+      // converte para base kg/litro
+      const multiplicador = unidade === 'ml' ? qtd / 1000 : unidade === '100g' ? qtd / 0.1 : qtd / 1000;
+      valorTotal += precoBase * multiplicador;
+    } else {
+      valorTotal += precoBase * qtd;
+    }
+  }
+
+  await produtoRef.update({
+    valorEstoque: parseFloat(valorTotal.toFixed(2)),
+    quantidadeEstoque: quantidadeTotal
+  });
+}
+
+// Substitua a função handleAcoesTabela
 function handleAcoesTabela(e) {
   const row = e.target.closest('tr');
   if (!row) return;
 
   const firebaseKey = row.getAttribute('data-key');
-  const index = produtos.findIndex(p => p.firebaseKey === firebaseKey);
-  const produto = produtos[index];
+  const produto = produtos.find(p => p.firebaseKey === firebaseKey); // Busca direta pela chave
+
+  if (!produto) {
+    console.error('Produto não encontrado para a chave:', firebaseKey);
+    mostrarMensagem('Produto não encontrado!', 'error');
+    return;
+  }
 
   // Consultar
   if (e.target.classList.contains('search-icon')) {
@@ -559,9 +679,9 @@ function handleAcoesTabela(e) {
     document.getElementById('modal-visualizar').style.display = 'flex';
   }
 
-  // Editar
+  // Editar (modificado)
   if (e.target.classList.contains('edit-icon')) {
-    preencherFormEdicao(produto, index);
+    preencherFormEdicao(produto, firebaseKey); // Passa a chave, não o índice
     document.getElementById('modal-produto').style.display = 'flex';
   }
 
@@ -570,6 +690,19 @@ function handleAcoesTabela(e) {
     firebaseKeyParaExcluir = firebaseKey;
     document.getElementById('modal-confirmar-exclusao').style.display = 'flex';
   }
+}
+
+// Atualize a função preencherFormEdicao
+function preencherFormEdicao(produto, firebaseKey) {
+  indiceParaEditar = firebaseKey;
+
+  document.getElementById('fornecedor').value = produto.fornecedorId || '';
+
+  document.getElementById('categoria').disabled = true;
+  document.getElementById('fornecedor').disabled = true;
+  //bloqueado
+  document.getElementById('categoria').style.backgroundColor = '#f0f0f0';
+  document.getElementById('fornecedor').style.backgroundColor = '#f0f0f0';
 }
 
 function preencherModalVisualizacao(produto) {
@@ -624,7 +757,16 @@ function preencherFormEdicao(produto, index) {
   document.getElementById('preco').value = produto.preco;
   document.getElementById('preco-por').value = produto.precoPor;
   document.getElementById('fornecedor').value = produto.fornecedorId || '';
+
   document.getElementById('titulo-modal-produto').textContent = 'Editar Produto';
+
+  // BLOQUEAR edição de categoria e fornecedor
+  document.getElementById('categoria').disabled = true;
+  document.getElementById('fornecedor').disabled = true;
+
+  //fundo cinza claro
+  document.getElementById('categoria').style.backgroundColor = '#f0f0f0';
+  document.getElementById('fornecedor').style.backgroundColor = '#f0f0f0';
 }
 
 // --- EXCLUSÕES ---
@@ -646,36 +788,71 @@ function excluirSelecionados() {
   modal.style.display = 'flex';
 }
 
-function confirmarExclusao() {
+async function confirmarExclusao() {
   const modal = document.getElementById('modal-confirmar-exclusao');
-  const multiplos = modal.getAttribute('data-multiplos') === 'true';
+  const isMultipla = modal.getAttribute('data-multiplos') === 'true';
 
-  if (multiplos) {
-    const selecionados = Array.from(document.querySelectorAll('.selecionar-produto:checked'));
+  try {
+    if (isMultipla) {
+      const selecionados = Array.from(document.querySelectorAll('.selecionar-produto:checked'));
+      for (const checkbox of selecionados) {
+        const tr = checkbox.closest('tr');
+        const firebaseKey = tr.getAttribute('data-key');
 
-    selecionados.forEach(cb => {
-      const row = cb.closest('tr');
-      const key = row.getAttribute('data-key');
-      const produto = produtos.find(p => p.firebaseKey === key);
-      firebase.database().ref('produto/' + key).remove();
-      registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
-    });
+        await removerProdutoDosPedidos(firebaseKey);
+        await firebase.database().ref(`produto/${firebaseKey}`).remove();
 
-    mostrarMensagem('Produtos excluídos com sucesso!', 'success');
+        registrarHistorico("Exclusão", `Produto excluído e removido dos pedidos.`);
+      }
+    } else if (firebaseKeyParaExcluir) {
+      await removerProdutoDosPedidos(firebaseKeyParaExcluir);
+      await firebase.database().ref(`produto/${firebaseKeyParaExcluir}`).remove();
+
+      registrarHistorico("Exclusão", `Produto excluído e removido dos pedidos.`);
+    }
+
+    firebaseKeyParaExcluir = null;
     modal.removeAttribute('data-multiplos');
-    modal.removeAttribute('data-quantidade');
     modal.style.display = 'none';
     carregarProdutosDoFirebase();
-  } else {
-    if (!firebaseKeyParaExcluir) return;
-    const produto = produtos.find(p => p.firebaseKey === firebaseKeyParaExcluir);
-    firebase.database().ref('produto/' + firebaseKeyParaExcluir).remove().then(() => {
-      registrarHistorico('Exclusão de produto', `Produto "${produto.nome}" excluído.`);
-      carregarProdutosDoFirebase();
-      mostrarMensagem('Produto excluído com sucesso!', 'success');
-      document.getElementById('modal-confirmar-exclusao').style.display = 'none';
-      firebaseKeyParaExcluir = null;
-    });
+  } catch (error) {
+    console.error("Erro ao excluir produto(s):", error);
+    mostrarMensagem('Erro ao excluir produto(s). Tente novamente.', 'error');
+  }
+}
+
+async function removerProdutoDosPedidos(firebaseKeyProduto) {
+  const pedidosRef = firebase.database().ref('pedido');
+  const snapshot = await pedidosRef.once('value');
+  const pedidos = snapshot.val();
+
+  for (const pedidoId in pedidos) {
+    const pedido = pedidos[pedidoId];
+    const itens = pedido.itensPedido || {};
+
+    // Filtra os itens que não são do produto a ser excluído
+    const novosItens = {};
+    for (const itemId in itens) {
+      if (itens[itemId].idProduto !== firebaseKeyProduto) {
+        novosItens[itemId] = itens[itemId];
+      }
+    }
+
+    if (Object.keys(novosItens).length === 0) {
+      // Se não sobrou nenhum item, exclui o pedido inteiro
+      await firebase.database().ref(`pedido/${pedidoId}`).remove();
+    } else {
+      // Se ainda tem itens, atualiza o pedido com novos itens e novo total
+      let novoTotal = 0;
+      for (const id in novosItens) {
+        novoTotal += parseFloat(novosItens[id].subtotal || 0);
+      }
+
+      await firebase.database().ref(`pedido/${pedidoId}`).update({
+        itensPedido: novosItens,
+        valorTotal: parseFloat(novoTotal.toFixed(2))
+      });
+    }
   }
 }
 
@@ -708,6 +885,8 @@ function aplicarFiltrosOrdenacao(lista) {
   const categoriaSelecionada = document.getElementById('filtrar-categoria')?.value || '';
   const fornecedorSelecionado = document.getElementById('filtrar-fornecedor')?.value || '';
   const ordem = document.getElementById('ordenar-nome')?.value || '';
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
 
   let filtrados = lista.filter(p => {
     const nome = p.nome.toLowerCase();
@@ -716,26 +895,23 @@ function aplicarFiltrosOrdenacao(lista) {
     const matchCategoria = categoriaSelecionada ? p.categoria === categoriaSelecionada : true;
     const matchFornecedor = fornecedorSelecionado ? p.fornecedorId === fornecedorSelecionado : true;
 
+    // CALCULAR VALIDADE PARA ESTE PRODUTO
+    const validadeProxima = calcularValidadeMaisProxima(p);
+    const diasParaVencer = validadeProxima ? calcularDiasParaVencer(validadeProxima) : null;
+
+    // APLICAR FILTROS ESPECIAIS
     let matchEspecial = true;
     if (filtroEspecialAtivo) {
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-      const validade = p.validade ? new Date(p.validade) : null;
-      if (validade) {
-        validade.setHours(0, 0, 0, 0);
-        const dias = Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
-        const atual = parseFloat(p.quantidadeEstoque);
-        const minima = parseFloat(p.quantidadeMinima);
-
-        if (filtroEspecialAtivo === 'validade') {
-          matchEspecial = dias <= 7 && dias >= 0;
-        } else if (filtroEspecialAtivo === 'estoque') {
-          matchEspecial = atual < minima;
-        } else if (filtroEspecialAtivo === 'vencido') {
-          matchEspecial = dias < 0;
-        }
-      } else {
-        matchEspecial = false;
+      if (filtroEspecialAtivo === 'estoque') {
+        const qtdAtual = parseFloat(p.quantidadeEstoque) || 0;
+        const qtdMinima = parseFloat(p.quantidadeMinima) || 0;
+        matchEspecial = qtdAtual < qtdMinima;
+      }
+      else if (filtroEspecialAtivo === 'validade') {
+        matchEspecial = diasParaVencer !== null && diasParaVencer <= 7 && diasParaVencer >= 0;
+      }
+      else if (filtroEspecialAtivo === 'vencido') {
+        matchEspecial = diasParaVencer !== null && diasParaVencer < 0;
       }
     }
 
@@ -778,64 +954,137 @@ document.querySelectorAll('#legenda-alertas span').forEach(btn => {
   });
 });
 
-// --- EXPORTAÇÃO ---
-function exportarTodosVisiveisParaCSV() {
-  const produtosVisiveis = aplicarFiltrosOrdenacao(produtos);
+function calcularValidadeMaisProxima(produto) {
+  if (!produto.lotes) return null;
 
-  if (produtosVisiveis.length === 0) {
-    mostrarMensagem('⚠️ Nenhum produto disponível para exportar.', 'warning');
+  const datas = Object.values(produto.lotes)
+    .map(l => l.validade)
+    .filter(Boolean)
+    .map(d => new Date(d))
+    .filter(d => !isNaN(d));
+
+  if (datas.length === 0) return null;
+  datas.sort((a, b) => a - b);
+  return datas[0];
+}
+
+function calcularDiasParaVencer(validade) {
+  if (!validade) return null;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const diffTime = validade - hoje;
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// --- EXPORTAÇÃO ---
+async function exportarTodosVisiveisParaCSV() {
+  const produtosFiltrados = aplicarFiltrosOrdenacao(produtos);
+  if (produtosFiltrados.length === 0) {
+    mostrarMensagem("Nenhum produto visível para exportar!", "warning");
     return;
   }
 
-  gerarCSV(produtosVisiveis, 'produtos_tabela_atual.csv');
+  const linhas = [["Código", "Nome", "Categoria", "Fornecedor", "Estoque Atual", "Unidade", "Estoque Mínimo", "Validade mais próxima", "Valor Estoque Total", "Qtd. de Lotes", "Lote", "Validade do Lote", "Qtd. Lote", "Subtotal Lote"]];
+
+  for (const produto of produtosFiltrados) {
+    const validadeMaisProxima = calcularValidadeMaisProxima(produto);
+    const validadeFormatada = validadeMaisProxima ? formatarData(validadeMaisProxima.toISOString().split('T')[0]) : '—';
+    const fornecedor = mapaFornecedores[produto.fornecedorId] || '—';
+    const qtdLotes = produto.lotes ? Object.keys(produto.lotes).length : 0;
+
+    const base = [
+      produto.codigo || '—',
+      produto.nome || '—',
+      produto.categoria || '—',
+      fornecedor,
+      produto.quantidadeEstoque || 0,
+      produto.unidadeMedida || '—',
+      produto.quantidadeMinima || 0,
+      validadeFormatada,
+      (produto.valorEstoque || 0).toFixed(2).replace('.', ','),
+      qtdLotes
+    ];
+
+    if (produto.lotes && Object.keys(produto.lotes).length > 0) {
+      for (const [loteId, lote] of Object.entries(produto.lotes)) {
+        linhas.push([
+          ...base,
+          loteId,
+          lote.validade || '—',
+          lote.quantidade || 0,
+          (lote.subtotal || 0).toFixed(2).replace('.', ',')
+        ]);
+      }
+    } else {
+      linhas.push([...base, '—', '—', '—', '—']);
+    }
+  }
+
+  gerarCSV(linhas, 'produtos_visiveis_detalhado.csv');
 }
 
-function exportarSelecionadosParaCSV() {
-  const linhas = Array.from(document.querySelectorAll('.selecionar-produto:checked'))
-    .map(cb => cb.closest('tr'));
+async function exportarSelecionadosParaCSV() {
+  const checkboxes = document.querySelectorAll('.selecionar-produto:checked');
+  if (checkboxes.length === 0) {
+    mostrarMensagem("Nenhum produto selecionado!", "warning");
+    return;
+  }
 
-  if (linhas.length === 0) return;
+  const chavesSelecionadas = Array.from(checkboxes).map(cb =>
+    cb.closest('tr').getAttribute('data-key')
+  );
 
-  const produtosSelecionados = linhas.map(tr => {
-    const firebaseKey = tr.getAttribute('data-key');
-    return produtos.find(p => p.firebaseKey === firebaseKey);
-  });
+  const produtosSelecionados = produtos.filter(p =>
+    chavesSelecionadas.includes(p.firebaseKey)
+  );
 
-  gerarCSV(produtosSelecionados, 'produtos_selecionados_completos.csv');
+  const linhas = [["Código", "Nome", "Categoria", "Fornecedor", "Estoque Atual", "Unidade", "Estoque Mínimo", "Validade mais próxima", "Valor Estoque Total", "Qtd. de Lotes", "Lote", "Validade do Lote", "Qtd. Lote", "Subtotal Lote"]];
+
+  for (const produto of produtosSelecionados) {
+    const validadeMaisProxima = calcularValidadeMaisProxima(produto);
+    const validadeFormatada = validadeMaisProxima ? formatarData(validadeMaisProxima.toISOString().split('T')[0]) : '—';
+    const fornecedor = mapaFornecedores[produto.fornecedorId] || '—';
+    const qtdLotes = produto.lotes ? Object.keys(produto.lotes).length : 0;
+
+    const base = [
+      produto.codigo || '—',
+      produto.nome || '—',
+      produto.categoria || '—',
+      fornecedor,
+      produto.quantidadeEstoque || 0,
+      produto.unidadeMedida || '—',
+      produto.quantidadeMinima || 0,
+      validadeFormatada,
+      (produto.valorEstoque || 0).toFixed(2).replace('.', ','),
+      qtdLotes
+    ];
+
+    if (produto.lotes && Object.keys(produto.lotes).length > 0) {
+      for (const [loteId, lote] of Object.entries(produto.lotes)) {
+        linhas.push([
+          ...base,
+          loteId,
+          lote.validade || '—',
+          lote.quantidade || 0,
+          (lote.subtotal || 0).toFixed(2).replace('.', ',')
+        ]);
+      }
+    } else {
+      linhas.push([...base, '—', '—', '—', '—']);
+    }
+  }
+
+  gerarCSV(linhas, 'produtos_selecionados_detalhado.csv');
 }
 
-function gerarCSV(dados, nomeArquivo) {
-  const headers = [
-    'Código', 'Nome', 'Categoria', 'Validade',
-    'Qtd. Mínima', 'Qtd. Atual', 'Unidade',
-    'Preço', 'Preço por', 'Fornecedor', 'Descrição'
-  ];
-
-  const rows = dados.map(produto => [
-    produto.codigo || '',
-    produto.nome || '',
-    produto.categoria || '',
-    produto.validade ? formatarData(produto.validade) : '',
-    produto.quantidadeMinima || '',
-    produto.quantidadeEstoque || '',
-    produto.unidadeMedida || '',
-    produto.preco || '',
-    produto.precoPor || '',
-    mapaFornecedores[produto.fornecedorId] || '',
-    produto.descricao || ''
-  ]);
-
-  // Gerar conteúdo CSV
-  const csvContent = '\uFEFF' + [headers, ...rows]
-    .map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"))
-    .join("\n");
-
-  // Criar e disparar download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+function gerarCSV(linhas, nomeArquivo) {
+  const conteudo = linhas.map(l => l.map(val => `"${val}"`).join(";")).join("\n");
+  const blob = new Blob(["\ufeff" + conteudo], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", nomeArquivo);
+  link.href = URL.createObjectURL(blob);
+  link.download = nomeArquivo;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
