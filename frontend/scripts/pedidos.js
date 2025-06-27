@@ -371,9 +371,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Eventos para o modal de validade vencida
+    document.getElementById('btn-confirmar-validade').addEventListener('click', () => {
+        document.getElementById('modal-confirmar-validade').style.display = 'none';
+    });
+
+    document.getElementById('btn-cancelar-validade').addEventListener('click', () => {
+        document.getElementById('modal-confirmar-validade').style.display = 'none';
+    });
+
+    //Atualizar total de produto imediatamente
     firebase.database().ref('produto').on('child_changed', async (snapshot) => {
         const produtoAtualizado = snapshot.val();
-        await atualizarTotaisDoProduto(snapshot.key); // Função existente
+        await atualizarTotaisDoProduto(snapshot.key);
         atualizarTabelaPedidos(); // Força atualização da UI
     });
 
@@ -517,7 +527,6 @@ function carregarFornecedores() {
         });
 }
 
-// Atualize a função carregarProdutos
 function carregarProdutos(selectEspecifico = null, fornecedorId = null) {
     const produtosRef = firebase.database().ref('produto');
     return produtosRef.once('value')
@@ -588,6 +597,22 @@ async function carregarLotesDoProduto(produtoId, selectLote, inputValidade) {
 
         selectLote.appendChild(option);
     }
+}
+
+function verificarValidadesVencidas(itens) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    return itens.some(item => {
+        if (!item.validade) return false;
+
+        // Corrige comparação considerando fuso horário
+        const partes = item.validade.split('-');
+        const dataValidade = new Date(partes[0], partes[1] - 1, partes[2]);
+        dataValidade.setHours(0, 0, 0, 0);
+
+        return dataValidade < hoje;
+    });
 }
 
 function calcularSubtotalItem(itemContainer) {
@@ -1070,7 +1095,7 @@ async function handlePedidoSubmit(e) {
         ? document.getElementById('nomeAdicionar')?.value
         : null;
 
-    // 3) Obtém itens e valida quantidade mínima
+    // 2) Obtém itens e valida quantidade mínima
     const itensNovos = obterItensPedido();
     if (itensNovos.length === 0) {
         mostrarMensagem('Adicione pelo menos um item ao pedido!', 'error');
@@ -1081,13 +1106,13 @@ async function handlePedidoSubmit(e) {
         return;
     }
 
-    // 4) Valida validade em entradas
+    // 3) Valida validade em entradas
     if (isEntrada && itensNovos.some(item => !item.validade)) {
         mostrarMensagem('Informe a validade para todos os itens de entrada!', 'error');
         return;
     }
 
-    // 5) Valida estoque em saídas
+    // 4) Valida estoque em saídas
     if (!isEntrada) {
         for (const item of itensNovos) {
             const snap = await firebase.database().ref(`produto/${item.produtoId}`).once('value');
@@ -1102,11 +1127,41 @@ async function handlePedidoSubmit(e) {
         }
     }
 
-    // 6) Metadados do pedido
+    // Verificar validade vencida 
+    if (isEntrada) {
+        const haValidadesVencidas = verificarValidadesVencidas(itensNovos);
+
+        if (haValidadesVencidas) {
+            // Exibe o modal de confirmação
+            const modalValidade = document.getElementById('modal-confirmar-validade');
+            const mensagem = modalValidade.querySelector('#mensagem-validade-vencida');
+            mensagem.textContent = 'Um ou mais itens possuem validade vencida. Deseja prosseguir mesmo assim?';
+            modalValidade.style.display = 'flex';
+
+            // Aguarda a resposta do usuário
+            const confirmado = await new Promise((resolve) => {
+                document.getElementById('btn-confirmar-validade').onclick = () => {
+                    modalValidade.style.display = 'none';
+                    resolve(true);
+                };
+
+                document.getElementById('btn-cancelar-validade').onclick = () => {
+                    modalValidade.style.display = 'none';
+                    resolve(false);
+                };
+            });
+
+            if (!confirmado) {
+                return; // Usuário cancelou
+            }
+        }
+    }
+
+    // 5) Metadados do pedido
     const numeroPedido = document.querySelector('.modal-order-number').textContent;
     const dataAtual = new Date().toISOString().split('T')[0];
 
-    // 7) Define referência e ID (criação vs. edição)
+    // 6) Define referência e ID (criação vs. edição)
     let pedidoRef, pedidoId;
     if (editando && indiceParaEditar) {
         pedidoRef = firebase.database().ref(`pedido/${indiceParaEditar}`);
@@ -1116,7 +1171,7 @@ async function handlePedidoSubmit(e) {
         pedidoId = pedidoRef.key;
     }
 
-    // 8) Se estivermos editando, REVERTE corretamente a movimentação antiga
+    // 7) Se estivermos editando, REVERTE corretamente a movimentação antiga
     if (editando) {
         const oldSnap = await firebase.database().ref(`pedido/${pedidoId}/itensPedido`).once('value');
         const itensAntigos = oldSnap.val() || {};
@@ -1137,7 +1192,7 @@ async function handlePedidoSubmit(e) {
         }
     }
 
-    // 9) Monta o objeto do pedido (com novos atributos)
+    // 8) Monta o objeto do pedido (com novos atributos)
     const novoPedido = {
         codigoPedido: numeroPedido,
         tipoPedido: isEntrada ? 'Compra' : 'Venda',
@@ -1163,7 +1218,7 @@ async function handlePedidoSubmit(e) {
     });
 
     try {
-        // 10) Grava ou sobrescreve no Firebase
+        // 9) Grava ou sobrescreve no Firebase
         await pedidoRef.set(novoPedido);
 
         //gravar histórico
@@ -1179,17 +1234,17 @@ async function handlePedidoSubmit(e) {
             registrarHistorico(tipoHistorico, descricao);
         }
 
-        // 11) Aplica as movimentações dos itens atuais
+        // 10) Aplica as movimentações dos itens atuais
         for (const item of itensNovos) {
             await atualizarEstoqueProduto(item, isEntrada, pedidoId);
         }
 
-        // 12) Feedback e limpeza de flags
+        // 11) Feedback e limpeza de flags
         mostrarMensagem('Pedido salvo com sucesso!', 'success');
         editando = false;
         indiceParaEditar = null;
 
-        // 13) Fecha modal e recarrega lista
+        // 12) Fecha modal e recarrega lista
         document.getElementById(isEntrada ? 'modal-entrada' : 'modal-saida').style.display = 'none';
         setTimeout(() => {
             carregarPedidosDoFirebase();
