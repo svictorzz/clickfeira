@@ -847,16 +847,23 @@ async function adicionarLinhaTabelaPedido(pedido, tbody) {
 
     // 3) Monta o HTML da linha
     row.innerHTML = `
-      <td><input type="checkbox" class="selecionar-pedido"></td>
-      <td data-label="ID Pedido: ">${codigo}</td>
-      <td data-label="Fornecedor: ">Carregando...</td>
-      <td data-label="Data: ">${dataFormatada}</td>
-      <td data-label="Produtos: ">${qtdItens} <i class="fa fa-search search-icon ver-itens-icon"></i></td>
-      <td data-label="Total: ">${totalFormatado}</td>
-      <td class="col-consultar" data-label="Consultar"><i class="fa fa-search search-icon"></i></td>
-      <td class="col-editar"     data-label="Editar"><i class="fa fa-edit edit-icon"></i></td>
-      <td class="col-excluir"    data-label="Excluir"><i class="fa fa-trash delete-icon"></i></td>
-    `;
+  <td><input type="checkbox" class="selecionar-pedido"></td>
+  <td data-label="ID Pedido: ">${codigo}</td>
+  <td data-label="Fornecedor: ">Carregando.</td>
+  <td data-label="Data: ">${dataFormatada}</td>
+  <td data-label="Produtos: ">${qtdItens} <i class="fa fa-search search-icon ver-itens-icon"></i></td>
+  <td data-label="Total: ">${totalFormatado}</td>
+  <td class="col-consultar" data-label="Consultar"><i class="fa fa-search search-icon"></i></td>
+  <td class="col-editar"    data-label="Editar"><i class="fa fa-edit edit-icon"></i></td>
+  <td class="col-excluir"   data-label="Excluir"><i class="fa fa-trash delete-icon"></i></td>
+  <td class="acoes-mobile" data-label="Ações">
+    <div class="acoes-icones">
+      <i class="fa fa-search search-icon"></i>
+      <i class="fa fa-edit   edit-icon"></i>
+      <i class="fa fa-trash  delete-icon"></i>
+    </div>
+  </td>
+`;
     tbody.appendChild(row);
 
     // 4) Verifica se todos os lotes deste pedido estão zerados
@@ -2320,7 +2327,7 @@ async function exportarPedidosParaCSV(tipo) {
         }
     });
 
-    // ⚠️ Usa UTF-8 com BOM para compatibilidade com acentos no Excel
+    // acentos aceitos
     const BOM = '\uFEFF';
     const csvContent = BOM + linhas.map(linha => linha.map(c => `"${c}"`).join(';')).join('\n');
 
