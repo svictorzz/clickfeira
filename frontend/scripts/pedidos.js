@@ -54,8 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modal.style.display = 'flex';
             document.getElementById('totalAdicionar').textContent = "0,00";
-            modal.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
-
+            if (!editando && !modal.querySelector('.modal-order-number').textContent) {
+                modal.querySelector('.modal-order-number').textContent = gerarCodigoPedido();
+            }
             carregarFornecedores();
 
             document.getElementById('nomeAdicionar').addEventListener('change', async (e) => {
@@ -209,11 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-exportar-entradas').addEventListener('click', () => {
-  exportarPedidosParaCSV('entrada');
-});
-document.getElementById('btn-exportar-saidas').addEventListener('click', () => {
-  exportarPedidosParaCSV('saida');
-});
+        exportarPedidosParaCSV('entrada');
+    });
+    document.getElementById('btn-exportar-saidas').addEventListener('click', () => {
+        exportarPedidosParaCSV('saida');
+    });
 
     // Entradas
     document.getElementById('selecionar-todos-entradas').addEventListener('change', e => {
@@ -1146,6 +1147,19 @@ async function handlePedidoSubmit(e) {
         // 10) Grava ou sobrescreve no Firebase
         await pedidoRef.set(novoPedido);
 
+        //gravar histórico
+        const tipoHistorico = editando
+            ? `Edição de estoque (${isEntrada ? 'Entrada' : 'Saída'})`
+            : `Movimentação de estoque (${isEntrada ? 'Entrada' : 'Saída'})`;
+
+        // registra UMA entrada no histórico para CADA item
+        for (const item of itensNovos) {
+            const nome = item.nome || 'item';
+            const acao = editando ? 'editado' : 'cadastrado';
+            const descricao = `Pedido ${numeroPedido} - ${nome} ${acao}.`;
+            registrarHistorico(tipoHistorico, descricao);
+        }
+
         // 11) Aplica as movimentações dos itens atuais
         for (const item of itensNovos) {
             await atualizarEstoqueProduto(item, isEntrada, pedidoId);
@@ -1733,92 +1747,145 @@ function configurarEventosPedidos() {
                     // 5.5) remover com cascade
                     btnRem.addEventListener('click', async () => {
                         const totalItensAtuais = Object.keys(pedido.itensPedido).length;
-                        if (totalItensAtuais <= 1) {
-                            mostrarMensagem('O pedido deve ter pelo menos um item!', 'error');
-                            return;
-                        }
 
-                        try {
-                            const snapshot = await firebase.database().ref('pedido').once('value');
-                            const todosPedidos = snapshot.val() || {};
+                        if (isEntrada) {
+                            // Lógica original para entradas (com lotes e saídas associadas)
+                            if (totalItensAtuais <= 1) {
+                                mostrarMensagem('O pedido deve ter pelo menos um item!', 'error');
+                                return;
+                            }
 
-                            // 🔎 Identificar saídas associadas ao lote sendo removido
-                            const saidasDoLote = Object.entries(todosPedidos)
-                                .filter(([_, pedido]) => pedido.tipoPedido === 'Venda')
-                                .filter(([_, pedido]) => {
-                                    const itens = pedido.itensPedido || {};
-                                    return Object.values(itens).some(item =>
-                                        item.idProduto === itemData.idProduto &&
-                                        item.lote === itemData.lote
-                                    );
+                            try {
+                                const snapshot = await firebase.database().ref('pedido').once('value');
+                                const todosPedidos = snapshot.val() || {};
+
+                                // Identificar saídas associadas ao lote sendo removido
+                                const saidasDoLote = Object.entries(todosPedidos)
+                                    .filter(([_, pedido]) => pedido.tipoPedido === 'Venda')
+                                    .filter(([_, pedido]) => {
+                                        const itens = pedido.itensPedido || {};
+                                        return Object.values(itens).some(item =>
+                                            item.idProduto === itemData.idProduto &&
+                                            item.lote === itemData.lote
+                                        );
+                                    });
+
+                                let mensagemConfirmacao = 'Deseja remover este item da entrada?';
+                                if (saidasDoLote.length > 0) {
+                                    mensagemConfirmacao += `\n\n⚠️ Este lote foi utilizado em ${saidasDoLote.length} saída(s). Essas saídas serão excluídas junto com o item e o lote.`;
+                                }
+
+                                if (!confirm(mensagemConfirmacao)) return;
+
+                                // Excluir as saídas associadas
+                                for (const [saidaId, saida] of saidasDoLote) {
+                                    const itensSaida = saida.itensPedido || {};
+                                    for (const [_, item] of Object.entries(itensSaida)) {
+                                        await atualizarEstoqueProduto(item, true, saidaId);
+                                    }
+                                    await firebase.database().ref(`pedido/${saidaId}`).remove();
+                                }
+
+                                // Remover o item da entrada
+                                await firebase.database()
+                                    .ref(`pedido/${indiceParaEditar}/itensPedido/${itemId}`)
+                                    .remove();
+
+                                // Remover o lote do produto
+                                await firebase.database()
+                                    .ref(`produto/${itemData.idProduto}/lotes/${itemData.lote}`)
+                                    .remove();
+
+                                // Atualizar totais de estoque e valor do produto
+                                await atualizarTotaisDoProduto(itemData.idProduto);
+
+                                // Atualizar a interface
+                                div.remove();
+                                atualizarTotalPedido();
+                                atualizarEstadoRemoverItens(modal);
+                                delete pedido.itensPedido[itemId];
+
+                                // Recalcula total após remoção
+                                const novoTotal = Object.values(pedido.itensPedido).reduce(
+                                    (total, item) => total + (item.subtotal || 0),
+                                    0
+                                );
+
+                                // Atualiza no Firebase
+                                await firebase.database().ref(`pedido/${indiceParaEditar}`).update({
+                                    valor: novoTotal
                                 });
 
-                            let mensagemConfirmacao = 'Deseja remover este item da entrada?';
-                            if (saidasDoLote.length > 0) {
-                                mensagemConfirmacao += `\n\n⚠️ Este lote foi utilizado em ${saidasDoLote.length} saída(s). Essas saídas serão excluídas junto com o item e o lote.`;
-                            }
-
-                            if (!confirm(mensagemConfirmacao)) return;
-
-                            // 🔁 Excluir as saídas associadas
-                            for (const [saidaId, saida] of saidasDoLote) {
-                                const itensSaida = saida.itensPedido || {};
-                                for (const [_, item] of Object.entries(itensSaida)) {
-                                    await atualizarEstoqueProduto(item, true, saidaId);
+                                // Atualiza visualmente na tabela (total na célula)
+                                const linha = document.querySelector(`tr[data-key="${indiceParaEditar}"]`);
+                                if (linha) {
+                                    const totalFormatado = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
+                                    linha.querySelector('td[data-label="Total: "]').textContent = totalFormatado;
                                 }
-                                await firebase.database().ref(`pedido/${saidaId}`).remove();
+
+                                mostrarMensagem('Item removido com sucesso. Lote e saídas associadas também foram excluídos.', 'sucesso');
+
+                            } catch (error) {
+                                console.error('Erro ao remover item:', error);
+                                mostrarMensagem('Erro ao remover item!', 'error');
+                            }
+                        } else {
+                            // Lógica para SAÍDAS
+                            if (totalItensAtuais <= 1) {
+                                mostrarMensagem('A saída deve ter pelo menos um item!', 'error');
+                                return;
                             }
 
-                            // ❌ Remover o item da entrada
-                            await firebase.database()
-                                .ref(`pedido/${indiceParaEditar}/itensPedido/${itemId}`)
-                                .remove();
-
-                            // ❌ Remover o lote do produto
-                            await firebase.database()
-                                .ref(`produto/${itemData.idProduto}/lotes/${itemData.lote}`)
-                                .remove();
-
-                            // ♻️ Atualizar totais de estoque e valor do produto
-                            await atualizarTotaisDoProduto(itemData.idProduto);
-
-                            // 🖼️ Atualizar a interface
-                            div.remove();
-                            atualizarTotalPedido();
-                            atualizarEstadoRemoverItens(modal);
-                            delete pedido.itensPedido[itemId];
-
-                            // Recalcula total após remoção
-                            const novoTotal = Object.values(pedido.itensPedido).reduce(
-                                (total, item) => total + (item.subtotal || 0),
-                                0
-                            );
-
-                            // Atualiza no Firebase
-                            await firebase.database().ref(`pedido/${indiceParaEditar}`).update({
-                                valor: novoTotal
-                            });
-
-                            // Atualiza visualmente na tabela (total na célula)
-                            const linha = document.querySelector(`tr[data-key="${indiceParaEditar}"]`);
-                            if (linha) {
-                                const totalFormatado = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
-                                linha.querySelector('td[data-label="Total: "]').textContent = totalFormatado;
+                            if (!confirm('Deseja remover este item da saída?\nA quantidade será reabastecida no lote.')) {
+                                return;
                             }
 
-                            mostrarMensagem('Item removido com sucesso. Lote e saídas associadas também foram excluídos.', 'sucesso');
+                            try {
+                                // Reverte a saída (adiciona a quantidade de volta ao lote)
+                                await atualizarEstoqueProduto(itemData, true, pedido.firebaseKey);
 
-                        } catch (error) {
-                            console.error('Erro ao remover item:', error);
-                            mostrarMensagem('Erro ao remover item!', 'error');
+                                // Remove o item do pedido
+                                await firebase.database()
+                                    .ref(`pedido/${indiceParaEditar}/itensPedido/${itemId}`)
+                                    .remove();
+
+                                // Atualiza a interface
+                                div.remove();
+                                atualizarTotalPedido();
+                                atualizarEstadoRemoverItens(modal);
+
+                                // Atualiza o total do pedido
+                                const novoTotal = Object.values(pedido.itensPedido).reduce(
+                                    (total, item) => item === itemData ? total : total + (item.subtotal || 0),
+                                    0
+                                );
+
+                                await firebase.database().ref(`pedido/${indiceParaEditar}`).update({
+                                    valor: novoTotal
+                                });
+
+                                // Atualiza a tabela
+                                const linha = document.querySelector(`tr[data-key="${indiceParaEditar}"]`);
+                                if (linha) {
+                                    const totalFormatado = `R$ ${novoTotal.toFixed(2).replace('.', ',')}`;
+                                    linha.querySelector('td[data-label="Total: "]').textContent = totalFormatado;
+                                }
+
+                                mostrarMensagem('Item removido com sucesso. Estoque reabastecido.', 'sucesso');
+
+                            } catch (error) {
+                                console.error('Erro ao remover item:', error);
+                                mostrarMensagem('Erro ao remover item!', 'error');
+                            }
                         }
-                    });
-
+                    })
                 }
             }
 
             // 6) termina de abrir modal
             atualizarEstadoRemoverItens(modal);
+            // Manter o código original do pedido
+            modal.querySelector('.modal-order-number').textContent = pedido.codigoPedido || '(sem número)';
             modal.querySelector(isEntrada ? '#btnFecharPedido' : '#btnFecharPedidoSaida')
                 .textContent = 'Atualizar pedido';
             modal.style.display = 'flex';
@@ -1868,6 +1935,7 @@ function configurarEventosPedidos() {
                 ? selectedKeys.slice()
                 : [firebaseKeyParaExcluir];
 
+
             // 2) Carrega os pedidos completos antes de tocar no banco
             const pedidosParaRemover = [];
             for (const fk of keysToRemove) {
@@ -1890,6 +1958,16 @@ function configurarEventosPedidos() {
                     }
                     // 3) apaga apenas o registro de saída
                     await firebase.database().ref(`pedido/${pedido.firebaseKey}`).remove();
+                    const tipoHist = `Exclusão de estoque (Saída)`;
+                    const cod = (pedido.codigoPedido || pedido.firebaseKey)
+                        .toUpperCase().replace(/[^A-Z0-9\-]/g, '').trim();
+
+                    for (const item of Object.values(pedido.itensPedido || {})) {
+                        const nome = item.nome || 'item';
+                        const descricao = `Pedido ${cod} - ${nome} excluído.`;
+                        registrarHistorico(tipoHist, descricao);
+                    }
+
 
                 } else {
                     // ---- REMOÇÃO DE COMPRA (CASCADE) ----
@@ -1901,6 +1979,15 @@ function configurarEventosPedidos() {
 
                     // 3.2) Apaga a própria entrada
                     await firebase.database().ref(`pedido/${pedido.firebaseKey}`).remove();
+                    const tipoHist = 'Exclusão de estoque (Entrada)';
+                    const cod = (pedido.codigoPedido || pedido.firebaseKey)
+                        .toUpperCase().replace(/[^A-Z0-9\-]/g, '').trim();
+
+                    for (const item of Object.values(pedido.itensPedido || {})) {
+                        const nome = item.nome || 'item';
+                        const descricao = `Pedido ${cod} - ${nome} excluído.`;
+                        registrarHistorico(tipoHist, descricao);
+                    }
 
                     // 3.3) Remove cada lote do produto e recalcula
                     for (const item of Object.values(pedido.itensPedido || {})) {
@@ -2113,65 +2200,76 @@ async function atualizarTotaisDoProduto(produtoId) {
 }
 
 async function exportarPedidosParaCSV(tipo) {
-  const snapshot = await firebase.database().ref('pedido').once('value');
-  const pedidos = snapshot.val() || {};
+    const snapshot = await firebase.database().ref('pedido').once('value');
+    const pedidos = snapshot.val() || {};
 
-  const fornecedoresSnapshot = await firebase.database().ref('fornecedor').once('value');
-  const fornecedores = fornecedoresSnapshot.val() || {};
+    const fornecedoresSnapshot = await firebase.database().ref('fornecedor').once('value');
+    const fornecedores = fornecedoresSnapshot.val() || {};
 
-  const linhas = [[
-    'Código Pedido',
-    tipo === 'entrada' ? 'Fornecedor' : 'Cliente',
-    'Tipo de Pedido',
-    'Data',
-    'Produto',
-    'Lote',
-    'Quantidade',
-    'Unidade',
-    'Validade',
-    'Subtotal (R$)'
-  ]];
+    const linhas = [[
+        'Código Pedido',
+        tipo === 'entrada' ? 'Fornecedor' : 'Cliente',
+        'Tipo de Pedido',
+        'Data',
+        'Produto',
+        'Lote',
+        'Quantidade',
+        'Unidade',
+        'Validade',
+        'Subtotal (R$)'
+    ]];
 
-  Object.values(pedidos).forEach(pedido => {
-    if (pedido.tipoPedido === (tipo === 'entrada' ? 'Compra' : 'Venda')) {
-      const codigo = pedido.codigoPedido || '(sem código)';
-      const tipoPedido = pedido.tipoPedido || '-';
-      const data = pedido.data || '-';
+    Object.values(pedidos).forEach(pedido => {
+        if (pedido.tipoPedido === (tipo === 'entrada' ? 'Compra' : 'Venda')) {
+            const codigo = pedido.codigoPedido || '(sem código)';
+            const tipoPedido = pedido.tipoPedido || '-';
+            const data = pedido.data || '-';
 
-      const nomePessoa = tipo === 'entrada'
-        ? (fornecedores[pedido.idFornecedor]?.nome || 'Fornecedor não identificado')
-        : pedido.nomeCliente || 'Cliente não identificado';
+            const nomePessoa = tipo === 'entrada'
+                ? (fornecedores[pedido.idFornecedor]?.nome || 'Fornecedor não identificado')
+                : pedido.nomeCliente || 'Cliente não identificado';
 
-      const itens = pedido.itensPedido || {};
-      Object.values(itens).forEach(item => {
-        const linha = [
-          codigo,
-          nomePessoa,
-          tipoPedido,
-          data,
-          item.nome || '(sem nome)',
-          item.lote || '-',
-          item.quantidade || 0,
-          item.unidadeMedida || '-',
-          item.validade || '-',
-          (parseFloat(item.subtotal) || 0).toLocaleString('pt-BR', {
-            minimumFractionDigits: 2
-          })
-        ];
-        linhas.push(linha);
-      });
-    }
-  });
+            const itens = pedido.itensPedido || {};
+            Object.values(itens).forEach(item => {
+                const linha = [
+                    codigo,
+                    nomePessoa,
+                    tipoPedido,
+                    data,
+                    item.nome || '(sem nome)',
+                    item.lote || '-',
+                    item.quantidade || 0,
+                    item.unidadeMedida || '-',
+                    item.validade || '-',
+                    (parseFloat(item.subtotal) || 0).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2
+                    })
+                ];
+                linhas.push(linha);
+            });
+        }
+    });
 
-  // ⚠️ Usa UTF-8 com BOM para compatibilidade com acentos no Excel
-  const BOM = '\uFEFF';
-  const csvContent = BOM + linhas.map(linha => linha.map(c => `"${c}"`).join(';')).join('\n');
+    // com acesso a acentos
+    const BOM = '\uFEFF';
+    const csvContent = BOM + linhas.map(linha => linha.map(c => `"${c}"`).join(';')).join('\n');
 
-  const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `relatorio_pedidos_${tipo}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `relatorio_pedidos_${tipo}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function registrarHistorico(tipo, descricao) {
+    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
+    firebase.database().ref('historicoAcoes').push({
+        tipo,
+        descricao,
+        data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+        idComerciante
+    });
 }
