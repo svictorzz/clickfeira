@@ -1,941 +1,343 @@
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
-  authDomain: "click-feira.firebaseapp.com",
-  databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
-  projectId: "click-feira",
-  storageBucket: "click-feira.appspot.com",
-  messagingSenderId: "108583577904",
-  appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
-};
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-// Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fornecedores | Gerenciar</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/menu.css">
+  <link rel="stylesheet" href="../styles/fornecedores.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
 
-// Variáveis globais
-let fornecedores = [];
-let fornecedorParaEditar = null;
-let fornecedorParaExcluir = null;
-const modalExcluir = new bootstrap.Modal(document.getElementById('modal-excluir'));
-let proximoCodigo = 1;
-let ordenacaoAtual = '';
+<body>
+  <div id="menu-container"></div>
 
-// DOM Elements
-const elements = {
-  tabelaFornecedores: document.getElementById('tabela-fornecedores'),
-  pesquisarFornecedor: document.getElementById('pesquisar-fornecedor'),
-  nomeFornecedorExcluir: document.getElementById('nome-fornecedor-excluir'),
-  filtrosContainer: document.getElementById('filtros-container'),
-  ordenarNome: document.getElementById('ordenar-nome'),
-  filtrarTipo: document.getElementById('filtrar-tipo'),
-  filtrarCategoria: document.getElementById('filtrar-categoria'),
-  btnExportarTodos: document.getElementById('btn-exportar-todos'),
-  btnLimparFiltros: document.getElementById('btn-limpar-filtros'),
-  btnExcluirSelecionados: document.getElementById('btn-excluir-selecionados'),
-  btnExportarSelecionados: document.getElementById('btn-exportar-selecionados'),
-  selecionarTodos: document.getElementById('selecionar-todos'),
-  acoesMultiplas: document.getElementById('acoes-multiplas')
-};
+  <div class="main-content-container">
+    <div class="container-centralizado">
+      <div class="row w-100 justify-content-center">
+        <div class="col-md-12 p-4">
+          <div class="card-header bg-white">
+            <h2><b>Fornecedores</b> <span class="cinza">/ Gerenciar</span></h2>
+          </div>
+          <div class="card-body">
+            <div class="search-bar">
+              <div class="input-icon">
+                <i class="fa fa-search"></i>
+                <input id="pesquisar-fornecedor" type="text" placeholder="Pesquisar">
+              </div>
+              <button class="filter"><i class="fa fa-sliders"></i> Filtros</button>
+              <button id="btn-adicionar" class="abrir-modal"><i class="fa fa-plus"></i> Adicionar</button>
+              
+              <!-- Botões alinhados à direita -->
+              <div class="botoes-direita">
+                <button id="btn-exportar-todos" class="filter">📥 Exportar Todos</button>
+                <button id="btn-limpar-filtros" class="filter" style="display: none;">Limpar Filtros</button>
+                <div id="acoes-multiplas" style="display: none;">
+                  <button id="btn-excluir-selecionados">Excluir Selecionados</button>
+                  <button id="btn-exportar-selecionados">Exportar Selecionados</button>
+                </div>
+              </div>
+            </div>
 
-// Registrar ação no histórico
-function registrarHistorico(tipo, descricao) {
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (!idComerciante) {
-    console.warn("ID do comerciante não encontrado. Histórico não registrado.");
-    return;
-  }
+            <div id="filtros-container">
+              <div>
+                <label>Ordenar por:</label>
+                <select id="ordenar-nome">
+                  <option value="">Ordenar</option>
+                  <option value="az">Nome (A-Z)</option>
+                  <option value="za">Nome (Z-A)</option>
+                </select>
+              </div>
+              <div>
+                <div>
+                  <label>Filtrar por categoria:</label>
+                  <select id="filtrar-categoria">
+                    <option value="">Todas</option>
+                    <option value="frutas">Frutas</option>
+                    <option value="legumes">Legumes</option>
+                    <option value="vegetais">Vegetais</option>
+                    <option value="verduras">Verduras</option>
+                    <option value="temperos">Temperos</option>
+                    <option value="laticínios">Laticínios</option>
+                    <option value="doces">Doces</option>
+                    <option value="salgados">Salgados</option>
+                    <option value="carnes">Carnes</option>
+                    <option value="grãos">Grãos</option>
+                    <option value="bebidas">Bebidas</option>
+                    <option value="outros">Outros</option>
+                  </select>
+                </div>
+                <label>Filtrar por tipo:</label>
+                <select id="filtrar-tipo">
+                  <option value="">Todos</option>
+                  <option value="cnpj">CNPJ</option>
+                  <option value="cpf">CPF</option>
+                </select>
+              </div>
+            </div>
 
-  const historico = {
-    tipo,
-    descricao,
-    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
-    idComerciante
-  };
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th><input type="checkbox" id="selecionar-todos"></th>
+                    <th>Código</th>
+                    <th>CNPJ/CPF</th>
+                    <th>Fornecedor</th>
+                    <th>Telefone</th>
+                    <th>Data Cadastro</th>
+                    <th>Última Atualização</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-fornecedores">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  firebase.database().ref('historicoAcoes').push(historico);
-}
+  <!-- Modal Adicionar Fornecedor -->
+  <div id="modal-adicionar" class="modal-overlay">
+    <div class="modal-content">
+      <form id="form-adicionar">
+        <center>
+          <h3>Adicionar Novo Fornecedor</h3>
+        </center>
 
-// Função para obter data legível
-function obterDataLegivel() {
-  const hoje = new Date();
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const ano = hoje.getFullYear();
-  const hora = hoje.getHours().toString().padStart(2, '0');
-  const minutos = hoje.getMinutes().toString().padStart(2, '0');
-  return `${dia}/${mes}/${ano} às ${hora}:${minutos}`;
-}
+        <div class="form-grid">
+          <div class="form-col">
+            <label for="codigo">Código:</label>
+            <input id="codigo" class="form-control" type="text" readonly />
 
-// Função para formatar data 
-function formatarData(dataISO) {
-  if (!dataISO) return '';
-  if (dataISO.includes('às')) return dataISO;
+            <label for="nome">Nome do Fornecedor:</label>
+            <input id="nome" class="form-control" required />
+            <div id="nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
 
-  const data = new Date(dataISO);
-  if (isNaN(data.getTime())) return '';
+            <label for="cnpj">CNPJ/CPF:</label>
+            <input id="cnpj" class="form-control" required />
+            <div id="cnpj-error" class="error-message">CNPJ/CPF inválido</div>
 
-  const dia = String(data.getDate()).padStart(2, '0');
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const ano = data.getFullYear();
-  const horas = String(data.getHours()).padStart(2, '0');
-  const minutos = String(data.getMinutes()).padStart(2, '0');
+            <label for="telefone">Telefone:</label>
+            <input id="telefone" class="form-control" required />
+            <div id="telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
+          </div>
 
-  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
-}
+          <div class="form-col">
+            <label for="email">E-mail:</label>
+            <input id="email" class="form-control" type="email" required />
+            <div id="email-error" class="error-message">E-mail inválido</div>
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', () => {
-  carregarFornecedoresDoFirebase();
+            <!-- CEP REMOVIDO -->
+            <label for="endereco">Endereço:</label>
+            <input id="endereco" class="form-control" required />
 
-  // Event Listeners
-  document.getElementById('btn-adicionar').addEventListener('click', mostrarModalAdicionar);
-  document.getElementById('btn-cancelar-adicionar').addEventListener('click', fecharModalAdicionar);
-  document.getElementById('btn-cancelar-editar').addEventListener('click', fecharModalEditar);
-  document.getElementById('btn-voltar-visualizar').addEventListener('click', fecharModalVisualizar);
-  document.getElementById('btn-cancelar-exclusao').addEventListener('click', () => modalExcluir.hide());
-  document.getElementById('btn-confirmar-exclusao').addEventListener('click', confirmarExclusao);
-  elements.pesquisarFornecedor.addEventListener('input', pesquisarFornecedores);
-  elements.ordenarNome.addEventListener('change', ordenarFornecedores);
-  elements.filtrarTipo.addEventListener('change', () => aplicarOrdenacaoEFiltros());
-  elements.filtrarCategoria.addEventListener('change', aplicarOrdenacaoEFiltros);
-  elements.btnExcluirSelecionados.addEventListener('click', excluirSelecionados);
-  elements.btnExportarSelecionados.addEventListener('click', exportarSelecionadosParaCSV);
-  elements.selecionarTodos.addEventListener('change', toggleSelecaoTodos);
+            <label>Produtos Fornecidos:</label>
+            <div id="produtos-checkboxes" class="checkbox-grid">
+              <label><input type="checkbox" name="produtos" value="frutas"> Frutas</label>
+              <label><input type="checkbox" name="produtos" value="legumes"> Legumes</label>
+              <label><input type="checkbox" name="produtos" value="vegetais"> Vegetais</label>
+              <label><input type="checkbox" name="produtos" value="verduras"> Verduras</label>
+              <label><input type="checkbox" name="produtos" value="temperos"> Temperos</label>
+              <label><input type="checkbox" name="produtos" value="laticínios"> Laticínios</label>
+              <label><input type="checkbox" name="produtos" value="doces"> Doces</label>
+              <label><input type="checkbox" name="produtos" value="salgados"> Salgados</label>
+              <label><input type="checkbox" name="produtos" value="carnes"> Carnes</label>
+              <label><input type="checkbox" name="produtos" value="grãos"> Grãos</label>
+              <label><input type="checkbox" name="produtos" value="bebidas"> Bebidas</label>
+              <label><input type="checkbox" name="produtos" value="outros"> Outros</label>
+            </div>
+          </div>
+        </div>
 
-  // Toggle para mostrar/ocultar filtros
-  document.querySelector('.filter').addEventListener('click', function () {
-    if (elements.filtrosContainer.style.display === 'none') {
-      elements.filtrosContainer.style.display = 'flex';
-    } else {
-      elements.filtrosContainer.style.display = 'none';
-    }
-  });
+        <div class="modal-buttons">
+          <button type="submit" class="salvar">Salvar</button>
+          <button type="button" class="cancelar" id="btn-cancelar-adicionar">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-  // Evitar envio com Enter
-  document.querySelectorAll('form').forEach(form => {
-    form.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-      }
+  <!-- Modal Editar Fornecedor -->
+  <div id="modal-editar" class="modal-overlay">
+    <div class="modal-content">
+      <form id="form-editar">
+        <center>
+          <h3>Editar Fornecedor</h3>
+        </center>
+        <input type="hidden" id="edit-id">
+
+        <div class="form-grid">
+          <div class="form-col">
+            <label for="edit-codigo">Código:</label>
+            <input id="edit-codigo" class="form-control" readonly />
+
+            <label for="edit-nome">Nome do Fornecedor:</label>
+            <input id="edit-nome" class="form-control" required />
+            <div id="edit-nome-error" class="error-message">Nome é obrigatório (apenas letras e espaços)</div>
+
+            <label for="edit-cnpj">CNPJ/CPF:</label>
+            <input id="edit-cnpj" class="form-control" required />
+            <div id="edit-cnpj-error" class="error-message">CNPJ/CPF inválido</div>
+
+            <label for="edit-telefone">Telefone:</label>
+            <input id="edit-telefone" class="form-control" required />
+            <div id="edit-telefone-error" class="error-message">Formato: (DDD) 99999-9999 ou (DDD) 9999-9999</div>
+          </div>
+
+          <div class="form-col">
+            <label for="edit-email">E-mail:</label>
+            <input id="edit-email" class="form-control" type="email" />
+            <div id="edit-email-error" class="error-message">E-mail inválido</div>
+
+            <!-- CEP REMOVIDO -->
+            <label for="edit-endereco">Endereço:</label>
+            <input id="edit-endereco" class="form-control" />
+
+            <label>Produtos Fornecidos:</label>
+            <div id="edit-produtos-checkboxes" class="checkbox-grid">
+              <label><input type="checkbox" name="produtos" value="frutas"> Frutas</label>
+              <label><input type="checkbox" name="produtos" value="legumes"> Legumes</label>
+              <label><input type="checkbox" name="produtos" value="vegetais"> Vegetais</label>
+              <label><input type="checkbox" name="produtos" value="verduras"> Verduras</label>
+              <label><input type="checkbox" name="produtos" value="temperos"> Temperos</label>
+              <label><input type="checkbox" name="produtos" value="laticínios"> Laticínios</label>
+              <label><input type="checkbox" name="produtos" value="doces"> Doces</label>
+              <label><input type="checkbox" name="produtos" value="salgados"> Salgados</label>
+              <label><input type="checkbox" name="produtos" value="carnes"> Carnes</label>
+              <label><input type="checkbox" name="produtos" value="grãos"> Grãos</label>
+              <label><input type="checkbox" name="produtos" value="bebidas"> Bebidas</label>
+              <label><input type="checkbox" name="produtos" value="outros"> Outros</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="submit" class="salvar">Salvar</button>
+          <button type="button" class="cancelar" id="btn-cancelar-editar">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Visualizar Fornecedor -->
+  <div id="modal-visualizar" class="modal-overlay">
+    <div class="modal-content">
+      <center>
+        <h3>Detalhes do Fornecedor</h3>
+      </center>
+
+      <div class="visualizar-fornecedor">
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Código:</div>
+            <div class="info-value" id="view-codigo"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Nome:</div>
+            <div class="info-value" id="view-nome"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">CNPJ/CPF:</div>
+            <div class="info-value" id="view-cnpj"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">E-mail:</div>
+            <div class="info-value" id="view-email"></div>
+          </div>
+        </div>
+        <!-- CEP REMOVIDO -->
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Telefone:</div>
+            <div class="info-value" id="view-telefone"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Endereço:</div>
+            <div class="info-value" id="view-endereco"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Data de Cadastro:</div>
+            <div class="info-value" id="view-dataCadastro"></div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-12">
+            <div class="info-label">Última Atualização:</div>
+            <div class="info-value" id="view-dataAtualizacao"></div>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="info-label">Produtos:</div>
+            <div class="info-value" id="view-produtos"></div>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="cancelar" id="btn-voltar-visualizar">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Exclusão -->
+  <div class="modal fade" id="modal-excluir" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <p>Deseja realmente excluir o fornecedor?</p>
+          <p class="fw-bold" id="nome-fornecedor-excluir"></p>
+          <p class="text-muted">Os produtos e pedidos cadastrados a ele também serão.</p>
+          <p class="text-muted"></p>Esta ação não poderá ser desfeita.</p>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" id="btn-cancelar-exclusao" class="btn btn-outline-secondary btn-sm">
+            Cancelar
+          </button>
+          <button type="button" id="btn-confirmar-exclusao" class="btn btn-danger btn-sm">
+            Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch('../components/menu.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('menu-container').innerHTML = html;
+        })
+        .catch(err => console.error("Erro ao carregar menu:", err));
     });
-  });
-
-  // Formulários
-  document.getElementById('form-adicionar').addEventListener('submit', salvarFornecedor);
-  document.getElementById('form-editar').addEventListener('submit', atualizarFornecedor);
-
-  // Máscaras e validações
-  aplicarMascaras();
-});
-
-// Limpar Filtro
-elements.btnLimparFiltros.addEventListener('click', () => {
-  elements.filtrarTipo.value = '';
-  elements.filtrarCategoria.value = '';
-  aplicarOrdenacaoEFiltros();
-});
-
-// Exportar fornecedores (todos)
-elements.btnExportarTodos.addEventListener('click', exportarTodosFornecedores);
-
-// Carregar fornecedores do Firebase
-function carregarFornecedoresDoFirebase() {
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (!idComerciante) {
-    console.warn("ID do comerciante não encontrado.");
-    return;
-  }
-
-  firebase.database().ref('fornecedor').on('value', (snapshot) => {
-    fornecedores = [];
-    snapshot.forEach((childSnapshot) => {
-      const fornecedor = childSnapshot.val();
-      if (fornecedor.idComerciante === idComerciante) {
-        fornecedor.firebaseKey = childSnapshot.key;
-        fornecedores.push(fornecedor);
-
-        // Atualiza o proximoCodigo
-        const numCodigo = parseInt(fornecedor.codigo?.replace(/\D/g, ''));
-        if (!isNaN(numCodigo) && numCodigo >= proximoCodigo) {
-          proximoCodigo = numCodigo + 1;
-        }
-      }
-    });
-    aplicarOrdenacaoEFiltros();
-  });
-}
-
-// Função para aplicar ordenação e filtros juntos
-function aplicarOrdenacaoEFiltros() {
-  let filtrados = [...fornecedores];
-  const tipoFiltro = elements.filtrarTipo.value;
-  const termoPesquisa = elements.pesquisarFornecedor.value.toLowerCase();
-  const categoriaSelecionada = elements.filtrarCategoria.value;
-
-  // Aplicar filtro por tipo (CPF/CNPJ)
-  if (tipoFiltro === 'cpf') {
-    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 11);
-  } else if (tipoFiltro === 'cnpj') {
-    filtrados = filtrados.filter(f => f.cnpj && f.cnpj.replace(/\D/g, '').length === 14);
-  }
-
-  // Filtrar por categoria de produtos
-  if (categoriaSelecionada) {
-    filtrados = filtrados.filter(f =>
-      Array.isArray(f.produtos) && f.produtos.includes(categoriaSelecionada)
-    );
-  }
-
-  // Aplicar pesquisa
-  if (termoPesquisa) {
-    filtrados = filtrados.filter(fornecedor =>
-      (fornecedor.nome && fornecedor.nome.toLowerCase().includes(termoPesquisa)) ||
-      (fornecedor.cnpj && fornecedor.cnpj.includes(termoPesquisa)) ||
-      (fornecedor.codigo && fornecedor.codigo.includes(termoPesquisa))
-    );
-  }
-
-  // Aplicar ordenação
-  switch (ordenacaoAtual) {
-    case 'az':
-      filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-      break;
-    case 'za':
-      filtrados.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
-      break;
-  }
-
-  const algumFiltroAtivo = elements.filtrarTipo.value || elements.filtrarCategoria.value;
-  elements.btnLimparFiltros.style.display = algumFiltroAtivo ? 'inline-block' : 'none';
-
-  renderizarTabela(filtrados);
-}
-
-// Funções para abrir/fechar modais
-function mostrarModalAdicionar() {
-  document.getElementById('form-adicionar').reset();
-  document.getElementById('codigo').value = proximoCodigo.toString().padStart(3, '0');
-  document.getElementById('modal-adicionar').style.display = 'flex';
-  fornecedorParaEditar = null;
-}
-
-function fecharModalAdicionar() {
-  document.getElementById('modal-adicionar').style.display = 'none';
-}
-
-function mostrarModalEditar(firebaseKey) {
-  const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
-  if (!fornecedor) {
-    mostrarMensagem("Fornecedor não encontrado.", "error");
-    return;
-  }
-
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (fornecedor.idComerciante !== idComerciante) {
-    mostrarMensagem("Você não tem permissão para editar este fornecedor.", "error");
-    return;
-  }
-
-  // Preencher os campos do formulário de edição
-  document.getElementById('edit-id').value = firebaseKey;
-  document.getElementById('edit-codigo').value = fornecedor.codigo || '';
-  document.getElementById('edit-nome').value = fornecedor.nome || '';
-  document.getElementById('edit-cnpj').value = fornecedor.cnpj || '';
-  document.getElementById('edit-email').value = fornecedor.email || '';
-  // CEP REMOVIDO
-  document.getElementById('edit-telefone').value = fornecedor.telefone || '';
-  document.getElementById('edit-endereco').value = fornecedor.endereco || '';
-  const checkboxes = document.querySelectorAll('#edit-produtos-checkboxes input[name="produtos"]');
-  checkboxes.forEach(cb => {
-    cb.checked = Array.isArray(fornecedor.produtos) && fornecedor.produtos.includes(cb.value);
-  });
-  document.getElementById('modal-editar').style.display = 'flex';
-  fornecedorParaEditar = fornecedor;
-}
-
-function fecharModalEditar() {
-  document.getElementById('modal-editar').style.display = 'none';
-  fornecedorParaEditar = null;
-}
-
-function mostrarModalVisualizar(firebaseKey) {
-  const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
-  if (!fornecedor) {
-    mostrarMensagem("Fornecedor não encontrado.", "error");
-    return;
-  }
-
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (fornecedor.idComerciante !== idComerciante) {
-    mostrarMensagem("Você não tem permissão para acessar este fornecedor.", "error");
-    return;
-  }
-
-  // Preenchimento do modal com dados do fornecedor
-  document.getElementById('view-codigo').textContent = fornecedor.codigo || '';
-  document.getElementById('view-nome').textContent = fornecedor.nome || '';
-  document.getElementById('view-cnpj').textContent = fornecedor.cnpj || '';
-  document.getElementById('view-email').textContent = fornecedor.email || '';
-  // CEP REMOVIDO
-  document.getElementById('view-telefone').textContent = fornecedor.telefone || '';
-  document.getElementById('view-endereco').textContent = fornecedor.endereco || '';
-  document.getElementById('view-dataCadastro').textContent = formatarData(fornecedor.dataCadastro) || '';
-  document.getElementById('view-dataAtualizacao').textContent = formatarData(fornecedor.dataUltimaAtualizacao) || '';
-  document.getElementById('view-produtos').textContent = Array.isArray(fornecedor.produtos)
-    ? fornecedor.produtos.join(', ')
-    : fornecedor.produtos || '';
-  document.getElementById('modal-visualizar').style.display = 'flex';
-}
-
-function fecharModalVisualizar() {
-  document.getElementById('modal-visualizar').style.display = 'none';
-}
-
-function mostrarModalExclusao(firebaseKey) {
-  const fornecedor = fornecedores.find(f => f.firebaseKey === firebaseKey);
-  if (!fornecedor) {
-    mostrarMensagem("Fornecedor não encontrado.", "error");
-    return;
-  }
-
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (fornecedor.idComerciante !== idComerciante) {
-    mostrarMensagem("Você não tem permissão para excluir este fornecedor.", "error");
-    return;
-  }
-
-  fornecedorParaExcluir = fornecedor;
-  document.getElementById('nome-fornecedor-excluir').textContent = fornecedor.nome;
-  modalExcluir.show();
-}
-
-// Funções de renderização
-function renderizarTabela(fornecedoresParaRenderizar = fornecedores) {
-  elements.tabelaFornecedores.innerHTML = '';
-
-  if (fornecedoresParaRenderizar.length === 0) {
-    elements.tabelaFornecedores.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center py-3 text-muted">
-          Nenhum fornecedor encontrado
-        </td>
-      </tr>
-    `;
-    elements.acoesMultiplas.style.display = 'none';
-    return;
-  }
-
-  fornecedoresParaRenderizar.forEach(fornecedor => {
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-key', fornecedor.firebaseKey);
-    tr.innerHTML = `
-      <td><input type="checkbox" class="selecionar-fornecedor"></td>
-      <td>${fornecedor.codigo || ''}</td>
-      <td>${fornecedor.cnpj || ''}</td>
-      <td>${fornecedor.nome || ''}</td>
-      <td>${fornecedor.telefone || ''}</td>
-      <td>${fornecedor.dataCadastro ? formatarData(fornecedor.dataCadastro) : ''}</td>
-      <td>${fornecedor.dataUltimaAtualizacao ? formatarData(fornecedor.dataUltimaAtualizacao) : ''}</td>
-      <td class="text-center">
-        <i class="fas fa-search text-muted cursor-pointer btn-visualizar"></i>
-        <button class="btn btn-sm btn-outline-primary btn-editar me-1">
-          <i class="fas fa-edit"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-danger btn-excluir" data-nome="${fornecedor.nome}">
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      </td>
-    `;
-
-    tr.querySelector('.btn-visualizar').addEventListener('click', () =>
-      mostrarModalVisualizar(fornecedor.firebaseKey));
-
-    tr.querySelector('.btn-editar').addEventListener('click', () =>
-      mostrarModalEditar(fornecedor.firebaseKey));
-
-    tr.querySelector('.btn-excluir').addEventListener('click', () =>
-      mostrarModalExclusao(fornecedor.firebaseKey));
-
-    elements.tabelaFornecedores.appendChild(tr);
-  });
-
-  // Atualizar seleção
-  document.querySelectorAll('.selecionar-fornecedor').forEach(checkbox => {
-    checkbox.addEventListener('change', atualizarSelecaoIndividual);
-  });
-
-  atualizarAcoesMultiplas();
-}
-
-// Funções CRUD
-function confirmarExclusao() {
-  if (fornecedorParaExcluir) {
-    const fornecedorRef = firebase.database().ref('fornecedor/' + fornecedorParaExcluir.firebaseKey);
-
-    fornecedorRef.once('value').then(snapshot => {
-      const fornecedor = snapshot.val();
-      const nomeFornecedor = fornecedor?.nome;
-
-      return fornecedorRef.remove().then(() => {
-        mostrarMensagem('Fornecedor excluído com sucesso!', 'success');
-        modalExcluir.hide();
-        registrarHistorico('Exclusão de fornecedor', `Fornecedor "${nomeFornecedor}" foi excluído.`);
-        excluirProdutosDoFornecedor(fornecedorParaExcluir.firebaseKey);
-        fornecedorParaExcluir = null;
-      });
-    }).catch(error => {
-      console.error('Erro ao excluir fornecedor:', error);
-      mostrarMensagem('Erro ao excluir fornecedor', 'error');
-    });
-  }
-}
-
-function excluirProdutosDoFornecedor(fornecedorId) {
-  firebase.database().ref('produto').once('value').then(snapshot => {
-    snapshot.forEach(child => {
-      const produto = child.val();
-      const key = child.key;
-      if (produto.fornecedorId === fornecedorId) {
-        // 1) Remove o produto
-        firebase.database().ref('produto/' + key).remove();
-        registrarHistorico(
-          'Exclusão automática',
-          `Produto "${produto.nome}" excluído porque o fornecedor foi removido.`
-        ); // :contentReference[oaicite:0]{index=0}
-
-        // 2) Remove todos os pedidos que contenham esse produto
-        excluirPedidosDoProduto(key);
-      }
-    });
-  });
-}
-
-function excluirPedidosDoProduto(produtoId) {
-  const pedidosRef = firebase.database().ref('pedido');
-  pedidosRef.once('value').then(snapshot => {
-    snapshot.forEach(child => {
-      const pedidoKey = child.key;
-      const pedido = child.val();
-      const itens = pedido.itensPedido || {};
-      // pega chaves dos itens que referenciam o produto removido
-      const keysParaRemover = Object.keys(itens)
-        .filter(itemKey => itens[itemKey].idProduto === produtoId);
-
-      if (keysParaRemover.length === 0) return;
-
-      const totalItens = Object.keys(itens).length;
-      const ehSaida = pedido.tipoPedido === 'Venda';
-
-      if (ehSaida && keysParaRemover.length < totalItens) {
-        // Remove somente os itens órfãos
-        keysParaRemover.forEach(itemKey => {
-          pedidosRef.child(`${pedidoKey}/itensPedido/${itemKey}`).remove();
-        });
-        // Recalcula e atualiza o total do pedido
-        recalcularTotalPedido(pedidoKey);
-        registrarHistorico(
-          'Exclusão automática',
-          `Item(s) do produto removido excluído(s) do pedido ${pedidoKey}.`
-        );
-      } else {
-        // Pedido de entrada ou todos os itens eram do fornecedor excluído
-        pedidosRef.child(pedidoKey).remove();
-        registrarHistorico(
-          'Exclusão automática',
-          `Pedido ${pedidoKey} excluído pois não contém mais itens válidos.`
-        );
-      }
-    });
-  });
-}
-
-function recalcularTotalPedido(pedidoKey) {
-  const itensRef = firebase.database().ref(`pedido/${pedidoKey}/itensPedido`);
-  itensRef.once('value').then(snap => {
-    let novoTotal = 0;
-    snap.forEach(itemSnap => {
-      const item = itemSnap.val();
-      novoTotal += Number(item.quantidade) * Number(item.precoUnitario);
-    });
-    // ← inserção
-    firebase
-      .database()
-      .ref(`pedido/${pedidoKey}`)
-      .update({ valor: novoTotal });
-  });
-}
-
-function salvarFornecedor(e) {
-  e.preventDefault();
-
-  if (!validarFormulario('form-adicionar')) return;
-
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (!idComerciante) {
-    console.warn("ID do comerciante não encontrado. Redirecionando para login.");
-    window.location.href = "login.html";
-    return;
-  }
-
-  const novoFornecedor = {
-    codigo: document.getElementById('codigo').value,
-    nome: document.getElementById('nome').value,
-    cnpj: document.getElementById('cnpj').value,
-    email: document.getElementById('email').value,
-    // CEP REMOVIDO
-    telefone: document.getElementById('telefone').value,
-    endereco: document.getElementById('endereco').value,
-    produtos: Array.from(document.querySelectorAll('#produtos-checkboxes input[name="produtos"]:checked'))
-      .map(cb => cb.value),
-    dataCadastro: obterDataLegivel(),
-    dataUltimaAtualizacao: obterDataLegivel(),
-    idComerciante: idComerciante
-  };
-
-  // Validações
-  if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(novoFornecedor.nome) || novoFornecedor.nome.split(" ").length < 2) {
-    mostrarMensagem('Nome inválido. Use apenas letras e espaços (mínimo 2 palavras).', 'error');
-    return;
-  }
-
-  // Limite de tamanho
-  if (novoFornecedor.nome.length > 80) {
-    mostrarMensagem('Nome muito longo (máximo 80 caracteres)', 'error');
-    return;
-  }
-
-  if (novoFornecedor.email.length > 100) {
-    mostrarMensagem('E-mail muito longo (máximo 100 caracteres)', 'error');
-    return;
-  }
-
-  // Produtos válidos
-  novoFornecedor.produtos = novoFornecedor.produtos.filter(p => [
-    "frutas", "legumes", "vegetais", "verduras", "temperos",
-    "laticínios", "doces", "salgados", "carnes", "grãos", "bebidas", "outros"
-  ].includes(p));
-
-  if (fornecedorParaEditar) {
-    firebase.database().ref('fornecedor/' + fornecedorParaEditar.firebaseKey).update(novoFornecedor)
-      .then(() => {
-        mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
-        fecharModalAdicionar();
-        fornecedorParaEditar = null;
-        registrarHistorico('Edição de fornecedor', `Fornecedor "${novoFornecedor.nome}" atualizado.`);
-      })
-      .catch(error => {
-        console.error('Erro ao atualizar fornecedor:', error);
-        mostrarMensagem('Erro ao atualizar fornecedor', 'error');
-      });
-  } else {
-    const cnpjNormalizado = novoFornecedor.cnpj.replace(/\D/g, '');
-    const cnpjDuplicado = fornecedores.some(f =>
-      f.cnpj.replace(/\D/g, '') === cnpjNormalizado
-    );
-
-    if (cnpjDuplicado) {
-      mostrarMensagem('CNPJ/CPF já cadastrado para outro fornecedor.', 'error');
-      return;
-    }
-
-    const emailNormalizado = novoFornecedor.email.toLowerCase().trim();
-    const emailDuplicado = fornecedores.some(f =>
-      f.email.toLowerCase().trim() === emailNormalizado
-    );
-
-    if (emailDuplicado) {
-      mostrarMensagem('E-mail já cadastrado para outro fornecedor.', 'error');
-      return;
-    }
-
-    firebase.database().ref('fornecedor').push(novoFornecedor)
-      .then(() => {
-        mostrarMensagem('Fornecedor cadastrado com sucesso!', 'success');
-        fecharModalAdicionar();
-        proximoCodigo++;
-        registrarHistorico('Cadastro de fornecedor', `Fornecedor "${novoFornecedor.nome}" cadastrado.`);
-      })
-      .catch(error => {
-        console.error('Erro ao cadastrar fornecedor:', error);
-        mostrarMensagem('Erro ao cadastrar fornecedor', 'error');
-      });
-  }
-}
-
-function atualizarFornecedor(e) {
-  e.preventDefault();
-
-  if (!validarFormulario('form-editar')) return;
-
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-  if (!idComerciante) {
-    console.warn("ID do comerciante não encontrado.");
-    return;
-  }
-
-  const dadosAtualizados = {
-    codigo: document.getElementById('edit-codigo').value,
-    nome: document.getElementById('edit-nome').value,
-    cnpj: document.getElementById('edit-cnpj').value,
-    email: document.getElementById('edit-email').value,
-    // CEP REMOVIDO
-    telefone: document.getElementById('edit-telefone').value,
-    endereco: document.getElementById('edit-endereco').value,
-    produtos: Array.from(document.querySelectorAll('#edit-produtos-checkboxes input[name="produtos"]:checked'))
-      .map(cb => cb.value),
-    dataUltimaAtualizacao: obterDataLegivel(),
-    idComerciante: idComerciante
-  };
-
-  const fornecedorId = document.getElementById('edit-id').value;
-
-  firebase.database().ref('fornecedor/' + fornecedorId).update(dadosAtualizados)
-    .then(() => {
-      mostrarMensagem('Fornecedor atualizado com sucesso!', 'success');
-      fecharModalEditar();
-      registrarHistorico('Edição de fornecedor', `Fornecedor "${dadosAtualizados.nome}" atualizado.`);
-    })
-    .catch(error => {
-      console.error('Erro ao atualizar fornecedor:', error);
-      mostrarMensagem('Erro ao atualizar fornecedor', 'error');
-    });
-}
-
-// Funções auxiliares
-function pesquisarFornecedores() {
-  aplicarOrdenacaoEFiltros();
-}
-
-function ordenarFornecedores() {
-  ordenacaoAtual = elements.ordenarNome.value;
-  aplicarOrdenacaoEFiltros();
-}
-
-function validarFormulario(formId) {
-  let valido = true;
-  const form = document.getElementById(formId);
-
-  form.querySelectorAll('[required]').forEach(campo => {
-    const errorElement = document.getElementById(campo.id + '-error');
-
-    if (!campo.value.trim()) {
-      campo.classList.add('is-invalid');
-      if (errorElement) errorElement.style.display = 'block';
-      valido = false;
-    } else {
-      campo.classList.remove('is-invalid');
-      if (errorElement) errorElement.style.display = 'none';
-    }
-  });
-
-  if (formId === 'form-adicionar' || formId === 'form-editar') {
-    const cnpjField = form.querySelector('#cnpj, #edit-cnpj');
-    if (cnpjField && cnpjField.value.trim()) {
-      const cnpjError = document.getElementById(cnpjField.id + '-error');
-      if (!validarCnpjCpf(cnpjField.value)) {
-        cnpjField.classList.add('is-invalid');
-        if (cnpjError) {
-          cnpjError.textContent = 'CNPJ/CPF inválido';
-          cnpjError.style.display = 'block';
-        }
-        valido = false;
-      }
-    }
-
-    const emailField = form.querySelector('#email, #edit-email');
-    if (emailField && emailField.value.trim()) {
-      const emailError = document.getElementById(emailField.id + '-error');
-      if (!validarEmail(emailField.value)) {
-        emailField.classList.add('is-invalid');
-        if (emailError) emailError.style.display = 'block';
-        valido = false;
-      }
-    }
-
-    const nomeField = form.querySelector('#nome, #edit-nome');
-    if (nomeField && nomeField.value.trim()) {
-      const nomeError = document.getElementById(nomeField.id + '-error');
-      const nome = nomeField.value.trim();
-      if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nome) || nome.split(" ").length < 2) {
-        nomeField.classList.add('is-invalid');
-        if (nomeError) {
-          nomeError.textContent = 'Nome inválido. Use apenas letras e espaços (mínimo 2 palavras).';
-          nomeError.style.display = 'block';
-        }
-        valido = false;
-      }
-    }
-
-    const telefoneField = form.querySelector('#telefone, #edit-telefone');
-    if (telefoneField && telefoneField.value.trim()) {
-      const telefoneError = document.getElementById(telefoneField.id + '-error');
-      if (!validarTelefone(telefoneField.value)) {
-        telefoneField.classList.add('is-invalid');
-        if (telefoneError) {
-          telefoneError.textContent = 'Formato inválido. Use (DDD) 99999-9999 ou (DDD) 9999-9999';
-          telefoneError.style.display = 'block';
-        }
-        valido = false;
-      }
-    }
-  }
-
-  if (formId === 'form-adicionar' || formId === 'form-editar') {
-    const produtosSelecionados = form.querySelectorAll('input[name="produtos"]:checked');
-    if (produtosSelecionados.length === 0) {
-      mostrarMensagem("Selecione pelo menos um produto fornecido.", "error");
-      valido = false;
-    }
-  }
-
-  return valido;
-}
-
-function aplicarMascaras() {
-  const cnpjFields = document.querySelectorAll('#cnpj, #edit-cnpj');
-  cnpjFields.forEach(field => {
-    field.addEventListener('input', function (e) {
-      let value = e.target.value.replace(/\D/g, '');
-
-      if (value.length <= 11) {
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-      } else {
-        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-        value = value.replace(/(\d{4})(\d)/, '$1-$2');
-      }
-
-      e.target.value = value;
-    });
-  });
-
-  const telefoneFields = document.querySelectorAll('#telefone, #edit-telefone');
-  telefoneFields.forEach(field => {
-    field.addEventListener('input', function (e) {
-      let value = e.target.value.replace(/\D/g, '');
-
-      if (value.length > 10) {
-        value = value.replace(/^(\d{2})(\d)/, '($1) $2');
-        value = value.replace(/(\d{5})(\d)/, '$1-$2');
-      } else if (value.length > 6) {
-        value = value.replace(/^(\d{2})(\d)/, '($1) $2');
-        value = value.replace(/(\d{4})(\d)/, '$1-$2');
-      }
-
-      e.target.value = value;
-    });
-  });
-
-  const nomeFields = document.querySelectorAll('#nome, #edit-nome');
-  nomeFields.forEach(field => {
-    field.addEventListener('input', function (e) {
-      e.target.value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
-    });
-  });
-}
-
-// Funções de validação
-function validarCnpjCpf(valor) {
-  const str = valor.replace(/[^\d]+/g, '');
-
-  if (str.length === 11) {
-    return validarCPF(str);
-  } else if (str.length === 14) {
-    return validarCNPJ(str);
-  }
-  return false;
-}
-
-function validarCPF(cpf) {
-  cpf = cpf.replace(/[^\d]+/g, '');
-
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
-    return false;
-  }
-
-  let add = 0;
-  for (let i = 0; i < 9; i++) {
-    add += parseInt(cpf.charAt(i)) * (10 - i);
-  }
-  let rev = 11 - (add % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(cpf.charAt(9))) return false;
-
-  add = 0;
-  for (let i = 0; i < 10; i++) {
-    add += parseInt(cpf.charAt(i)) * (11 - i);
-  }
-  rev = 11 - (add % 11);
-  if (rev === 10 || rev === 11) rev = 0;
-  if (rev !== parseInt(cpf.charAt(10))) return false;
-
-  return true;
-}
-
-function validarCNPJ(cnpj) {
-  cnpj = cnpj.replace(/[^\d]+/g, '');
-
-  if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) {
-    return false;
-  }
-
-  let tamanho = cnpj.length - 2;
-  let numeros = cnpj.substring(0, tamanho);
-  const digitos = cnpj.substring(tamanho);
-  let soma = 0;
-  let pos = tamanho - 7;
-
-  for (let i = tamanho; i >= 1; i--) {
-    soma += numeros.charAt(tamanho - i) * pos--;
-    if (pos < 2) pos = 9;
-  }
-
-  let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-  if (resultado !== parseInt(digitos.charAt(0))) return false;
-
-  tamanho = tamanho + 1;
-  numeros = cnpj.substring(0, tamanho);
-  soma = 0;
-  pos = tamanho - 7;
-
-  for (let i = tamanho; i >= 1; i--) {
-    soma += numeros.charAt(tamanho - i) * pos--;
-    if (pos < 2) pos = 9;
-  }
-
-  resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-  if (resultado !== parseInt(digitos.charAt(1))) return false;
-
-  return true;
-}
-
-function validarEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-
-function validarTelefone(telefone) {
-  const re = /^\(\d{2}\) \d{4,5}-\d{4}$/;
-  return re.test(telefone);
-}
-
-function mostrarMensagem(texto, tipo = 'success') {
-  const msg = document.createElement('div');
-  msg.className = `mensagem-alerta ${tipo}`;
-  msg.textContent = texto;
-  document.body.appendChild(msg);
-
-  setTimeout(() => msg.remove(), 3000);
-}
-
-//Exportar fornecedores
-function exportarTodosFornecedores() {
-  if (fornecedores.length === 0) {
-    mostrarMensagem("Nenhum fornecedor para exportar.", "warning");
-    return;
-  }
-
-  const dadosExportar = fornecedores.map(f => ({
-    Código: f.codigo || '',
-    Nome: f.nome || '',
-    CNPJ_CPF: f.cnpj || '',
-    Email: f.email || '',
-    Telefone: f.telefone || '',
-    Endereço: f.endereco || '',
-    Produtos: Array.isArray(f.produtos) ? f.produtos.join(', ') : '',
-    Data_Cadastro: f.dataCadastro || '',
-    Última_Atualização: f.dataUltimaAtualizacao || ''
-  }));
-
-  const csv = Papa.unparse(dadosExportar, {
-    quotes: true,
-    delimiter: ";"
-  });
-
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", "fornecedores.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-// --- SELEÇÃO MÚLTIPLA ---
-function toggleSelecaoTodos() {
-  const checkboxes = document.querySelectorAll('.selecionar-fornecedor');
-  checkboxes.forEach(cb => cb.checked = elements.selecionarTodos.checked);
-  atualizarAcoesMultiplas();
-}
-
-function atualizarSelecaoIndividual() {
-  const todos = document.querySelectorAll('.selecionar-fornecedor');
-  const marcados = document.querySelectorAll('.selecionar-fornecedor:checked');
-  elements.selecionarTodos.checked = todos.length === marcados.length;
-  atualizarAcoesMultiplas();
-}
-
-function atualizarAcoesMultiplas() {
-  const selecionados = document.querySelectorAll('.selecionar-fornecedor:checked').length;
-  elements.acoesMultiplas.style.display = selecionados > 0 ? 'flex' : 'none';
-}
-
-function excluirSelecionados() {
-  const selecionados = Array.from(document.querySelectorAll('.selecionar-fornecedor:checked'));
-  if (selecionados.length === 0) return;
-
-  const firebaseKeys = selecionados.map(cb => cb.closest('tr').getAttribute('data-key'));
-
-  firebaseKeys.forEach(key => {
-    const fornecedor = fornecedores.find(f => f.firebaseKey === key);
-    if (!fornecedor) return;
-
-    firebase.database().ref('fornecedor/' + key).remove().then(() => {
-      registrarHistorico('Exclusão de fornecedor', `Fornecedor "${fornecedor.nome}" excluído.`);
-      excluirProdutosDoFornecedor(key);
-    });
-  });
-
-  mostrarMensagem(`${selecionados.length} fornecedores excluídos com sucesso!`, 'success');
-  elements.acoesMultiplas.style.display = 'none';
-}
-
-function exportarSelecionadosParaCSV() {
-  const selecionados = Array.from(document.querySelectorAll('.selecionar-fornecedor:checked'));
-  if (selecionados.length === 0) return;
-
-  const firebaseKeys = selecionados.map(cb => cb.closest('tr').getAttribute('data-key'));
-  const fornecedoresSelecionados = fornecedores.filter(f => firebaseKeys.includes(f.firebaseKey));
-
-  const dadosExportar = fornecedoresSelecionados.map(f => ({
-    Código: f.codigo || '',
-    Nome: f.nome || '',
-    CNPJ_CPF: f.cnpj || '',
-    Email: f.email || '',
-    Telefone: f.telefone || '',
-    Endereço: f.endereco || '',
-    Produtos: Array.isArray(f.produtos) ? f.produtos.join(', ') : '',
-    Data_Cadastro: f.dataCadastro || '',
-    Última_Atualização: f.dataUltimaAtualizacao || ''
-  }));
-
-  const csv = Papa.unparse(dadosExportar, {
-    quotes: true,
-    delimiter: ";"
-  });
-
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", "fornecedores_selecionados.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+  </script>
+  <script src="../scripts/fornecedores.js"></script>
+</body>
+
+</html>
