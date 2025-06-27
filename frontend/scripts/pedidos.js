@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(div);
             configurarItemEntrada(div);
 
-            // VERIFICAÇÃO DO FORNECEDOR MOVIDA PARA AQUI
+            // VERIFICAÇÃO DO FORNECEDOR
             const fornecedorId = document.getElementById('nomeAdicionar').value;
             if (fornecedorId) {
                 const selectProduto = div.querySelector('select.produto-select');
@@ -178,6 +178,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('input-pesquisa-pedidos').addEventListener('input', () => {
         paginaAtual = 1;
         atualizarTabelaPedidos();
+    });
+
+    let searchTimer;
+    document.getElementById('input-pesquisa-pedidos').addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            paginaAtualEntradas = 1;
+            paginaAtualSaidas = 1;
+            atualizarTabelaPedidos();
+        }, 300);
     });
 
     document.getElementById('cancelarModal').addEventListener('click', () => {
@@ -360,6 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    firebase.database().ref('produto').on('child_changed', async (snapshot) => {
+        const produtoAtualizado = snapshot.val();
+        await atualizarTotaisDoProduto(snapshot.key); // Função existente
+        atualizarTabelaPedidos(); // Força atualização da UI
+    });
+
 });
 
 async function carregarFornecedoresNoItem(itemDiv) {
@@ -588,9 +605,9 @@ function calcularSubtotalItem(itemContainer) {
         return;
     }
 
-    // 2) Preço unitário (por “base unit”)  
-    // – saída: pega do data-preco do lote  
-    // – entrada: pega do data-preco-base e data-preco-por do produto e normaliza
+    // 2) Preço unitário 
+    // sssaída: pega do ddata-preco do lote  
+    // entrada: pega do data-preco-base e data-preco-por do produto e normaliza
     let precoUnit = 0;
 
     if (loteSelect) {
@@ -609,13 +626,15 @@ function calcularSubtotalItem(itemContainer) {
         precoUnit = precoBase / precopor;
     }
 
-    // 3) Cálculo
-    const subtotal = precoUnit * quantidade;
+    // 3) Verifica e calcula
+    if (isNaN(precoUnit) || isNaN(quantidade)) {
+        subtotalInput.value = 'R$ 0,00';
+    } else {
+        const subtotal = precoUnit * quantidade;
+        subtotalInput.value = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+    }
 
-    // 4) Exibe
-    subtotalInput.value = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
-
-    // 5) Atualiza total do pedido
+    // 4) Atualiza total do pedido
     atualizarTotalPedido();
 }
 
@@ -2177,24 +2196,20 @@ async function atualizarTotaisDoProduto(produtoId) {
     });
 
     // Adicionado: Recalcular o valor total do pedido
-    const pedidoRef = firebase.database().ref('pedido');
-    const pedidosSnapshot = await pedidoRef.once('value');
+    const pedidosRef = firebase.database().ref('pedido');
+    const snapshotPedidos = await pedidosRef.once('value');
 
-    pedidosSnapshot.forEach(pedidoSnapshot => {
-        const pedido = pedidoSnapshot.val();
+    snapshotPedidos.forEach(pedidoSnap => {
         let totalPedido = 0;
+        const itens = pedidoSnap.val().itensPedido || {};
 
-        Object.values(pedido.itensPedido || {}).forEach(item => {
-            if (item.produtoId === produtoId) {
-                totalPedido += item.subtotal || 0;
-            }
+        Object.values(itens).forEach(item => {
+            totalPedido += item.subtotal || 0;
         });
 
-        // Atualizar o total do pedido se for diferente
-        if (totalPedido !== pedido.valor) {
-            pedidoRef.child(pedidoSnapshot.key).update({
-                valor: totalPedido
-            });
+        // Atualiza se necessário
+        if (totalPedido !== pedidoSnap.val().valor) {
+            pedidosRef.child(pedidoSnap.key).update({ valor: totalPedido });
         }
     });
 }
@@ -2250,7 +2265,7 @@ async function exportarPedidosParaCSV(tipo) {
         }
     });
 
-    // com acesso a acentos
+    // ⚠️ Usa UTF-8 com BOM para compatibilidade com acentos no Excel
     const BOM = '\uFEFF';
     const csvContent = BOM + linhas.map(linha => linha.map(c => `"${c}"`).join(';')).join('\n');
 
