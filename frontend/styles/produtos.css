@@ -113,6 +113,809 @@ header h2 {
   max-width: 200px;
 }
 
+#imagem-atual {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  max-height: 100px;
+}
+
+/* --- LEGENDAS E CONTROLE DE EXCLUSÃO --- */
+#topo-tabela {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+#legenda-alertas {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+#legenda-alertas span {
+  padding: 8px 16px;
+  border-radius: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid;
+}
+
+#legenda-alertas span:nth-child(1) {
+  border-color: #ffd700;
+}
+
+#legenda-alertas span:nth-child(2) {
+  border-color: #2196f3;
+}
+
+#legenda-alertas span:nth-child(3) {
+  border-color: #ff4444;
+}
+
+.mensagem-sem-produtos {
+  text-align: center;
+  padding: 30px 10px;
+  font-weight: 500;
+  color: #777;
+  font-size: 16px;
+  background-color: #fff;
+}
+
+.linha-sem-produtos td {
+  border-bottom: none;
+}
+
+/* --- TABELA DE PRODUTOS --- */
+.tabela-produtos {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font-size: 14px;
+  position: relative;
+  min-width: 800px;
+}
+
+.tabela-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .tabela-wrapper {
+    margin-top: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.tabela-produtos th {
+  background: #f8fff9;
+  color: #2d3436;
+  padding: 16px;
+  font-weight: 600;
+  border-bottom: 3px solid #007f30;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Cabeçalho e células */
+th,
+td {
+  text-align: center;
+  padding: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+}
+
+.tabela-produtos td {
+  padding: 14px;
+  color: #444;
+  border-bottom: 1px solid #f0f4f7;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+th {
+  color: #111 !important;
+  font-weight: 600;
+  border-bottom: 2px solid #007f30;
+}
+
+td {
+  color: #333;
+  border-bottom: 1px solid #eee;
+  word-break: break-word;
+}
+
+/* --- HOVER EFEITO --- */
+.tabela-produtos tr:not(:first-child):hover td {
+  background: rgba(0, 127, 48, 0.03);
+  cursor: pointer;
+}
+
+/* --- ÍCONES DE AÇÃO --- */
+.edit-icon,
+.delete-icon,
+.search-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.search-icon:hover {
+  color: #2196f3;
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.edit-icon {
+  color: #007f30;
+  cursor: pointer;
+}
+
+.edit-icon:hover {
+  color: #007f30;
+  background: rgba(0, 127, 48, 0.1);
+}
+
+.delete-icon {
+  color: #d9534f;
+  cursor: pointer;
+}
+
+.delete-icon:hover {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+/* Ícones de ação agrupados no mobile */
+.acoes-icones {
+  display: flex;
+  gap: 8px;
+}
+
+.acoes-icones i {
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+/* Reforça o clique/tap-friendly */
+.acoes-icones i:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Agrupamento compacto da label + ícones */
+.acoes-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+@media (min-width: 769px) {
+  .acoes-mobile {
+    display: none !important;
+    /* só mostra no mobile */
+  }
+}
+
+@media (max-width: 768px) {
+
+  .col-consultar,
+  .col-editar,
+  .col-excluir {
+    display: none;
+  }
+}
+
+/* Alertas por linha */
+.alerta-validade {
+  background: #fff9e6 !important;
+  border-left: 4px solid #ffd700 !important;
+}
+
+.alerta-validade td,
+.alerta-estoque td,
+.alerta-vencido td {
+  color: #222 !important;
+  font-weight: 500;
+}
+
+.alerta-estoque {
+  background: #e8f4ff !important;
+  border-left: 4px solid #2196f3 !important;
+}
+
+.alerta-vencido {
+  background: #ffebee !important;
+  border-left: 4px solid #ff4444 !important;
+}
+
+/* --- CONTROLES DE PAGINAÇÃO --- */
+#controles-paginacao {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+#controles-paginacao button {
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  color: #444;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+#controles-paginacao button:hover:not(:disabled) {
+  background: #007f30;
+  color: white;
+  border-color: #007f30;
+  transform: translateY(-2px);
+}
+
+#controles-paginacao button:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: default;
+}
+
+#controles-paginacao span {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Checkbox Selecionar Todos */
+#selecionar-todos {
+  transform: scale(1.3);
+  cursor: pointer;
+}
+
+/* --- MODAIS RESPONSIVOS --- */
+/* Container que cobre toda a tela */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* Conteúdo do modal - ajustado para caber sem scroll */
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 700px;
+  max-height: 95vh;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  animation: aparecer-modal 0.25s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+/* Animação de entrada */
+@keyframes aparecer-modal {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Formulário dentro dos modais - mais compacto */
+.modal-content h3 {
+  margin-bottom: 15px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 1.4rem;
+}
+
+.modal-content label {
+  display: block;
+  margin-top: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.modal-content textarea {
+  resize: vertical;
+  min-height: 80px;
+  max-height: 100px;
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 10px;
+    max-height: 90vh;
+  }
+
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-content input,
+  .modal-content select,
+  .modal-content textarea {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    height: 36px;
+    line-height: 1.2;
+  }
+
+  .modal-content textarea {
+    min-height: 60px;
+    max-height: 80px;
+  }
+
+  .form-col {
+    gap: 6px;
+  }
+
+  .modal-content label {
+    font-size: 0.82rem;
+  }
+
+  .input-group {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .input-group input,
+  .input-group select {
+    flex: 1 1 50%;
+    max-width: 100%;
+    height: 36px;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  #preco-por,
+  #unidade-minima,
+  #unidade-atual {
+    min-width: 80px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Grid responsivo para formulários - mais compacto */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+#preco-por {
+  flex: 1;
+}
+
+.input-group input,
+.input-group select {
+  flex: 1 1 100px;
+  min-width: 0;
+}
+
+/* Botões no Modal - mais compactos */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.modal-buttons .salvar {
+  background-color: #007f30;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-buttons .cancelar,
+.modal-buttons .cancelar-visualizar {
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+
+  .modal-buttons .salvar,
+  .modal-buttons .cancelar {
+    width: 100%;
+  }
+}
+
+/* Estilo da Imagem e Descrição - mais compactos */
+.product-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.image-description {
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+/* Modal de Confirmação de Exclusão - mais compacto */
+#modal-confirmar-exclusao .modal-content {
+  max-width: 350px;
+  padding: 15px;
+  text-align: center;
+}
+
+#modal-confirmar-exclusao h4 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+}
+
+#modal-confirmar-exclusao p {
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+/* --- DESTAQUE PARA BOTÃO DE FILTRO ATIVO --- */
+#legenda-alertas span.filtro-ativo {
+  box-shadow: 0 0 0 3px rgba(0, 127, 48, 0.3);
+  outline: 2px solid #007f30;
+  background-color: #e6f9ec;
+  transition: all 0.3s ease;
+}
+
+/* Estilo para o botão "Limpar Filtro" */
+#btn-limpar-filtros {
+  background-color: #6c757d;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  display: none;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+}
+
+#btn-limpar-filtros:hover {
+  background-color: #5a6268;
+}
+
+.mensagem-alerta {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  animation: aparecer 0.3s ease;
+}
+
+.mensagem-alerta.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.mensagem-alerta.warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* BOTAO DE EXCLUIR SELECIONADOS E EXPORTAR*/
+#acoes-multiplas {
+  display: none;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#acoes-multiplas button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#btn-excluir-selecionados {
+  background-color: #dc3545;
+  color: white;
+}
+
+#btn-excluir-selecionados:hover {
+  background-color: #b52a32;
+}
+
+#btn-exportar-selecionados {
+  background-color: #007f30;
+  color: white;
+}
+
+#btn-exportar-selecionados:hover {
+  background-color: #005f24;
+}
+
+/*Botão exportar todos*/
+#btn-exportar-todos {
+  background-color: #0062cc;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+#btn-exportar-todos:hover {
+  background-color: #004999;
+}
+
+/* --- RESPONSIVIDADE AVANÇADA --- */
+/* Tabela transformada em cards em dispositivos móveis */
+@media (max-width: 768px) {
+
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
+  }
+
+  thead tr {
+    display: none;
+  }
+
+  tbody tr {
+    margin-bottom: 12px;
+    padding: 12px;
+  }
+
+  td {
+    padding: 10px 5px 10px 50%;
+    text-align: left;
+  }
+
+  td::before {
+    content: attr(data-label);
+    left: 10px;
+    font-weight: bold;
+  }
+}
+
+select:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+  opacity: 0.8;
+}/* --- RESET GLOBAL --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* --- ESTILO GERAL DA PÁGINA --- */
+body {
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+/* --- CONTEÚDO PRINCIPAL --- */
+.content {
+  padding: 30px;
+  min-height: 100vh;
+  margin-top: 60px;
+  overflow-y: auto;
+}
+
+/* --- TÍTULO DO HEADER --- */
+header h2 {
+  font-size: 28px;
+}
+
+.cinza {
+  color: gray;
+  font-weight: normal;
+  font-size: 26px;
+}
+
+/* --- BARRA DE PESQUISA (Search Bar) --- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  margin: 30px 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-icon i {
+  position: absolute;
+  left: 10px;
+  color: gray;
+}
+
+.input-icon input {
+  padding: 10px 10px 10px 30px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.input-icon input:focus {
+  box-shadow: 0 0 5px rgba(0, 127, 48, 0.5);
+  border: 1px solid #007f30;
+}
+
+/* --- BOTÕES PRINCIPAIS --- */
+.filter,
+.abrir-modal {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+.filter {
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+}
+
+.filter:hover {
+  background-color: #e8f5e9;
+}
+
+.abrir-modal {
+  background-color: #007f30;
+  color: white;
+}
+
+.abrir-modal:hover,
+.modal-buttons .salvar:hover {
+  background-color: #005f24;
+}
+
+/* --- FILTROS --- */
+#filtros-container {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+#filtros-container select {
+  border-radius: 10px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  max-width: 200px;
+}
+
+#imagem-atual {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  max-height: 100px;
+}
+
 /* --- LEGENDAS E CONTROLE DE EXCLUSÃO --- */
 #topo-tabela {
   display: flex;
