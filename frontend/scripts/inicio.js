@@ -6,6 +6,19 @@ const itensPorPagina = 5;
 const produtos = [];
 let indiceParaEditar = null;
 
+//Inicialização do banco -->
+const firebaseConfig = {
+  apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
+  authDomain: "click-feira.firebaseapp.com",
+  databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
+  projectId: "click-feira",
+  storageBucket: "click-feira.appspot.com",
+  messagingSenderId: "108583577904",
+  appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
+};
+firebase.initializeApp(firebaseConfig);
+
+
 // --- CARREGAR DADOS DO FIREBASE ---
 document.addEventListener('DOMContentLoaded', () => {
   carregarAlertasDoFirebase();
@@ -103,17 +116,14 @@ function carregarFornecedores() {
   const select = document.getElementById('fornecedor');
   if (!select) return;
 
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   firebase.database().ref('fornecedor').once('value').then(snapshot => {
     select.innerHTML = '<option value="">Selecione...</option>';
     snapshot.forEach(child => {
       const fornecedor = child.val();
-      if (fornecedor.idComerciante === idComerciante) {
-        const option = document.createElement('option');
-        option.value = child.key; // <-- ESSENCIAL!
-        option.textContent = fornecedor.nome;
-        select.appendChild(option);
-      }
+      const option = document.createElement('option');
+      option.value = fornecedor.nome;
+      option.textContent = fornecedor.nome;
+      select.appendChild(option);
     });
   });
 }
@@ -159,50 +169,97 @@ document.getElementById('toggle-historia').addEventListener('click', () => {
 
 // --- BUSCAR PRODUTOS COM ALERTAS ---
 function carregarAlertasDoFirebase() {
-  const idComercianteAtual = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+  const idComerciante = sessionStorage.getItem("idComerciante") || localStorage.getItem("idComerciante");
 
   firebase.database().ref('produto').once('value').then(snapshot => {
     alertas = [];
 
+    // Zera horário de hoje (00:00 local)
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
+    // Helper: parse "YYYY-MM-DD" como data local (00:00)
+    function parseLocalDate(str) {
+      const [ano, mes, dia] = str.split("-");
+      return new Date(Number(ano), Number(mes) - 1, Number(dia));
+    }
+
     snapshot.forEach(childSnapshot => {
       const produto = childSnapshot.val();
-
-      // ✅ Só inclui produtos do comerciante logado
-      if (produto.idComerciante !== idComercianteAtual) return;
-
       produto.firebaseKey = childSnapshot.key;
 
-      const validade = new Date(produto.validade);
-      validade.setHours(0, 0, 0, 0);
-      const diasParaVencer = Math.ceil(((validade - hoje) / (1000 * 60 * 60 * 24)) + 1);
+      // 1) Só do comerciante logado
+      if (produto.idComerciante !== idComerciante) return;
 
+      let temVencido = false;
+      let temProxValid = false;
+      let diasParaVencer = null;
+
+      // 2) Se há lotes, calcula dias para cada validade
+      if (produto.lotes) {
+        const diffs = Object.values(produto.lotes).map(lote => {
+          const dataVal = parseLocalDate(lote.validade);
+          // já nasce em 00:00 local, mas reforça:
+          dataVal.setHours(0, 0, 0, 0);
+          // Math.round corrige pequenos offsets de timezone
+          return Math.round((dataVal - hoje) / (1000 * 60 * 60 * 24));
+        });
+
+        // marca vencidos (hoje incluído)
+        if (diffs.some(d => d <= 0)) {
+          temVencido = true;
+        }
+        // marca próximos (1 a 7 dias) e captura o menor
+        const proximos = diffs.filter(d => d > 0 && d <= 7);
+        if (proximos.length) {
+          temProxValid = true;
+          diasParaVencer = Math.min(...proximos);
+        }
+
+        // 3) Se não há lotes mas há validade no produto raiz
+      } else if (produto.validade) {
+        const dataVal = parseLocalDate(produto.validade);
+        dataVal.setHours(0, 0, 0, 0);
+        const diff = Math.round((dataVal - hoje) / (1000 * 60 * 60 * 24));
+        if (diff <= 0) {
+          temVencido = true;
+        } else if (diff <= 7) {
+          temProxValid = true;
+          diasParaVencer = diff;
+        }
+      }
+
+      // 4) Estoque baixo (<= mínimo)
+      const qtde = parseFloat(produto.quantidadeEstoque || 0);
+      const qtdeMin = parseFloat(produto.quantidadeMinima || 0);
+      const temEstoqueBaixo = qtde <= qtdeMin;
+
+      // 5) Se não há nenhum alerta, pula
+      if (!temVencido && !temProxValid && !temEstoqueBaixo) return;
+
+      // 6) Monta objeto de alerta
       const alerta = {
         nome: produto.nome,
-        validade: produto.validade,
         diasParaVencer,
-        quantidadeEstoque: parseFloat(produto.quantidadeEstoque),
-        quantidadeMinima: parseFloat(produto.quantidadeMinima),
+        quantidadeEstoque: qtde,
+        quantidadeMinima: qtdeMin,
         unidade: produto.unidadeMedida,
         tipos: []
       };
 
-      if (diasParaVencer < 0) alerta.tipos.push('vencido');
-      else if (diasParaVencer <= 7) alerta.tipos.push('validade');
+      // 7) Categoriza
+      if (temVencido) alerta.tipos.push('vencido');
+      else if (temProxValid) alerta.tipos.push('validade');
+      if (temEstoqueBaixo) alerta.tipos.push('estoque');
 
-      if (alerta.quantidadeEstoque < alerta.quantidadeMinima) {
-        alerta.tipos.push('estoque');
-      }
-
-      if (alerta.tipos.length > 0) alertas.push(alerta);
+      alertas.push(alerta);
     });
 
+    // 8) Atualiza UI e garante “Todos” ativo
     atualizarListaAlertas();
     atualizarBadge();
+    atualizarBotoesFiltro();
   });
-
 }
 
 // -- MOSTRAR MENSAGEM --
@@ -307,16 +364,10 @@ function exibirHistorico() {
   firebase.database().ref('historicoAcoes').once('value').then(snapshot => {
     historicoCompleto = [];
 
-    const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
     snapshot.forEach(childSnapshot => {
       const item = childSnapshot.val();
       item.firebaseKey = childSnapshot.key;
-
-      // ✅ Exibir apenas ações do comerciante logado
-      if (item.idComerciante === idComerciante) {
-        historicoCompleto.unshift(item);
-      }
+      historicoCompleto.unshift(item); // ordem mais recente primeiro
     });
 
     atualizarBadgeHistorico();
@@ -326,13 +377,10 @@ function exibirHistorico() {
 
 // Registra histórico
 function registrarHistorico(tipo, descricao) {
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
   firebase.database().ref('historicoAcoes').push({
     tipo,
     descricao,
-    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
-    idComerciante // ✅ associando o histórico ao comerciante
+    data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
   });
 }
 
@@ -451,7 +499,7 @@ function handleFormSubmit(e) {
   const [ano, mes, dia] = validadeInput.split('-').map(Number);
   const validadeSelecionada = new Date(ano, mes - 1, dia);
   const hoje = new Date();
-  const fornecedorId = document.getElementById('fornecedor').value;
+  const fornecedor = document.getElementById('fornecedor').value;
   hoje.setHours(0, 0, 0, 0);
   validadeSelecionada.setHours(0, 0, 0, 0);
 
@@ -501,8 +549,6 @@ function handleFormSubmit(e) {
   }
 
   // Monta o objeto produto
-  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-
   const produto = {
     codigo,
     nome,
@@ -515,10 +561,9 @@ function handleFormSubmit(e) {
     quantidadeMinima: parseFloat(quantidadeMinima),
     unidadeMedida,
     ativo: true,
-    fornecedorId,
+    fornecedor, // ajuste conforme necessário
     imagemUrl: '',
-    dataUltimaAtualizacao: obterDataLegivel(),
-    idComerciante
+    dataUltimaAtualizacao: obterDataLegivel()
   };
 
   // -- EDITAR PRODUTO - DATA DE CADASTRO
