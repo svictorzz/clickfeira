@@ -303,11 +303,13 @@ td {
 
 @media (min-width: 769px) {
   .acoes-mobile {
-    display: none !important; /* só mostra no mobile */
+    display: none !important;
+    /* só mostra no mobile */
   }
 }
 
 @media (max-width: 768px) {
+
   .col-consultar,
   .col-editar,
   .col-excluir {
@@ -596,6 +598,7 @@ td {
 }
 
 @media (max-width: 480px) {
+
   .modal-buttons .salvar,
   .modal-buttons .cancelar {
     width: 100%;
@@ -687,6 +690,7 @@ td {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -777,4 +781,10 @@ td {
     left: 10px;
     font-weight: bold;
   }
+}
+
+select:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+  opacity: 0.8;
 }
