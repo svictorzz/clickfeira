@@ -50,16 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Adicionar evento ao botão flutuante
-  document.getElementById('botao-flutuante').addEventListener('click', () => {
-    document.getElementById('modal-produto').style.display = 'flex';
-    document.getElementById('form-produto').reset();
-    document.getElementById('codigo').value = gerarCodigoProduto();
-    document.getElementById('unidade-atual').value = document.getElementById('unidade-minima').value;
-    document.getElementById('titulo-modal-produto').textContent = 'Adicionar Novo Produto';
-    window.indiceParaEditar = null; // Garante que estamos em modo de adição
-  });
-
   // Cancelar cadastro
   document.querySelector('#modal-produto .cancelar').addEventListener('click', () => {
     document.getElementById('modal-produto').style.display = 'none';
@@ -105,55 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.submissaoPendente = null;
   });
 
-  // Submissão do formulário
-  document.getElementById('form-produto').addEventListener('submit', handleFormSubmit);
-  carregarFornecedores();
-
 });
-
-// Buscar fornecedores do Firebase
-function carregarFornecedores() {
-  const select = document.getElementById('fornecedor');
-  if (!select) return;
-
-  firebase.database().ref('fornecedor').once('value').then(snapshot => {
-    select.innerHTML = '<option value="">Selecione...</option>';
-    snapshot.forEach(child => {
-      const fornecedor = child.val();
-      const option = document.createElement('option');
-      option.value = fornecedor.nome;
-      option.textContent = fornecedor.nome;
-      select.appendChild(option);
-    });
-  });
-}
-
-// Função para gerar código do produto (copiada de produtos.js)
-function gerarCodigoProduto() {
-  let novoCodigo;
-  do {
-    novoCodigo = 'PRD-' + Math.floor(10000 + Math.random() * 90000);
-  } while (produtos.some(p => p.codigo === novoCodigo));
-  return novoCodigo;
-};
-
-// DATA FORMATADA
-function obterDataLegivel() {
-  const hoje = new Date();
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const ano = hoje.getFullYear();
-  const hora = hoje.getHours().toString().padStart(2, '0');
-  const min = hoje.getMinutes().toString().padStart(2, '0');
-  return `${dia}/${mes}/${ano} às ${hora}:${min}`;
-}
-
-// Converter imagem para FB
-function converterImagemParaBase64(file, callback) {
-  const reader = new FileReader();
-  reader.onload = e => callback(e.target.result);
-  reader.readAsDataURL(file);
-}
 
 //Dobrar Nossa Historia ao clicar (seção)
 document.getElementById('toggle-historia').addEventListener('click', () => {
@@ -490,102 +432,3 @@ document.getElementById('confirmar-limpar').addEventListener('click', () => {
     }
   });
 });
-
-//COPIADO DE PRODUTOS
-function handleFormSubmit(e) {
-  e.preventDefault();
-
-  const validadeInput = document.getElementById('validade').value;
-  const [ano, mes, dia] = validadeInput.split('-').map(Number);
-  const validadeSelecionada = new Date(ano, mes - 1, dia);
-  const hoje = new Date();
-  const fornecedor = document.getElementById('fornecedor').value;
-  hoje.setHours(0, 0, 0, 0);
-  validadeSelecionada.setHours(0, 0, 0, 0);
-
-  // Se a data estiver vencida, exibe o modal e salva o evento para depois
-  if (validadeSelecionada < hoje && !window.continuarMesmoComValidadeVencida) {
-    window.submissaoPendente = e;
-    document.getElementById('modal-validade-vencida').style.display = 'flex';
-    return;
-  }
-
-  // Resetar a flag de continuidade
-  window.continuarMesmoComValidadeVencida = false;
-
-  const codigo = document.getElementById('codigo').value.trim();
-  const nome = document.getElementById('nome').value.trim();
-  const categoria = document.getElementById('categoria').value.trim();
-  const preco = parseFloat(document.getElementById('preco').value);
-  const descricao = document.getElementById('descricao').value;
-  const quantidadeEstoque = document.getElementById('qtd-atual').value;
-  const quantidadeMinima = document.getElementById('qtd-minima').value;
-  const unidadeMedida = document.getElementById('unidade-minima').value;
-  const precoPor = document.getElementById('preco-por').value;
-  const imagemInput = document.getElementById('imagem');
-  const file = imagemInput.files[0];
-
-  // Validação de campos obrigatórios
-  if (!codigo || !nome || !categoria || isNaN(preco) || !validadeInput || !quantidadeEstoque || !quantidadeMinima || !precoPor) {
-    mostrarMensagem('⚠️ Preencha todos os campos obrigatórios!', 'error');
-    return;
-  }
-
-  // Validação de coerência entre unidade e tipo de preço
-  const combinacoesValidas = {
-    unidade: ['unidade', 'pacote'],
-    pacote: ['unidade', 'pacote'],
-    litro: ['litro', 'ml'],
-    ml: ['litro', 'ml'],
-    kg: ['kg', 'g', '100g'],
-    g: ['kg', 'g', '100g'],
-    '100g': ['kg', 'g', '100g']
-  };
-
-  // -- MENSAGEM CASO COERENCIA ENTRE UNIDADE E TIPO DE PREÇO NAO BATER
-  if (!combinacoesValidas[unidadeMedida]?.includes(precoPor)) {
-    mostrarMensagem(`🚫 A unidade "${unidadeMedida}" não é compatível com o tipo de preço "${precoPor}". Corrija antes de salvar.`, 'error');
-    return;
-  }
-
-  // Monta o objeto produto
-  const produto = {
-    codigo,
-    nome,
-    descricao,
-    categoria,
-    validade: validadeInput,
-    preco: preco.toFixed(2),
-    precoPor,
-    quantidadeEstoque: parseFloat(quantidadeEstoque),
-    quantidadeMinima: parseFloat(quantidadeMinima),
-    unidadeMedida,
-    ativo: true,
-    fornecedor, // ajuste conforme necessário
-    imagemUrl: '',
-    dataUltimaAtualizacao: obterDataLegivel()
-  };
-
-  // -- EDITAR PRODUTO - DATA DE CADASTRO
-  if (indiceParaEditar === null) {
-    produto.dataCadastro = obterDataLegivel();
-  }
-
-  // -- SALVAR IMG NO FIREBASE
-  const salvar = imagem => {
-    produto.imagemUrl = imagem;
-    firebase.database().ref('produto').push(produto).then(() => {
-      registrarHistorico('Cadastro de produto', `Produto "${produto.nome}" cadastrado.`);
-      carregarAlertasDoFirebase();
-      exibirHistorico();
-      mostrarMensagem('✅ Produto cadastrado com sucesso!', 'success');
-      document.getElementById('modal-produto').style.display = 'none';
-    });
-  };
-
-  if (file) {
-    converterImagemParaBase64(file, salvar);
-  } else {
-    salvar('');
-  }
-}
