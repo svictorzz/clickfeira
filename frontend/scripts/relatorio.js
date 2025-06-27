@@ -1,14 +1,9 @@
+// --- relatorio.js (Updated with idComerciante filtering) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 import {
   atualizarTodosDashboards,
 } from './dashboard.js';
-
-// Exporta funções utilitárias para uso em dashboard.js
-
-export function obterIdComerciante() {
-  return localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
-}
 
 export function calcularFatorConversao(precoPor, unidade, qtd) {
   if (precoPor === unidade) return qtd;
@@ -44,49 +39,32 @@ const firebaseConfig = {
   projectId: "click-feira",
   storageBucket: "click-feira.appspot.com",
   messagingSenderId: "108583577904",
-  appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
+  appId: "1:108583577904:web:7d93b0d8ad8e6e7f"
 };
-
-// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 
-// === Indicador de carregamento ===
-export function mostrarCarregando() {
-  const el = document.getElementById("loading-indicador");
-  if (el) el.style.display = "block";
-}
+export function mostrarCarregando() { /* ... */ }
+export function esconderCarregando() { /* ... */ }
 
-export function esconderCarregando() {
-  const el = document.getElementById("loading-indicador");
-  if (el) el.style.display = "none";
-}
-
-// === Salvar filtro no localStorage ===
+// Salvar filtro no localStorage
 document.addEventListener("DOMContentLoaded", () => {
   const selectFiltro = document.getElementById("filtro-categoria");
   const btnLimpar = document.getElementById("limpar-filtro");
   const filtroSalvo = localStorage.getItem("categoriaSelecionada");
-
   if (filtroSalvo) selectFiltro.value = filtroSalvo;
-
   selectFiltro.addEventListener("change", () => {
     localStorage.setItem("categoriaSelecionada", selectFiltro.value);
     atualizarTodosDashboards();
   });
-
-  if (btnLimpar) {
-    btnLimpar.addEventListener("click", () => {
-      selectFiltro.value = "todas";
-      localStorage.setItem("categoriaSelecionada", "todas");
-      selectFiltro.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-  }
-
+  if (btnLimpar) btnLimpar.addEventListener("click", () => {
+    selectFiltro.value = "todas";
+    localStorage.setItem("categoriaSelecionada", "todas");
+    selectFiltro.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   carregarCategoriasNoFiltro();
 });
 
-// Exportar dados para Excel
 export function exportarParaExcel(dados, nomeArquivo = "relatorio", nomeAba = "Dados") {
   if (!Array.isArray(dados) || dados.length === 0) return;
   const worksheet = XLSX.utils.json_to_sheet(dados);
@@ -96,35 +74,49 @@ export function exportarParaExcel(dados, nomeArquivo = "relatorio", nomeAba = "D
   XLSX.writeFile(workbook, `${nomeArquivo}_${hoje}.xlsx`);
 }
 
-// Função para carregar categorias no filtro
-function carregarCategoriasNoFiltro() {
+async function carregarCategoriasNoFiltro() {
+  const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
   const refProdutos = ref(db, "produto");
-  get(refProdutos).then(snapshot => {
-    const idComerciante = obterIdComerciante();
-    const lista = Object.values(snapshot.val() || {}).filter(p => p.idComerciante === idComerciante);
+  const snap = await get(refProdutos);
+  const raw = snap.val() || {};
+  const lista = Object.values(raw).filter(p => p.idComerciante === idComerciante);
+  const categoriasUnicas = [...new Set(lista.map(p => p.categoria).filter(Boolean))];
 
-    const categoriasUnicas = [...new Set(lista.map(p => p.categoria).filter(Boolean))];
-
-    const select = document.getElementById("filtro-categoria");
-    select.innerHTML = "";
-
-    // Adiciona a opção padrão
-    const opcaoTodas = document.createElement("option");
-    opcaoTodas.value = "todas";
-    opcaoTodas.textContent = "Todas as Categorias";
-    select.appendChild(opcaoTodas);
-
-    categoriasUnicas.forEach(cat => {
-      const opt = document.createElement("option");
-      opt.value = cat;
-      opt.textContent = cat;
-      select.appendChild(opt);
-    });
-
-    // Restaurar seleção só depois que tudo foi adicionado
-    const filtroSalvo = localStorage.getItem("categoriaSelecionada") || "todas";
-    select.value = filtroSalvo;
-
-    atualizarTodosDashboards();
+  const select = document.getElementById("filtro-categoria");
+  select.innerHTML = '';
+  const opcaoTodas = document.createElement("option");
+  opcaoTodas.value = "todas";
+  opcaoTodas.textContent = "Todas as Categorias";
+  select.appendChild(opcaoTodas);
+  categoriasUnicas.forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
   });
+
+  const filtroSalvo = localStorage.getItem("categoriaSelecionada") || "todas";
+  select.value = filtroSalvo;
+  atualizarTodosDashboards();
+}
+
+/*Validade mais próxima e dias para vencer*/
+
+export function calcularValidadeMaisProxima(produto) {
+  if (!produto.lotes) return null;
+  const datas = Object.values(produto.lotes)
+    .map(l => l.validade)
+    .filter(Boolean)
+    .map(d => new Date(d))
+    .filter(d => !isNaN(d));
+  if (datas.length === 0) return null;
+  datas.sort((a, b) => a - b);
+  return datas[0];
+}
+
+export function calcularDiasParaVencer(validade) {
+  if (!validade) return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.floor((validade - hoje) / (1000 * 60 * 60 * 24));
 }
