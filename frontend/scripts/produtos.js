@@ -35,6 +35,23 @@ function configurarEventListeners() {
         console.warn('Produto não encontrado para a chave:', firebaseKey);
       }
     }
+    // Quando o usuário escolher um arquivo, já monta o preview e o hidden
+    document.getElementById('imagem').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById('imagem-preview');
+      const hidden = document.getElementById('imagem-base64');
+
+      if (file) {
+        const dataUrl = await readFileAsDataURL(file);
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+        hidden.value = dataUrl;
+      } else {
+        preview.style.display = 'none';
+        hidden.value = '';
+      }
+    });
+
   });
 
   // Cancelamentos
@@ -428,6 +445,15 @@ function validarCompatibilidadeUnidadePreco(e) {
   }
 }
 
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -441,6 +467,16 @@ async function handleFormSubmit(e) {
   const quantidadeMinima = parseInt(document.getElementById('qtd-minima').value);
   const imagem = document.getElementById('imagem').files[0];
   const idComerciante = localStorage.getItem("idComerciante") || sessionStorage.getItem("idComerciante");
+
+  const imagemFile = document.getElementById('imagem').files[0];
+  const base64Existente = document.getElementById('imagem-base64').value;
+  let imagemBase64 = '';
+
+  if (imagemFile) {
+    imagemBase64 = await readFileAsDataURL(imagemFile);
+  } else if (base64Existente) {
+    imagemBase64 = base64Existente;
+  }
 
   if (!nome || !categoria || !fornecedorId || !preco || !precoPor || !unidadeMedida || isNaN(quantidadeMinima)) {
     alert('Preencha todos os campos obrigatórios.');
@@ -472,17 +508,9 @@ async function handleFormSubmit(e) {
         precoPor,
         unidadeMedida,
         quantidadeMinima,
-        dataUltimaAtualizacao: dataAtual
+        dataUltimaAtualizacao: dataAtual,
+        imagemBase64,
       };
-
-
-      // Se houver imagem nova, faça o upload e atualize
-      if (imagem) {
-        const storageRef = firebase.storage().ref(`imagens/${imagem.name}`);
-        await storageRef.put(imagem);
-        const url = await storageRef.getDownloadURL();
-        dadosAtualizados.imagemUrl = url;
-      }
 
       // Preservar campos sensíveis
       dadosAtualizados.lotes = produtoExistente.lotes || {};
@@ -510,12 +538,7 @@ async function handleFormSubmit(e) {
     const novoProdutoRef = firebase.database().ref('produto').push();
     const idProduto = novoProdutoRef.key;
 
-    let imagemUrl = "";
-    if (imagem) {
-      const storageRef = firebase.storage().ref(`imagens/${imagem.name}`);
-      await storageRef.put(imagem);
-      imagemUrl = await storageRef.getDownloadURL();
-    }
+
 
     const codigo = gerarCodigoProduto();
 
@@ -528,7 +551,7 @@ async function handleFormSubmit(e) {
       precoPor,
       unidadeMedida,
       quantidadeMinima,
-      imagemUrl,
+      imagemBase64,
       codigo,
       idComerciante: idComerciante,
       dataUltimaAtualizacao: dataAtual,
@@ -713,7 +736,7 @@ function preencherModalVisualizacao(produto) {
   document.getElementById('ver-total-estimado').textContent = `R$ ${parseFloat(produto.valorEstoque || 0).toFixed(2).replace('.', ',')}`;
   document.getElementById('ver-descricao').textContent = produto.descricao;
   document.getElementById('ver-qtd-minima').textContent = `${produto.quantidadeMinima} ${produto.unidadeMedida}`;
-  document.getElementById('ver-imagem').src = produto.imagemUrl;
+  document.getElementById('ver-imagem').src = produto.imagemBase64 || 'fallback.png';
   const nomeFornecedor = mapaFornecedores[produto.fornecedorId];
   document.getElementById('ver-fornecedor').textContent = nomeFornecedor ? nomeFornecedor : 'Fornecedor não disponível';
 
@@ -757,6 +780,18 @@ function preencherFormEdicao(produto, index) {
   document.getElementById('preco').value = produto.preco;
   document.getElementById('preco-por').value = produto.precoPor;
   document.getElementById('fornecedor').value = produto.fornecedorId || '';
+
+  const hidden = document.getElementById('imagem-base64');
+  const preview = document.getElementById('imagem-preview');
+
+  hidden.value = produto.imagemBase64 || '';
+
+  if (produto.imagemBase64) {
+    preview.src = produto.imagemBase64;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
 
   document.getElementById('titulo-modal-produto').textContent = 'Editar Produto';
 
