@@ -271,12 +271,7 @@
         const html = await res.text();
         document.getElementById('menu-container').innerHTML = html;
 
-        // 2) Inicia a página (mostrar/esconder seções, etc.)
-        //iniciarPagina();
-
-        // 3) Após mostrar a seção “Início”, inicializa alertas e histórico
-        //    (paginaHistorico e paginaAtual já são globais em inicio.js)
-        carregarAlertas();
+        carregarAlertasDoFirebase();
         paginaHistorico = 0;
         exibirHistorico();
       } catch (error) {
@@ -287,20 +282,6 @@
 
   <!-- Scripts do Bootstrap para funcionalidades adicionais -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Inicialização do banco -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD_8Rr7Ya6MzqJ6Hn6vJwQZ7yj6Qt8sE7A",
-      authDomain: "click-feira.firebaseapp.com",
-      databaseURL: "https://click-feira-default-rtdb.firebaseio.com",
-      projectId: "click-feira",
-      storageBucket: "click-feira.appspot.com",
-      messagingSenderId: "108583577904",
-      appId: "1:108583577904:web:7d9b3d0c8d9b0d8d8e6e7f"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
 
   <!-- Script do arquivo JS da página, com 'defer' para carregar após o HTML -->
   <script src="../scripts/inicio.js" defer></script>
