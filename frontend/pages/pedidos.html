@@ -73,40 +73,48 @@
         </div>
 
         <!-- Tabela de Entradas -->
-        <table class="custom-table" id="tabela-entradas">
-            <thead>
-                <tr>
-                    <th class="col-checkbox"><input type="checkbox" id="selecionar-todos-entradas"></th>
-                    <th class="col-id">ID Pedido</th>
-                    <th class="col-fornecedor">Fornecedor</th>
-                    <th class="col-data">Data</th>
-                    <th class="col-produtos">Produtos</th>
-                    <th class="col-total">Total</th>
-                    <th class="col-consultar">Consultar</th>
-                    <th class="col-sar">Editar</th>
-                    <th class="col-excluir">Excluir</th>
-                </tr>
-            </thead>
-            <tbody id="lista-pedidos-entradas" class="lista-pedidos"></tbody>
-        </table>
+        <div class="tabela-wrapper">
+            <table class="custom-table" id="tabela-entradas">
+                <thead>
+                    <tr>
+                        <th class="col-checkbox">
+                            <input type="checkbox" id="selecionar-todos-entradas">
+                        </th>
+                        <th class="col-id">ID Pedido</th>
+                        <th class="col-fornecedor">Fornecedor</th>
+                        <th class="col-data">Data</th>
+                        <th class="col-produtos">Produtos</th>
+                        <th class="col-total">Total</th>
+                        <th class="col-consultar">Consultar</th>
+                        <th class="col-editar">Editar</th>
+                        <th class="col-excluir">Excluir</th>
+                        <th class="acoes-mobile">Ações</th> <!-- você já adicionou aqui -->
+                    </tr>
+                </thead>
+                <tbody id="lista-pedidos-entradas" class="lista-pedidos"></tbody>
+            </table>
+        </div>
 
         <!-- Tabela de Saídas -->
-        <table class="custom-table" id="tabela-saidas" style="display: none;">
-            <thead>
-                <tr>
-                    <th class="col-checkbox"><input type="checkbox" id="selecionar-todos-saidas"></th>
-                    <th class="col-id">ID Pedido</th>
-                    <th class="col-cliente">Cliente</th>
-                    <th class="col-data">Data</th>
-                    <th class="col-produtos">Produtos</th>
-                    <th class="col-total">Total</th>
-                    <th class="col-consultar">Consultar</th>
-                    <th class="col-editar">Editar</th>
-                    <th class="col-excluir">Excluir</th>
-                </tr>
-            </thead>
-            <tbody id="lista-pedidos-saidas" class="lista-pedidos"></tbody>
-        </table>
+        <div class="tabela-wrapper">
+            <table class="custom-table" id="tabela-saidas" style="display: none;">
+                <thead>
+                    <tr>
+                        <th class="col-checkbox"><input type="checkbox" id="selecionar-todos-saidas"></th>
+                        <th class="col-id">ID Pedido</th>
+                        <th class="col-cliente">Cliente</th>
+                        <th class="col-data">Data</th>
+                        <th class="col-produtos">Produtos</th>
+                        <th class="col-total">Total</th>
+                        <th class="col-consultar">Consultar</th>
+                        <th class="col-editar">Editar</th>
+                        <th class="col-excluir">Excluir</th>
+                        <th class="acoes-mobile">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-pedidos-saidas" class="lista-pedidos"></tbody>
+            </table>
+        </div>
 
         <div id="controles-paginacao"
             style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
@@ -205,6 +213,18 @@
             <div id="itens-lista-visualizacao"></div>
             <div class="modal-footer">
                 <button class="botao-secundario" id="fecharVisualizarItens">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmar validade vencida em cadastro -->
+    <div id="modal-confirmar-validade" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h4>Validade Vencida</h4>
+            <p id="mensagem-validade-vencida" style="color: gray; font-size: 14px;"></p>
+            <div class="modal-buttons" style="justify-content: center; gap: 1em;">
+                <button id="btn-confirmar-validade" class="salvar">Sim, prosseguir</button>
+                <button id="btn-cancelar-validade" class="cancelar">Cancelar</button>
             </div>
         </div>
     </div>
