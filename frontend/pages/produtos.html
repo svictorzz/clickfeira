@@ -155,6 +155,12 @@
               <label for="imagem">Imagem do Produto</label>
               <input type="file" id="imagem" name="imagem" accept="image/*">
 
+              <!-- Preview da imagem (inicia oculto) -->
+              <img id="imagem-preview" class="product-image" style="display:none; margin-top:8px; max-width:100px;">
+
+              <!-- Armazena o Base64 existente em edição -->
+              <input type="hidden" id="imagem-base64" name="imagem-base64">
+
               <label for="codigo">Código</label>
               <input type="text" id="codigo" name="codigo" readonly>
 
